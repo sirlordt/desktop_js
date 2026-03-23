@@ -1,0 +1,166 @@
+[data-theme="gtk4-light"] {
+  /* Background and Surface */
+  --window-bg-color: #f6f5f4;
+  --window-fg-color: #2e3436;
+  --view-bg-color: #ffffff;
+  --view-fg-color: #000000;
+  --headerbar-bg-color: #ebebeb;
+  --headerbar-fg-color: #2e3436;
+  --sidebar-bg-color: #f0f0ef;
+  --sidebar-fg-color: #2e3436;
+  --card-bg-color: #ffffff;
+  --card-fg-color: #2e3436;
+
+  /* Accent Colors (GTK Blue) */
+  --accent-bg-color: #3584e4;
+  --accent-fg-color: #ffffff;
+  --accent-hover-color: #2a76d6;
+  --accent-active-color: #1e68c8;
+
+  /* Secondary Colors */
+  --success-bg-color: #33d17a;
+  --success-fg-color: #ffffff;
+  --warning-bg-color: #f5c211;
+  --warning-fg-color: #000000;
+  --error-bg-color: #e01b24;
+  --error-fg-color: #ffffff;
+
+  /* Button / UI States */
+  --button-bg-color: #eeeeec;
+  --button-fg-color: #2e3436;
+  --button-hover-bg-color: #e5e5e2;
+  --button-active-bg-color: #d6d6d1;
+  --button-disabled-bg-color: #f6f5f4;
+  --button-disabled-fg-color: #929595;
+
+  /* Input / Forms */
+  --input-bg-color: #ffffff;
+  --input-fg-color: #2e3436;
+  --input-border-color: rgba(0, 0, 0, 0.18);
+  --input-focus-border-color: #3584e4;
+  --input-placeholder-color: #929595;
+
+  /* Menu / Dropdown */
+  --menu-bg-color: #ffffff;
+  --menu-fg-color: #2e3436;
+  --menu-hover-bg-color: #3584e4;
+  --menu-hover-fg-color: #ffffff;
+  --menu-separator-color: rgba(0, 0, 0, 0.1);
+  --menu-border-color: rgba(0, 0, 0, 0.15);
+
+  /* Tooltip */
+  --tooltip-bg-color: #2e3436;
+  --tooltip-fg-color: #ffffff;
+
+  /* Dialog / Modal */
+  --dialog-bg-color: #ffffff;
+  --dialog-fg-color: #2e3436;
+  --dialog-overlay-color: rgba(0, 0, 0, 0.3);
+
+  /* Tabs */
+  --tab-active-bg-color: #ffffff;
+  --tab-active-fg-color: #2e3436;
+  --tab-inactive-bg-color: #e0e0dd;
+  --tab-inactive-fg-color: #929595;
+  --tab-border-color: rgba(0, 0, 0, 0.15);
+
+  /* Toolbar */
+  --toolbar-bg-color: #f0f0ef;
+  --toolbar-fg-color: #2e3436;
+
+  /* Statusbar */
+  --statusbar-bg-color: #ebebeb;
+  --statusbar-fg-color: #929595;
+
+  /* Selection */
+  --selection-bg-color: #3584e4;
+  --selection-fg-color: #ffffff;
+
+  /* Link */
+  --link-color: #3584e4;
+  --link-hover-color: #2a76d6;
+  --link-visited-color: #7c4dff;
+
+  /* Switch / Toggle */
+  --switch-bg-color: #c0bfbc;
+  --switch-active-bg-color: #3584e4;
+  --switch-thumb-color: #ffffff;
+
+  /* Checkbox / Radio */
+  --checkbox-bg-color: #ffffff;
+  --checkbox-checked-bg-color: #3584e4;
+  --checkbox-check-color: #ffffff;
+  --checkbox-border-color: rgba(0, 0, 0, 0.25);
+
+  /* Slider / Range */
+  --slider-track-bg-color: #d6d6d1;
+  --slider-thumb-bg-color: #ffffff;
+  --slider-fill-color: #3584e4;
+
+  /* Progress Bar */
+  --progress-bg-color: #d6d6d1;
+  --progress-fill-color: #3584e4;
+
+  /* Focus Ring */
+  --focus-ring-color: rgba(53, 132, 228, 0.5);
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* Separator / Divider */
+  --separator-color: rgba(0, 0, 0, 0.12);
+
+  /* Popover */
+  --popover-bg-color: #ffffff;
+  --popover-fg-color: #2e3436;
+  --popover-border-color: rgba(0, 0, 0, 0.15);
+
+  /* Button Shape */
+  --btn-border-radius-tiny: 4px;
+  --btn-border-radius-small: 5px;
+  --btn-border-radius-medium: 6px;
+  --btn-border-radius-large: 8px;
+  --btn-border-radius-xlarge: 10px;
+  --btn-border-width: 1px;
+  --btn-border-style: solid;
+  --btn-focus-ring-width: 2px;
+  --btn-focus-ring-offset: 2px;
+  --btn-transition: all 150ms ease-in-out;
+
+  /* Borders and Shadows */
+  --border-color: rgba(0, 0, 0, 0.15);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+
+  /* Scrollbar */
+  --scrollbar-bg-color: transparent;
+  --scrollbar-thumb-color: rgba(0, 0, 0, 0.25);
+  --scrollbar-thumb-hover-color: rgba(0, 0, 0, 0.4);
+
+  /* Font Families */
+  --font-sans: 'Cantarell', 'Noto Sans', system-ui, sans-serif;
+  --font-heading: 'Cantarell', 'Noto Sans', system-ui, sans-serif;
+  --font-mono: 'Source Code Pro', 'Noto Sans Mono', ui-monospace, monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.5px;
+  --letter-spacing-normal: 0px;
+  --letter-spacing-wide: 0.5px;
+}

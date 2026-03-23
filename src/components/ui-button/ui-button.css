@@ -1,0 +1,430 @@
+:host {
+  display: inline-flex;
+  max-width: var(--ui-btn-max-width, none);
+}
+
+:host([hidden]) {
+  display: none;
+}
+
+:host([truncate]) {
+  --ui-btn-max-width: 100%;
+}
+
+.ui-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  border: var(--btn-border-width) var(--btn-border-style) var(--_btn-border-color);
+  border-radius: var(--_btn-border-radius);
+  background: var(--_btn-bg);
+  color: var(--_btn-fg);
+  font-family: var(--font-sans);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  transition: var(--btn-transition);
+  outline: none;
+  user-select: none;
+  white-space: nowrap;
+  text-decoration: none;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Sizes ── */
+
+:host([size="tiny"]) .ui-btn {
+  padding: 4px 8px;
+  font-size: var(--font-size-xs);
+  border-radius: var(--btn-border-radius-tiny);
+  --_btn-border-radius: var(--btn-border-radius-tiny);
+}
+
+:host([size="small"]) .ui-btn {
+  padding: 6px 12px;
+  font-size: var(--font-size-sm);
+  border-radius: var(--btn-border-radius-small);
+  --_btn-border-radius: var(--btn-border-radius-small);
+}
+
+:host(:not([size])) .ui-btn,
+:host([size="medium"]) .ui-btn {
+  padding: 8px 16px;
+  font-size: var(--font-size-md);
+  border-radius: var(--btn-border-radius-medium);
+  --_btn-border-radius: var(--btn-border-radius-medium);
+}
+
+:host([size="large"]) .ui-btn {
+  padding: 10px 20px;
+  font-size: var(--font-size-lg);
+  border-radius: var(--btn-border-radius-large);
+  --_btn-border-radius: var(--btn-border-radius-large);
+}
+
+:host([size="xlarge"]) .ui-btn {
+  padding: 12px 24px;
+  font-size: var(--font-size-xl);
+  border-radius: var(--btn-border-radius-xlarge);
+  --_btn-border-radius: var(--btn-border-radius-xlarge);
+}
+
+:host([size="custom"]) .ui-btn,
+:host([position="absolute"]) .ui-btn {
+  width: 100%;
+  height: 100%;
+}
+
+:host([size="custom"]) .ui-btn {
+  padding: 8px 16px;
+  font-size: var(--font-size-md);
+  border-radius: var(--btn-border-radius-medium);
+  --_btn-border-radius: var(--btn-border-radius-medium);
+}
+
+:host([size="custom"]) .ui-btn__label,
+:host([position="absolute"]) .ui-btn__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  min-width: 0;
+}
+
+/* ── Variant: Solid (default) ── */
+
+:host(:not([variant])) .ui-btn,
+:host([variant="solid"]) .ui-btn {
+  --_btn-bg: var(--accent-bg-color);
+  --_btn-fg: var(--accent-fg-color);
+  --_btn-border-color: var(--accent-bg-color);
+  --_btn-focus-color: var(--accent-bg-color);
+}
+
+:host(:not([variant])) .ui-btn:hover,
+:host([variant="solid"]) .ui-btn:hover {
+  --_btn-bg: var(--accent-hover-color);
+  --_btn-border-color: var(--accent-hover-color);
+}
+
+:host(:not([variant])) .ui-btn:active,
+:host([variant="solid"]) .ui-btn:active,
+:host(:not([variant])[pressed]) .ui-btn,
+:host([variant="solid"][pressed]) .ui-btn {
+  --_btn-bg: var(--accent-active-color);
+  --_btn-border-color: var(--accent-active-color);
+}
+
+/* ── Variant: Outline ── */
+
+:host([variant="outline"]) .ui-btn {
+  --_btn-bg: transparent;
+  --_btn-fg: var(--accent-bg-color);
+  --_btn-border-color: var(--accent-bg-color);
+  --_btn-focus-color: var(--accent-bg-color);
+}
+
+:host([variant="outline"]) .ui-btn:hover {
+  --_btn-bg: var(--accent-bg-color);
+  --_btn-fg: var(--accent-fg-color);
+}
+
+:host([variant="outline"]) .ui-btn:active,
+:host([variant="outline"][pressed]) .ui-btn {
+  --_btn-bg: var(--accent-active-color);
+  --_btn-fg: var(--accent-fg-color);
+  --_btn-border-color: var(--accent-active-color);
+}
+
+/* ── Variant: Ghost ── */
+
+:host([variant="ghost"]) .ui-btn {
+  --_btn-bg: transparent;
+  --_btn-fg: var(--button-fg-color);
+  --_btn-border-color: transparent;
+  --_btn-focus-color: var(--button-disabled-fg-color);
+}
+
+:host([variant="ghost"]) .ui-btn:hover {
+  --_btn-bg: var(--button-hover-bg-color);
+}
+
+:host([variant="ghost"]) .ui-btn:active,
+:host([variant="ghost"][pressed]) .ui-btn {
+  --_btn-bg: var(--button-active-bg-color);
+}
+
+/* ── Variant: Destructive ── */
+
+:host([variant="destructive"]) .ui-btn {
+  --_btn-bg: var(--error-bg-color);
+  --_btn-fg: var(--error-fg-color);
+  --_btn-border-color: var(--error-bg-color);
+  --_btn-focus-color: var(--error-bg-color);
+}
+
+/* WIN95: destructive focus uses fg color (the red) since bg is neutral gray */
+:host(.win95[variant="destructive"]) .ui-btn {
+  --_btn-focus-color: var(--error-fg-color);
+}
+
+:host([variant="destructive"]) .ui-btn:hover {
+  filter: brightness(0.9);
+}
+
+:host([variant="destructive"]) .ui-btn:active,
+:host([variant="destructive"][pressed]) .ui-btn {
+  filter: brightness(0.8);
+}
+
+/* ── Focus ── */
+
+.ui-btn:focus {
+  outline: var(--focus-ring-width) solid var(--_btn-focus-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+:host([focusable="false"]) .ui-btn:focus {
+  outline: none;
+}
+
+/* ── Disabled ── */
+
+:host([disabled]) .ui-btn {
+  --_btn-bg: var(--button-disabled-bg-color);
+  --_btn-fg: var(--button-disabled-fg-color);
+  --_btn-border-color: var(--button-disabled-bg-color);
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ── Pressed (toggle) — GTK4 scale effect ── */
+
+:host(:not([variant])) .ui-btn:active,
+:host([variant="solid"]) .ui-btn:active,
+:host([variant="outline"]) .ui-btn:active,
+:host([variant="destructive"]) .ui-btn:active {
+  transform: scale(0.98);
+}
+
+/* ══════════════════════════════════════
+   WIN95 OVERRIDES — Real 3D bevel borders
+   ══════════════════════════════════════ */
+
+/* Base: all WIN95 buttons are gray with 3D raised border */
+:host(.win95) .ui-btn {
+  --_btn-bg: var(--btn-3d-face);
+  --_btn-fg: var(--button-fg-color);
+  --_btn-border-color: transparent;
+  --_win95-pad-v: 8px;
+  --_win95-pad-h: 16px;
+  background: var(--btn-3d-face);
+  color: var(--button-fg-color);
+  border: 1px solid transparent;
+  border-radius: 0;
+  /* 3D raised: light top-left, dark bottom-right */
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-light),
+    inset 2px 2px 0 var(--btn-3d-mid-light),
+    inset -1px -1px 0 var(--btn-3d-dark),
+    inset -2px -2px 0 var(--btn-3d-mid-dark);
+  transition: none;
+  transform: none;
+}
+
+/* WIN95 padding vars per size */
+:host(.win95[size="tiny"]) .ui-btn { --_win95-pad-v: 4px; --_win95-pad-h: 8px; }
+:host(.win95[size="small"]) .ui-btn { --_win95-pad-v: 6px; --_win95-pad-h: 12px; }
+:host(.win95:not([size])) .ui-btn,
+:host(.win95[size="medium"]) .ui-btn { --_win95-pad-v: 8px; --_win95-pad-h: 16px; }
+:host(.win95[size="large"]) .ui-btn { --_win95-pad-v: 10px; --_win95-pad-h: 20px; }
+:host(.win95[size="xlarge"]) .ui-btn { --_win95-pad-v: 12px; --_win95-pad-h: 24px; }
+:host(.win95[size="custom"]) .ui-btn { --_win95-pad-v: 8px; --_win95-pad-h: 16px; }
+
+/* WIN95 Solid + Destructive: gray raised + outer frame (black top-left, white bottom-right) */
+:host(.win95:not([variant])) .ui-btn,
+:host(.win95[variant="solid"]) .ui-btn,
+:host(.win95[variant="destructive"]) .ui-btn {
+  --_btn-focus-color: var(--btn-focus-color);
+  border: 1px solid var(--button-fg-color);
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-light),
+    inset 2px 2px 0 var(--btn-3d-mid-light),
+    inset -1px -1px 0 var(--btn-3d-dark),
+    inset -2px -2px 0 var(--btn-3d-mid-dark);
+}
+
+:host(.win95[variant="destructive"]) .ui-btn {
+  --_btn-fg: var(--error-fg-color);
+  color: var(--error-fg-color);
+  --_btn-focus-color: var(--error-fg-color);
+}
+
+/* WIN95 Outline: thinner 3D effect */
+:host(.win95[variant="outline"]) .ui-btn {
+  --_btn-bg: var(--btn-3d-face);
+  --_btn-fg: var(--button-fg-color);
+  --_btn-focus-color: var(--btn-focus-color);
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-light),
+    inset -1px -1px 0 var(--btn-3d-mid-dark);
+}
+
+/* WIN95 Ghost: flat, no border (toolbar style) */
+:host(.win95[variant="ghost"]) .ui-btn {
+  --_btn-bg: transparent;
+  --_btn-fg: var(--button-fg-color);
+  --_btn-focus-color: var(--btn-focus-color);
+  box-shadow: none;
+  background: transparent;
+}
+
+:host(.win95[variant="ghost"]) .ui-btn:hover {
+  --_btn-bg: var(--btn-3d-face);
+  background: var(--btn-3d-face);
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-light),
+    inset -1px -1px 0 var(--btn-3d-mid-dark);
+}
+
+:host(.win95[variant="ghost"]) .ui-btn:active,
+:host(.win95[variant="ghost"][pressed]) .ui-btn {
+  background: var(--btn-3d-face);
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-dark),
+    inset 2px 2px 0 var(--btn-3d-mid-dark),
+    inset -1px -1px 0 var(--btn-3d-light);
+}
+
+/* WIN95 Hover: no background change (authentic Win95 behavior) */
+
+/* WIN95 Active/Pressed: 3D inset (sunken) + shift content 1px down-right */
+:host(.win95) .ui-btn:active,
+:host(.win95[pressed]) .ui-btn {
+  transform: none;
+  filter: none;
+  background: var(--btn-3d-face);
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-dark),
+    inset 2px 2px 0 var(--btn-3d-mid-dark),
+    inset -1px -1px 0 var(--btn-3d-light);
+  /* Shift content 1px down-right */
+  padding-top: calc(var(--_win95-pad-v) + 1px);
+  padding-left: calc(var(--_win95-pad-h) + 1px);
+  padding-bottom: calc(var(--_win95-pad-v) - 1px);
+  padding-right: calc(var(--_win95-pad-h) - 1px);
+}
+
+/* WIN95 Solid/Destructive pressed: double white line bottom-right */
+:host(.win95:not([variant])) .ui-btn:active,
+:host(.win95[variant="solid"]) .ui-btn:active,
+:host(.win95[variant="destructive"]) .ui-btn:active,
+:host(.win95:not([variant])[pressed]) .ui-btn,
+:host(.win95[variant="solid"][pressed]) .ui-btn,
+:host(.win95[variant="destructive"][pressed]) .ui-btn {
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-dark),
+    inset 2px 2px 0 var(--btn-3d-mid-dark),
+    inset -1px -1px 0 var(--btn-3d-light),
+    inset -2px -2px 0 var(--btn-3d-mid-light);
+}
+
+/* WIN95 Focus: dotted inner rectangle (like real Win95) */
+:host(.win95) .ui-btn:focus {
+  outline: none;
+}
+
+:host(.win95[focusable="false"]) .ui-btn:focus::after {
+  display: none;
+}
+
+:host(.win95) .ui-btn:focus::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  border: 1px dotted var(--btn-focus-color);
+  pointer-events: none;
+}
+
+/* Shift focus rect with content when pressed */
+:host(.win95) .ui-btn:active:focus::after,
+:host(.win95[pressed]) .ui-btn:focus::after {
+  top: 6px;
+  left: 6px;
+  right: 4px;
+  bottom: 4px;
+}
+
+/* WIN95 Disabled: embossed text effect */
+:host(.win95[disabled]) .ui-btn {
+  --_btn-bg: var(--btn-3d-face);
+  background: var(--btn-3d-face);
+  color: var(--button-disabled-fg-color);
+  text-shadow: 1px 1px 0 var(--btn-3d-light);
+  opacity: 1;
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-light),
+    inset 2px 2px 0 var(--btn-3d-mid-light),
+    inset -1px -1px 0 var(--btn-3d-dark),
+    inset -2px -2px 0 var(--btn-3d-mid-dark);
+}
+
+/* ── Icons ── */
+
+.ui-btn__icon-left,
+.ui-btn__icon-right {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+.ui-btn__icon-left.hidden,
+.ui-btn__icon-right.hidden {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.ui-btn__icon-left ::slotted(*),
+.ui-btn__icon-right ::slotted(*) {
+  width: 1em;
+  height: 1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.ui-btn__label {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+:host([truncate]) .ui-btn__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.ui-btn__label.hidden {
+  display: none;
+}
+
+/* Icon-only: reduce gap between icons */
+:host([data-icon-only]) .ui-btn {
+  gap: 3px;
+}

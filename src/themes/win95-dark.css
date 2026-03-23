@@ -1,0 +1,179 @@
+[data-theme="win95-dark"] {
+  /* Background and Surface */
+  --window-bg-color: #909090;
+  --window-fg-color: #000000;
+  --view-bg-color: #d0d0d0;
+  --view-fg-color: #000000;
+  --headerbar-bg-color: #000080;
+  --headerbar-fg-color: #ffffff;
+  --sidebar-bg-color: #909090;
+  --sidebar-fg-color: #000000;
+  --card-bg-color: #909090;
+  --card-fg-color: #000000;
+
+  /* Accent Colors (Classic Blue) */
+  --accent-bg-color: #000080;
+  --accent-fg-color: #ffffff;
+  --accent-hover-color: #0000a0;
+  --accent-active-color: #000060;
+
+  /* Secondary Colors (neutral bg, color on text/icons only) */
+  --success-bg-color: #909090;
+  --success-fg-color: #008000;
+  --warning-bg-color: #909090;
+  --warning-fg-color: #808000;
+  --error-bg-color: #909090;
+  --error-fg-color: #ff0000;
+
+  /* Button / UI States */
+  --button-bg-color: #909090;
+  --button-fg-color: #000000;
+  --button-hover-bg-color: #b0b0b0;
+  --button-active-bg-color: #909090;
+  --button-disabled-bg-color: #909090;
+  --button-disabled-fg-color: #808080;
+
+  /* Input / Forms */
+  --input-bg-color: #d0d0d0;
+  --input-fg-color: #000000;
+  --input-border-color: #808080;
+  --input-focus-border-color: #000080;
+  --input-placeholder-color: #808080;
+
+  /* Menu / Dropdown */
+  --menu-bg-color: #909090;
+  --menu-fg-color: #000000;
+  --menu-hover-bg-color: #000080;
+  --menu-hover-fg-color: #ffffff;
+  --menu-separator-color: #808080;
+  --menu-border-color: #808080;
+
+  /* Tooltip */
+  --tooltip-bg-color: #ffffe1;
+  --tooltip-fg-color: #000000;
+
+  /* Dialog / Modal */
+  --dialog-bg-color: #909090;
+  --dialog-fg-color: #000000;
+  --dialog-overlay-color: rgba(0, 0, 0, 0.4);
+
+  /* Tabs */
+  --tab-active-bg-color: #909090;
+  --tab-active-fg-color: #000000;
+  --tab-inactive-bg-color: #888888;
+  --tab-inactive-fg-color: #000000;
+  --tab-border-color: #808080;
+
+  /* Toolbar */
+  --toolbar-bg-color: #909090;
+  --toolbar-fg-color: #000000;
+
+  /* Statusbar */
+  --statusbar-bg-color: #909090;
+  --statusbar-fg-color: #000000;
+
+  /* Selection */
+  --selection-bg-color: #000080;
+  --selection-fg-color: #ffffff;
+
+  /* Link */
+  --link-color: #0000ff;
+  --link-hover-color: #0000ff;
+  --link-visited-color: #800080;
+
+  /* Switch / Toggle */
+  --switch-bg-color: #909090;
+  --switch-active-bg-color: #000080;
+  --switch-thumb-color: #ffffff;
+
+  /* Checkbox / Radio */
+  --checkbox-bg-color: #d0d0d0;
+  --checkbox-checked-bg-color: #d0d0d0;
+  --checkbox-check-color: #000000;
+  --checkbox-border-color: #808080;
+
+  /* Slider / Range */
+  --slider-track-bg-color: #909090;
+  --slider-thumb-bg-color: #909090;
+  --slider-fill-color: #000080;
+
+  /* Progress Bar */
+  --progress-bg-color: #909090;
+  --progress-fill-color: #000080;
+
+  /* Focus Ring */
+  --focus-ring-color: #000000;
+  --focus-ring-width: 1px;
+  --focus-ring-offset: -1px;
+
+  /* Separator / Divider */
+  --separator-color: #808080;
+
+  /* Popover */
+  --popover-bg-color: #909090;
+  --popover-fg-color: #000000;
+  --popover-border-color: #808080;
+
+  /* Button Shape */
+  --btn-border-radius-tiny: 0px;
+  --btn-border-radius-small: 0px;
+  --btn-border-radius-medium: 0px;
+  --btn-border-radius-large: 0px;
+  --btn-border-radius-xlarge: 0px;
+  --btn-border-width: 1px;
+  --btn-border-style: solid;
+  --btn-transition: none;
+
+  /* WIN95 3D Border Colors */
+  --btn-3d-light: #d0d0d0;
+  --btn-3d-mid-light: #b8b8b8;
+  --btn-3d-mid-dark: #686868;
+  --btn-3d-dark: #333333;
+  --btn-3d-face: #909090;
+
+  /* WIN95 Focus (dotted inner rectangle) */
+  --btn-focus-style: dotted;
+  --btn-focus-color: #000000;
+  --btn-focus-width: 1px;
+  --btn-focus-offset: -4px;
+
+  /* Borders and Shadows (classic 3D effect) */
+  --border-color: #808080;
+  --border-light-color: #d0d0d0;
+  --border-dark-color: #333333;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+
+  /* Scrollbar */
+  --scrollbar-bg-color: #909090;
+  --scrollbar-thumb-color: #808080;
+  --scrollbar-thumb-hover-color: #606060;
+
+  /* Font Families */
+  --font-sans: 'Cantarell', 'Noto Sans', system-ui, sans-serif;
+  --font-heading: 'Cantarell', 'Noto Sans', system-ui, sans-serif;
+  --font-mono: 'Source Code Pro', 'Noto Sans Mono', ui-monospace, monospace;
+
+  /* Font Sizes */
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+
+  /* Font Weights */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* Line Heights */
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.65;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.5px;
+  --letter-spacing-normal: 0px;
+  --letter-spacing-wide: 0.5px;
+}

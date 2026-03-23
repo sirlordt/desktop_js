@@ -49,8 +49,10 @@
   --menu-border-color: #808080;
 
   /* Tooltip */
-  --tooltip-bg-color: #ffffe1;
+  --tooltip-bg-color: #ffffc8;
   --tooltip-fg-color: #000000;
+  --tooltip-border-color: #222222;
+  --tooltip-border-radius: 3px;
 
   /* Dialog / Modal */
   --dialog-bg-color: #c0c0c0;

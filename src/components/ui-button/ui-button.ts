@@ -1,10 +1,13 @@
 import { UIView, UI_ATTRS } from '../common/ui-view'
+import { UIHint } from '../ui-hint/ui-hint'
+import type { HintAlignment, UIHintOptions } from '../common/types'
 import styles from './ui-button.css?raw'
 
 const BUTTON_ATTRS = [
   'variant', 'toggle', 'pressed',
   'icon-left', 'icon-right', 'icon-left-pressed', 'icon-right-pressed',
   'focusable', 'tabindex', 'truncate',
+  'hint', 'hint-alignment', 'hint-arrow',
 ] as const
 
 export class UIButton extends UIView {
@@ -16,6 +19,8 @@ export class UIButton extends UIView {
   private _iconLeftEl!: HTMLSpanElement
   private _iconRightEl!: HTMLSpanElement
   private _labelEl!: HTMLSpanElement
+  private _hint: UIHint | null = null
+  private _hintExternal: boolean = false
 
   constructor() {
     super()
@@ -71,10 +76,13 @@ export class UIButton extends UIView {
     if (leftSlot) this._on(leftSlot, 'slotchange' as any, () => this._updateIcons())
     if (rightSlot) this._on(rightSlot, 'slotchange' as any, () => this._updateIcons())
     if (labelSlot) this._on(labelSlot, 'slotchange' as any, () => this._updateLabel())
+
+    this._updateHint()
   }
 
   disconnectedCallback() {
     super.disconnectedCallback()
+    this._destroyInternalHint()
   }
 
   attributeChangedCallback(name: string, old: string | null, val: string | null) {
@@ -91,6 +99,9 @@ export class UIButton extends UIView {
     }
     if (name === 'truncate') {
       this._updateTruncate()
+    }
+    if (name === 'hint' || name === 'hint-alignment' || name === 'hint-arrow') {
+      this._updateHint()
     }
   }
 
@@ -231,6 +242,76 @@ export class UIButton extends UIView {
     } else {
       this._btn.setAttribute('tabindex', '0')
     }
+  }
+
+  // ── Hint integration ──
+
+  /** Get the current UIHint instance (internal or external) */
+  get uiHint(): UIHint | null { return this._hint }
+
+  /** Set an external UIHint — pass null to remove and revert to attribute-based hint */
+  set uiHint(hint: UIHint | null) {
+    this._destroyInternalHint()
+    if (hint) {
+      this._hint = hint
+      this._hintExternal = true
+    } else {
+      this._hintExternal = false
+      this._updateHint()
+    }
+  }
+
+  /** Configure the internal hint with full options. Replaces any existing hint. */
+  setHint(options: Partial<Omit<UIHintOptions, 'anchor'>>): UIHint {
+    this._destroyInternalHint()
+    this._hintExternal = false
+    const hint = new UIHint({
+      anchor: this,
+      trigger: 'hover',
+      showDelay: 300,
+      hideDelay: 150,
+      ...options,
+    })
+    this._hint = hint
+    return hint
+  }
+
+  private _updateHint() {
+    if (this._hintExternal || !this.isConnected) return
+
+    const text = this.getAttribute('hint')
+    if (!text) {
+      this._destroyInternalHint()
+      return
+    }
+
+    const alignment = (this.getAttribute('hint-alignment') as HintAlignment) || 'BottomCenter'
+    const arrow = this.hasAttribute('hint-arrow')
+
+    if (this._hint && !this._hintExternal) {
+      // Update existing internal hint
+      this._hint.content = text
+      this._hint.alignment = alignment
+      this._hint.arrow = arrow
+    } else {
+      // Create new internal hint
+      this._hint = new UIHint({
+        anchor: this,
+        content: text,
+        alignment,
+        arrow,
+        trigger: 'hover',
+        showDelay: 300,
+        hideDelay: 150,
+      })
+    }
+  }
+
+  private _destroyInternalHint() {
+    if (this._hint && !this._hintExternal) {
+      this._hint.destroy()
+    }
+    this._hint = null
   }
 }
 

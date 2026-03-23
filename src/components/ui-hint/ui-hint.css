@@ -1,0 +1,46 @@
+/* ══════════════════════════════════════════
+   UIHint – Base Styles
+   Uses theme CSS variables for colors
+   ══════════════════════════════════════════ */
+
+.ui-hint {
+  position: fixed;
+  z-index: 99999;
+  max-width: 360px;
+  pointer-events: auto;
+
+  background: var(--tooltip-bg-color);
+  color: var(--tooltip-fg-color);
+  border-color: var(--tooltip-border-color);
+
+  font-family: var(--font-sans);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+.ui-hint__content {
+  padding: 6px 10px;
+}
+
+.ui-hint__arrow,
+.ui-hint__arrow-fill {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* ── Disabled ── */
+
+.ui-hint.disabled {
+  display: none !important;
+}
+
+/* ── WIN95 overrides ── */
+
+.ui-hint.win95 {
+  border-radius: var(--tooltip-border-radius, 0px) !important;
+  box-shadow: none;
+  border: 1px solid var(--tooltip-border-color);
+}

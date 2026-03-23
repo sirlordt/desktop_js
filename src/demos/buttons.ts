@@ -1,4 +1,6 @@
 import '../components/ui-button/ui-button'
+import { UIButton } from '../components/ui-button/ui-button'
+import { UIHint } from '../components/ui-hint/ui-hint'
 import type { DemoRoute } from '../header'
 
 export const buttonsDemo: DemoRoute = {
@@ -14,7 +16,10 @@ export const buttonsDemo: DemoRoute = {
           <ui-button variant="solid">Solid</ui-button>
           <ui-button variant="outline">Outline</ui-button>
           <ui-button variant="ghost">Ghost</ui-button>
-          <ui-button variant="destructive">Destructive</ui-button>
+          <ui-button variant="danger">Danger</ui-button>
+          <ui-button variant="warning">Warning</ui-button>
+          <ui-button variant="info">Info</ui-button>
+          <ui-button variant="success">Success</ui-button>
         </div>
       </section>
 
@@ -26,49 +31,67 @@ export const buttonsDemo: DemoRoute = {
           <ui-button size="small">Small</ui-button>
           <ui-button size="medium">Medium</ui-button>
           <ui-button size="large">Large</ui-button>
-          <ui-button size="xlarge">Giant</ui-button>
+          <ui-button size="xlarge">XLarge</ui-button>
         </div>
       </section>
 
       <!-- Sizes x Variants -->
       <section class="demo-section">
         <h2>Sizes x Variants</h2>
-        <div class="btn-demo-grid">
+        <div class="btn-demo-grid" style="grid-template-columns: 80px repeat(7, 1fr);">
           <div class="btn-demo-grid__header"></div>
           <div class="btn-demo-grid__header">Solid</div>
           <div class="btn-demo-grid__header">Outline</div>
           <div class="btn-demo-grid__header">Ghost</div>
-          <div class="btn-demo-grid__header">Destructive</div>
+          <div class="btn-demo-grid__header">Danger</div>
+          <div class="btn-demo-grid__header">Warning</div>
+          <div class="btn-demo-grid__header">Info</div>
+          <div class="btn-demo-grid__header">Success</div>
 
           <div class="btn-demo-grid__label">Tiny</div>
-          <div><ui-button size="tiny" variant="solid">Action</ui-button></div>
-          <div><ui-button size="tiny" variant="outline">Action</ui-button></div>
-          <div><ui-button size="tiny" variant="ghost">Action</ui-button></div>
-          <div><ui-button size="tiny" variant="destructive">Action</ui-button></div>
+          <div><ui-button size="tiny" variant="solid">Act</ui-button></div>
+          <div><ui-button size="tiny" variant="outline">Act</ui-button></div>
+          <div><ui-button size="tiny" variant="ghost">Act</ui-button></div>
+          <div><ui-button size="tiny" variant="danger">Act</ui-button></div>
+          <div><ui-button size="tiny" variant="warning">Act</ui-button></div>
+          <div><ui-button size="tiny" variant="info">Act</ui-button></div>
+          <div><ui-button size="tiny" variant="success">Act</ui-button></div>
 
           <div class="btn-demo-grid__label">Small</div>
-          <div><ui-button size="small" variant="solid">Action</ui-button></div>
-          <div><ui-button size="small" variant="outline">Action</ui-button></div>
-          <div><ui-button size="small" variant="ghost">Action</ui-button></div>
-          <div><ui-button size="small" variant="destructive">Action</ui-button></div>
+          <div><ui-button size="small" variant="solid">Act</ui-button></div>
+          <div><ui-button size="small" variant="outline">Act</ui-button></div>
+          <div><ui-button size="small" variant="ghost">Act</ui-button></div>
+          <div><ui-button size="small" variant="danger">Act</ui-button></div>
+          <div><ui-button size="small" variant="warning">Act</ui-button></div>
+          <div><ui-button size="small" variant="info">Act</ui-button></div>
+          <div><ui-button size="small" variant="success">Act</ui-button></div>
 
           <div class="btn-demo-grid__label">Medium</div>
           <div><ui-button size="medium" variant="solid">Action</ui-button></div>
           <div><ui-button size="medium" variant="outline">Action</ui-button></div>
           <div><ui-button size="medium" variant="ghost">Action</ui-button></div>
-          <div><ui-button size="medium" variant="destructive">Action</ui-button></div>
+          <div><ui-button size="medium" variant="danger">Action</ui-button></div>
+          <div><ui-button size="medium" variant="warning">Action</ui-button></div>
+          <div><ui-button size="medium" variant="info">Action</ui-button></div>
+          <div><ui-button size="medium" variant="success">Action</ui-button></div>
 
           <div class="btn-demo-grid__label">Large</div>
           <div><ui-button size="large" variant="solid">Action</ui-button></div>
           <div><ui-button size="large" variant="outline">Action</ui-button></div>
           <div><ui-button size="large" variant="ghost">Action</ui-button></div>
-          <div><ui-button size="large" variant="destructive">Action</ui-button></div>
+          <div><ui-button size="large" variant="danger">Action</ui-button></div>
+          <div><ui-button size="large" variant="warning">Action</ui-button></div>
+          <div><ui-button size="large" variant="info">Action</ui-button></div>
+          <div><ui-button size="large" variant="success">Action</ui-button></div>
 
-          <div class="btn-demo-grid__label">Giant</div>
+          <div class="btn-demo-grid__label">XLarge</div>
           <div><ui-button size="xlarge" variant="solid">Action</ui-button></div>
           <div><ui-button size="xlarge" variant="outline">Action</ui-button></div>
           <div><ui-button size="xlarge" variant="ghost">Action</ui-button></div>
-          <div><ui-button size="xlarge" variant="destructive">Action</ui-button></div>
+          <div><ui-button size="xlarge" variant="danger">Action</ui-button></div>
+          <div><ui-button size="xlarge" variant="warning">Action</ui-button></div>
+          <div><ui-button size="xlarge" variant="info">Action</ui-button></div>
+          <div><ui-button size="xlarge" variant="success">Action</ui-button></div>
         </div>
       </section>
 
@@ -86,7 +109,10 @@ export const buttonsDemo: DemoRoute = {
           <ui-button variant="solid" disabled>Solid</ui-button>
           <ui-button variant="outline" disabled>Outline</ui-button>
           <ui-button variant="ghost" disabled>Ghost</ui-button>
-          <ui-button variant="destructive" disabled>Destructive</ui-button>
+          <ui-button variant="danger" disabled>Danger</ui-button>
+          <ui-button variant="warning" disabled>Warning</ui-button>
+          <ui-button variant="info" disabled>Info</ui-button>
+          <ui-button variant="success" disabled>Success</ui-button>
         </div>
       </section>
 
@@ -114,7 +140,7 @@ export const buttonsDemo: DemoRoute = {
           <ui-button variant="ghost">
             <svg slot="icon-left" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
           </ui-button>
-          <ui-button variant="destructive">
+          <ui-button variant="danger">
             Delete
             <svg slot="icon-right" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1V0h6v1h4v2H1V1h4zM2 4h12l-1 12H3L2 4z"/></svg>
           </ui-button>
@@ -133,7 +159,7 @@ export const buttonsDemo: DemoRoute = {
           <ui-button variant="ghost">
             <svg slot="icon-left" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
           </ui-button>
-          <ui-button variant="destructive">
+          <ui-button variant="danger">
             <svg slot="icon-left" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1V0h6v1h4v2H1V1h4zM2 4h12l-1 12H3L2 4z"/></svg>
           </ui-button>
         </div>
@@ -149,7 +175,7 @@ export const buttonsDemo: DemoRoute = {
           <ui-button variant="ghost">
             <svg slot="icon-right" viewBox="0 0 16 16" fill="currentColor"><path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
           </ui-button>
-          <ui-button variant="destructive">
+          <ui-button variant="danger">
             <svg slot="icon-right" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1V0h6v1h4v2H1V1h4zM2 4h12l-1 12H3L2 4z"/></svg>
           </ui-button>
         </div>
@@ -208,7 +234,7 @@ export const buttonsDemo: DemoRoute = {
           <ui-button focusable="false" variant="solid">Solid</ui-button>
           <ui-button focusable="false" variant="outline">Outline</ui-button>
           <ui-button focusable="false" variant="ghost">Ghost</ui-button>
-          <ui-button focusable="false" variant="destructive">Destructive</ui-button>
+          <ui-button focusable="false" variant="danger">Destructive</ui-button>
         </div>
 
         <h3>Non-focusable with icons</h3>
@@ -230,7 +256,7 @@ export const buttonsDemo: DemoRoute = {
           <ui-button focusable="false" variant="ghost">
             <svg slot="icon-left" viewBox="0 0 16 16" stroke="currentColor" stroke-width="2" fill="none"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
           </ui-button>
-          <ui-button focusable="false" variant="destructive">
+          <ui-button focusable="false" variant="danger">
             <svg slot="icon-left" viewBox="0 0 16 16" fill="currentColor"><path d="M5 1V0h6v1h4v2H1V1h4zM2 4h12l-1 12H3L2 4z"/></svg>
           </ui-button>
           <ui-button focusable="false" variant="solid">
@@ -262,7 +288,7 @@ export const buttonsDemo: DemoRoute = {
             <svg slot="icon-left" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="15" y2="15"/></svg>
             Search with long label here
           </ui-button>
-          <ui-button truncate="120" variant="destructive">Delete all the things forever</ui-button>
+          <ui-button truncate="120" variant="danger">Delete all the things forever</ui-button>
           <ui-button truncate="220">
             <svg slot="icon-left" viewBox="0 0 16 16" fill="currentColor"><path d="M1 1h6v6H1zM9 1h6v6H9zM1 9h6v6H1zM9 9h6v6H9z"/></svg>
             A very long label with both icons truncated
@@ -291,6 +317,30 @@ export const buttonsDemo: DemoRoute = {
           <ui-button style="--accent-bg-color: #8b5cf6; --accent-fg-color: #fff; --accent-hover-color: #7c3aed; --accent-active-color: #6d28d9;">Purple</ui-button>
           <ui-button style="--accent-bg-color: #10b981; --accent-fg-color: #fff; --accent-hover-color: #059669; --accent-active-color: #047857;">Green</ui-button>
         </div>
+      </section>
+
+      <!-- Hints -->
+      <section class="demo-section">
+        <h2>Hints (Tooltips)</h2>
+        <h3>Simple (hint attribute)</h3>
+        <div class="btn-demo-row">
+          <ui-button hint="Save the current document">Save</ui-button>
+          <ui-button variant="outline" hint="Undo the last action">Undo</ui-button>
+          <ui-button variant="ghost" hint="Open application settings">Settings</ui-button>
+          <ui-button variant="danger" hint="Delete this item permanently">Delete</ui-button>
+        </div>
+
+        <h3>With Arrow</h3>
+        <div class="btn-demo-row">
+          <ui-button variant="outline" hint="Left aligned hint" hint-alignment="LeftCenter" hint-arrow>Left</ui-button>
+          <ui-button variant="outline" hint="Top aligned hint" hint-alignment="TopCenter" hint-arrow>Top</ui-button>
+          <ui-button hint="Bottom hint with arrow" hint-arrow>Bottom</ui-button>
+          <ui-button variant="outline" hint="Right aligned hint" hint-alignment="RightCenter" hint-arrow>Right</ui-button>
+        </div>
+
+        <h3>Programmatic (via JS API)</h3>
+        <div class="btn-demo-row" id="hint-api-row"></div>
+        <p class="btn-demo-hint">Custom border, arrow, and rich HTML content via <code>setHint()</code></p>
       </section>
 
     </div>
@@ -339,5 +389,98 @@ export const buttonsDemo: DemoRoute = {
         }
       })
     })
+
+    // ── Hint API demos ──
+    const hintApiRow = document.getElementById('hint-api-row')
+    if (hintApiRow) {
+      // Rich hint with icon + title + separator + details
+      const richBtn = document.createElement('ui-button') as UIButton
+      richBtn.textContent = 'File Info'
+      richBtn.setAttribute('variant', 'outline')
+      hintApiRow.appendChild(richBtn)
+
+      const richContent = document.createElement('div')
+      richContent.style.cssText = 'width:220px;padding:6px;'
+      richContent.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="width:24px;height:24px;border-radius:4px;background:var(--accent-bg-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 1H4a1 1 0 00-1 1v12a1 1 0 001 1h8a1 1 0 001-1V5L9 1z"/><polyline points="9,1 9,5 13,5"/></svg></div>
+          <div style="font-size:12px;font-weight:700;">document.ts</div>
+        </div>
+        <div style="height:1px;margin-bottom:6px;background:var(--separator-color);"></div>
+        <div style="font-size:11px;margin-bottom:3px;opacity:0.7;">Size: 14.2 KB</div>
+        <div style="font-size:11px;margin-bottom:3px;opacity:0.7;">Modified: 2 hours ago</div>
+        <div style="font-size:11px;opacity:0.7;">Type: TypeScript</div>
+      `
+      richBtn.setHint({
+        content: richContent,
+        arrow: true,
+        alignment: 'BottomCenter',
+      })
+
+      // Warning hint with icon + status lines
+      const warnBtn = document.createElement('ui-button') as UIButton
+      warnBtn.textContent = 'System Status'
+      warnBtn.setAttribute('variant', 'warning')
+      hintApiRow.appendChild(warnBtn)
+
+      const warnContent = document.createElement('div')
+      warnContent.style.cssText = 'width:200px;padding:6px;'
+      warnContent.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="width:24px;height:24px;border-radius:4px;background:var(--error-bg-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5L1.5 13h13L8 1.5z"/><line x1="8" y1="6" x2="8" y2="9.5"/><line x1="8" y1="11.5" x2="8" y2="12"/></svg></div>
+          <div style="font-size:12px;font-weight:700;">Warning</div>
+        </div>
+        <div style="height:1px;margin-bottom:6px;background:var(--separator-color);"></div>
+        <div style="font-size:11px;margin-bottom:3px;">CPU: <span style="color:var(--error-bg-color);font-weight:600;">92%</span></div>
+        <div style="font-size:11px;margin-bottom:3px;">Memory: <span style="font-weight:600;">6.2 / 8 GB</span></div>
+        <div style="font-size:11px;">Disk: <span style="opacity:0.7;">45% used</span></div>
+      `
+      warnBtn.setHint({
+        content: warnContent,
+        arrow: true,
+        alignment: 'BottomCenter',
+      })
+
+      // Custom border hint
+      const borderBtn = document.createElement('ui-button') as UIButton
+      borderBtn.textContent = 'Custom Border'
+      borderBtn.setAttribute('variant', 'info')
+      hintApiRow.appendChild(borderBtn)
+      borderBtn.setHint({
+        content: '<div style="padding:4px 8px;font-size:12px;">Blue border with arrow</div>',
+        arrow: true,
+        borderColor: '#2563eb',
+        borderWidth: 2,
+        borderRadius: 8,
+      })
+
+      // External UIHint (top aligned)
+      const extBtn = document.createElement('ui-button') as UIButton
+      extBtn.textContent = 'External Hint'
+      extBtn.setAttribute('variant', 'success')
+      hintApiRow.appendChild(extBtn)
+
+      const extContent = document.createElement('div')
+      extContent.style.cssText = 'width:200px;padding:6px;'
+      extContent.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="width:24px;height:24px;border-radius:4px;background:var(--success-bg-color);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,8 6.5,11.5 13,5"/></svg></div>
+          <div style="font-size:12px;font-weight:700;">All checks passed</div>
+        </div>
+        <div style="height:1px;margin-bottom:6px;background:var(--separator-color);"></div>
+        <div style="font-size:11px;margin-bottom:3px;opacity:0.7;">Build: 1.2s</div>
+        <div style="font-size:11px;opacity:0.7;">Tests: 42/42 green</div>
+      `
+      extBtn.uiHint = new UIHint({
+        anchor: extBtn,
+        content: extContent,
+        trigger: 'hover',
+        arrow: true,
+        arrowSize: 8,
+        alignment: 'TopCenter',
+        showDelay: 100,
+        hideDelay: 100,
+      })
+    }
   },
 }

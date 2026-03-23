@@ -49,8 +49,9 @@
   --menu-border-color: rgba(0, 0, 0, 0.15);
 
   /* Tooltip */
-  --tooltip-bg-color: #2e3436;
-  --tooltip-fg-color: #ffffff;
+  --tooltip-bg-color: #ffffe1;
+  --tooltip-fg-color: #000000;
+  --tooltip-border-color: #c0c0c0;
 
   /* Dialog / Modal */
   --dialog-bg-color: #ffffff;

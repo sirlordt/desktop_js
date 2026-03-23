@@ -159,26 +159,89 @@
   --_btn-bg: var(--button-active-bg-color);
 }
 
-/* ── Variant: Destructive ── */
+/* ── Variant: Danger ── */
 
-:host([variant="destructive"]) .ui-btn {
+:host([variant="danger"]) .ui-btn {
   --_btn-bg: var(--error-bg-color);
   --_btn-fg: var(--error-fg-color);
   --_btn-border-color: var(--error-bg-color);
   --_btn-focus-color: var(--error-bg-color);
 }
 
-/* WIN95: destructive focus uses fg color (the red) since bg is neutral gray */
-:host(.win95[variant="destructive"]) .ui-btn {
+:host(.win95[variant="danger"]) .ui-btn {
   --_btn-focus-color: var(--error-fg-color);
 }
 
-:host([variant="destructive"]) .ui-btn:hover {
+:host([variant="danger"]) .ui-btn:hover {
   filter: brightness(0.9);
 }
 
-:host([variant="destructive"]) .ui-btn:active,
-:host([variant="destructive"][pressed]) .ui-btn {
+:host([variant="danger"]) .ui-btn:active,
+:host([variant="danger"][pressed]) .ui-btn {
+  filter: brightness(0.8);
+}
+
+/* ── Variant: Warning ── */
+
+:host([variant="warning"]) .ui-btn {
+  --_btn-bg: var(--warning-bg-color);
+  --_btn-fg: var(--warning-fg-color);
+  --_btn-border-color: var(--warning-bg-color);
+  --_btn-focus-color: var(--warning-bg-color);
+}
+
+:host(.win95[variant="warning"]) .ui-btn {
+  --_btn-focus-color: var(--warning-fg-color);
+}
+
+:host([variant="warning"]) .ui-btn:hover {
+  filter: brightness(0.9);
+}
+
+:host([variant="warning"]) .ui-btn:active,
+:host([variant="warning"][pressed]) .ui-btn {
+  filter: brightness(0.8);
+}
+
+/* ── Variant: Info ── */
+
+:host([variant="info"]) .ui-btn {
+  --_btn-bg: var(--accent-bg-color);
+  --_btn-fg: var(--accent-fg-color);
+  --_btn-border-color: var(--accent-bg-color);
+  --_btn-focus-color: var(--accent-bg-color);
+}
+
+:host([variant="info"]) .ui-btn:hover {
+  --_btn-bg: var(--accent-hover-color);
+  --_btn-border-color: var(--accent-hover-color);
+}
+
+:host([variant="info"]) .ui-btn:active,
+:host([variant="info"][pressed]) .ui-btn {
+  --_btn-bg: var(--accent-active-color);
+  --_btn-border-color: var(--accent-active-color);
+}
+
+/* ── Variant: Success ── */
+
+:host([variant="success"]) .ui-btn {
+  --_btn-bg: var(--success-bg-color);
+  --_btn-fg: var(--success-fg-color);
+  --_btn-border-color: var(--success-bg-color);
+  --_btn-focus-color: var(--success-bg-color);
+}
+
+:host(.win95[variant="success"]) .ui-btn {
+  --_btn-focus-color: var(--success-fg-color);
+}
+
+:host([variant="success"]) .ui-btn:hover {
+  filter: brightness(0.9);
+}
+
+:host([variant="success"]) .ui-btn:active,
+:host([variant="success"][pressed]) .ui-btn {
   filter: brightness(0.8);
 }
 
@@ -193,15 +256,17 @@
   outline: none;
 }
 
-/* ── Disabled ── */
+/* ── Disabled (GTK4: keep variant colors, wash out) ── */
 
 :host([disabled]) .ui-btn {
-  --_btn-bg: var(--button-disabled-bg-color);
-  --_btn-fg: var(--button-disabled-fg-color);
-  --_btn-border-color: var(--button-disabled-bg-color);
-  opacity: 0.6;
+  opacity: 0.45;
+  filter: saturate(0.5);
   cursor: not-allowed;
   pointer-events: none;
+}
+
+:host([disabled][variant="ghost"]) .ui-btn {
+  border: 2px solid var(--button-disabled-fg-color);
 }
 
 /* ── Pressed (toggle) — GTK4 scale effect ── */
@@ -209,7 +274,10 @@
 :host(:not([variant])) .ui-btn:active,
 :host([variant="solid"]) .ui-btn:active,
 :host([variant="outline"]) .ui-btn:active,
-:host([variant="destructive"]) .ui-btn:active {
+:host([variant="danger"]) .ui-btn:active,
+:host([variant="warning"]) .ui-btn:active,
+:host([variant="info"]) .ui-btn:active,
+:host([variant="success"]) .ui-btn:active {
   transform: scale(0.98);
 }
 
@@ -247,10 +315,13 @@
 :host(.win95[size="xlarge"]) .ui-btn { --_win95-pad-v: 12px; --_win95-pad-h: 24px; }
 :host(.win95[size="custom"]) .ui-btn { --_win95-pad-v: 8px; --_win95-pad-h: 16px; }
 
-/* WIN95 Solid + Destructive: gray raised + outer frame (black top-left, white bottom-right) */
+/* WIN95 Solid + status variants: gray raised + outer 1px black frame */
 :host(.win95:not([variant])) .ui-btn,
 :host(.win95[variant="solid"]) .ui-btn,
-:host(.win95[variant="destructive"]) .ui-btn {
+:host(.win95[variant="danger"]) .ui-btn,
+:host(.win95[variant="warning"]) .ui-btn,
+:host(.win95[variant="info"]) .ui-btn,
+:host(.win95[variant="success"]) .ui-btn {
   --_btn-focus-color: var(--btn-focus-color);
   border: 1px solid var(--button-fg-color);
   box-shadow:
@@ -260,10 +331,29 @@
     inset -2px -2px 0 var(--btn-3d-mid-dark);
 }
 
-:host(.win95[variant="destructive"]) .ui-btn {
+/* WIN95 status variant text colors */
+:host(.win95[variant="danger"]) .ui-btn {
   --_btn-fg: var(--error-fg-color);
   color: var(--error-fg-color);
   --_btn-focus-color: var(--error-fg-color);
+}
+
+:host(.win95[variant="warning"]) .ui-btn {
+  --_btn-fg: var(--warning-fg-color);
+  color: var(--warning-fg-color);
+  --_btn-focus-color: var(--warning-fg-color);
+}
+
+:host(.win95[variant="info"]) .ui-btn {
+  --_btn-fg: var(--accent-bg-color);
+  color: var(--accent-bg-color);
+  --_btn-focus-color: var(--accent-bg-color);
+}
+
+:host(.win95[variant="success"]) .ui-btn {
+  --_btn-fg: var(--success-fg-color);
+  color: var(--success-fg-color);
+  --_btn-focus-color: var(--success-fg-color);
 }
 
 /* WIN95 Outline: thinner 3D effect */
@@ -321,13 +411,19 @@
   padding-right: calc(var(--_win95-pad-h) - 1px);
 }
 
-/* WIN95 Solid/Destructive pressed: double white line bottom-right */
+/* WIN95 Solid + status pressed: double white line bottom-right */
 :host(.win95:not([variant])) .ui-btn:active,
 :host(.win95[variant="solid"]) .ui-btn:active,
-:host(.win95[variant="destructive"]) .ui-btn:active,
+:host(.win95[variant="danger"]) .ui-btn:active,
+:host(.win95[variant="warning"]) .ui-btn:active,
+:host(.win95[variant="info"]) .ui-btn:active,
+:host(.win95[variant="success"]) .ui-btn:active,
 :host(.win95:not([variant])[pressed]) .ui-btn,
 :host(.win95[variant="solid"][pressed]) .ui-btn,
-:host(.win95[variant="destructive"][pressed]) .ui-btn {
+:host(.win95[variant="danger"][pressed]) .ui-btn,
+:host(.win95[variant="warning"][pressed]) .ui-btn,
+:host(.win95[variant="info"][pressed]) .ui-btn,
+:host(.win95[variant="success"][pressed]) .ui-btn {
   box-shadow:
     inset 1px 1px 0 var(--btn-3d-dark),
     inset 2px 2px 0 var(--btn-3d-mid-dark),
@@ -371,6 +467,7 @@
   color: var(--button-disabled-fg-color);
   text-shadow: 1px 1px 0 var(--btn-3d-light);
   opacity: 1;
+  filter: none;
   box-shadow:
     inset 1px 1px 0 var(--btn-3d-light),
     inset 2px 2px 0 var(--btn-3d-mid-light),

@@ -433,3 +433,19 @@ ui-button [slot="icon-right"] svg {
   width: 100%;
   height: 100%;
 }
+
+/* ── Hint Demo ── */
+
+.hint-demo-cursor-area {
+  width: 100%;
+  height: 80px;
+  background: var(--view-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  color: var(--input-placeholder-color);
+  margin-top: 8px;
+}

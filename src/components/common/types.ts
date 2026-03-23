@@ -24,3 +24,37 @@ export interface Rect {
 export type UISize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | 'custom'
 
 export type UIPosition = 'fluid' | 'relative' | 'absolute'
+
+// ── Hint types ──
+
+export type HintAlignment =
+  | 'BottomLeft' | 'BottomCenter' | 'BottomRight'
+  | 'RightTop'   | 'RightCenter'  | 'RightBottom'
+  | 'TopLeft'    | 'TopCenter'    | 'TopRight'
+  | 'LeftTop'    | 'LeftCenter'   | 'LeftBottom'
+  | 'MouseCursor'
+
+export type HintTrigger = 'hover' | 'click' | 'programmatic'
+
+export type HintAnimation = 'fade' | 'none'
+
+export interface UIHintOptions {
+  anchor: HTMLElement
+  alignment?: HintAlignment
+  margin?: number
+  content?: HTMLElement | string
+  trigger?: HintTrigger | HintTrigger[]
+  showDelay?: number
+  hideDelay?: number
+  animation?: HintAnimation
+  animationDuration?: number
+  arrow?: boolean
+  arrowSize?: number
+  marginMouseCursorX?: number
+  marginMouseCursorY?: number
+  borderRadius?: number
+  borderColor?: string
+  borderWidth?: number
+  disabled?: boolean
+  name?: string
+}

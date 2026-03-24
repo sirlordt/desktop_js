@@ -19,6 +19,7 @@ export const windowsDemo: DemoRoute = {
         <button id="wm-add-no-resize">No Resize</button>
         <button id="wm-add-no-move">No Move</button>
         <button id="wm-add-scrollable">Scrollable</button>
+        <button id="wm-add-config">Config Demo</button>
         <button id="wm-minimize-all">Minimize All</button>
         <button id="wm-restore-all">Restore All</button>
         <button id="wm-close-all">Close All</button>
@@ -165,6 +166,84 @@ export const windowsDemo: DemoRoute = {
 
     document.getElementById('wm-add-scrollable')!.addEventListener('click', () => {
       addWindow({ title: `Scrollable ${winCount + 1}`, scroll: 'both', bigContent: true })
+    })
+
+    document.getElementById('wm-add-config')!.addEventListener('click', () => {
+      if (!wm) return
+      winCount++
+
+      const win = new UIWindow({
+        title: 'Config Demo',
+        left: 60 + ((winCount - 1) % 5) * 35,
+        top: 60 + ((winCount - 1) % 5) * 30,
+        width: 260,
+        height: 280,
+      })
+
+      const form = document.createElement('div')
+      form.style.cssText = 'padding:10px;font-size:12px;display:flex;flex-direction:column;gap:6px;'
+
+      const makeToggle = (label: string, checked: boolean, onChange: (v: boolean) => void) => {
+        const row = document.createElement('label')
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;'
+        const cb = document.createElement('input')
+        cb.type = 'checkbox'
+        cb.checked = checked
+        cb.addEventListener('change', () => onChange(cb.checked))
+        row.appendChild(cb)
+        row.appendChild(document.createTextNode(label))
+        return row
+      }
+
+      form.appendChild(makeToggle('Movable', true, (v) => { win.movable = v }))
+      form.appendChild(makeToggle('Resizable', true, (v) => {
+        win.element.querySelectorAll('[class^="ui-window__resize"]').forEach(h => {
+          ;(h as HTMLElement).style.display = v ? '' : 'none'
+        })
+      }))
+      form.appendChild(makeToggle('Show Title', true, (v) => { win.showTitle = v }))
+      form.appendChild(makeToggle('Minimize Button', true, (v) => {
+        const btn = win.element.querySelector('.ui-window__min-btn') as HTMLElement
+        if (btn) btn.style.display = v ? '' : 'none'
+      }))
+      form.appendChild(makeToggle('Maximize Button', true, (v) => {
+        const btn = win.element.querySelector('.ui-window__max-btn') as HTMLElement
+        if (btn) btn.style.display = v ? '' : 'none'
+      }))
+      form.appendChild(makeToggle('Close Button', true, (v) => {
+        const btn = win.element.querySelector('.ui-window__close-btn') as HTMLElement
+        if (btn) btn.style.display = v ? '' : 'none'
+      }))
+
+      // Title align
+      const alignRow = document.createElement('div')
+      alignRow.style.cssText = 'display:flex;align-items:center;gap:6px;'
+      alignRow.appendChild(document.createTextNode('Title align:'))
+      for (const align of ['left', 'center', 'right'] as const) {
+        const btn = document.createElement('button')
+        btn.textContent = align
+        btn.style.cssText = 'font-size:11px;padding:2px 6px;cursor:pointer;'
+        btn.addEventListener('click', () => { win.titleAlign = align })
+        alignRow.appendChild(btn)
+      }
+      form.appendChild(alignRow)
+
+      // Title text
+      const titleRow = document.createElement('div')
+      titleRow.style.cssText = 'display:flex;align-items:center;gap:6px;'
+      titleRow.appendChild(document.createTextNode('Title:'))
+      const titleInput = document.createElement('input')
+      titleInput.type = 'text'
+      titleInput.value = win.title
+      titleInput.style.cssText = 'flex:1;font-size:11px;padding:2px 4px;'
+      titleInput.addEventListener('input', () => { win.title = titleInput.value })
+      titleRow.appendChild(titleInput)
+      form.appendChild(titleRow)
+
+      win.contentElement.appendChild(form)
+      wm.addWindow(win)
+      wm.bringToFront(win)
+      updateStatus()
     })
 
     document.getElementById('wm-minimize-all')!.addEventListener('click', () => { wm?.minimizeAll(); updateStatus() })

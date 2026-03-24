@@ -70,22 +70,28 @@ export class UIWindowManager extends UIPanel {
     this.core.cleanups.push(() => this.element.removeEventListener('keydown', handler))
   }
 
-  /** Focus the next visible floating window in z-order */
+  /** Focus the next window in z-order. Restores minimized windows. */
   focusNext(): void {
-    const visible = this._zOrder.filter(c => c.windowState !== 'minimized')
-    if (visible.length < 2) return
-    const currentIdx = this._focused ? visible.indexOf(this._focused) : -1
-    const nextIdx = (currentIdx + 1) % visible.length
-    this.bringToFront(visible[nextIdx])
+    if (this._zOrder.length < 2) return
+    const currentIdx = this._focused ? this._zOrder.indexOf(this._focused) : -1
+    const nextIdx = (currentIdx + 1) % this._zOrder.length
+    this._focusWindow(this._zOrder[nextIdx])
   }
 
-  /** Focus the previous visible floating window in z-order */
+  /** Focus the previous window in z-order. Restores minimized windows. */
   focusPrevious(): void {
-    const visible = this._zOrder.filter(c => c.windowState !== 'minimized')
-    if (visible.length < 2) return
-    const currentIdx = this._focused ? visible.indexOf(this._focused) : 0
-    const prevIdx = (currentIdx - 1 + visible.length) % visible.length
-    this.bringToFront(visible[prevIdx])
+    if (this._zOrder.length < 2) return
+    const currentIdx = this._focused ? this._zOrder.indexOf(this._focused) : 0
+    const prevIdx = (currentIdx - 1 + this._zOrder.length) % this._zOrder.length
+    this._focusWindow(this._zOrder[prevIdx])
+  }
+
+  private _focusWindow(child: IWindowChild): void {
+    if (child.windowState === 'minimized') {
+      this.restoreChild(child)
+    } else {
+      this.bringToFront(child)
+    }
   }
 
   // ── Child management ──

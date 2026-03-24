@@ -118,12 +118,14 @@ export class UIWindowManager extends UIPanel {
   minimizeChild(child: IWindowChild): void {
     if (child.windowState === 'minimized') return
 
-    // Save restore rect
-    ;(child as any).__restoreRect = {
-      left: parseInt(child.element.style.left) || 0,
-      top: parseInt(child.element.style.top) || 0,
-      width: parseInt(child.element.style.width) || 0,
-      height: parseInt(child.element.style.height) || 0,
+    // Save restore rect only from normal state — maximized already saved it
+    if (child.windowState === 'normal') {
+      ;(child as any).__restoreRect = {
+        left: parseInt(child.element.style.left) || 0,
+        top: parseInt(child.element.style.top) || 0,
+        width: parseInt(child.element.style.width) || 0,
+        height: parseInt(child.element.style.height) || 0,
+      }
     }
 
     child.windowState = 'minimized'

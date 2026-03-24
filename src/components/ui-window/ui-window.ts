@@ -214,6 +214,7 @@ export class UIWindow implements IWindowChild {
     this.contentElement.style.display = 'none'
     this._setResizeHandlesVisible(false)
     if (this._minBtn) this._minBtn.icon = 'chevron-up'
+    if (this._maxBtn) this._maxBtn.icon = 'plus'
   }
 
   onRestored(): void {
@@ -224,11 +225,10 @@ export class UIWindow implements IWindowChild {
   }
 
   onMaximized(): void {
+    this.contentElement.style.display = ''
     this._setResizeHandlesVisible(false)
-    if (this._maxBtn) {
-      // Change icon to "restore" (chevron-down as visual cue, or reuse close-like overlap)
-      this._maxBtn.icon = 'chevron-down'
-    }
+    if (this._maxBtn) this._maxBtn.icon = 'chevron-down'
+    if (this._minBtn) this._minBtn.icon = 'minus'
   }
 
   onClosed(): void {}

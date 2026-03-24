@@ -307,6 +307,7 @@
    ===================== */
 .ui-scrollbar.hover-mode {
   background-color: transparent !important;
+  border-radius: 0 !important;
 }
 
 .ui-scrollbar.hover-mode .ui-scrollbar__start,

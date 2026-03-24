@@ -30,6 +30,8 @@ export class UIWindow implements IWindowChild {
   private _titleAlign: 'left' | 'center' | 'right'
   private _minWidth: number
   private _minHeight: number
+  private _maxWidth: number
+  private _maxHeight: number
   private _titleBarHeight: number
   private _cleanups: Array<() => void> = []
   private _destroyed: boolean = false
@@ -58,6 +60,8 @@ export class UIWindow implements IWindowChild {
     this._titleAlign = o.titleAlign ?? 'left'
     this._minWidth = o.minWidth ?? 150
     this._minHeight = o.minHeight ?? 80
+    this._maxWidth = o.maxWidth ?? Infinity
+    this._maxHeight = o.maxHeight ?? Infinity
     this._titleBarHeight = o.titleBarHeight ?? 28
     this._btnSize = Math.max(16, this._titleBarHeight - 8)
 
@@ -205,13 +209,13 @@ export class UIWindow implements IWindowChild {
 
   get width(): number { return parseInt(this.element.style.width) || 0 }
   set width(v: number) {
-    this.element.style.width = `${Math.max(this._minWidth, v)}px`
+    this.element.style.width = `${Math.min(this._maxWidth, Math.max(this._minWidth, v))}px`
     this._scrollBox?.refresh()
   }
 
   get height(): number { return parseInt(this.element.style.height) || 0 }
   set height(v: number) {
-    this.element.style.height = `${Math.max(this._minHeight, v)}px`
+    this.element.style.height = `${Math.min(this._maxHeight, Math.max(this._minHeight, v))}px`
     this._scrollBox?.refresh()
   }
 
@@ -379,40 +383,49 @@ export class UIWindow implements IWindowChild {
       )
     }
 
+    const clampW = (v: number) => Math.min(this._maxWidth, Math.max(this._minWidth, v))
+    const clampH = (v: number) => Math.min(this._maxHeight, Math.max(this._minHeight, v))
+
     // East
     makeHandle('ui-window__resize-e', (dx, _dy, sw) => { this.width = sw + dx })
     // West
     makeHandle('ui-window__resize-w', (dx, _dy, sw, _sh, sl) => {
-      const newW = sw - dx
-      if (newW >= this._minWidth) { this.width = newW; this.left = sl + dx }
+      const newW = clampW(sw - dx)
+      this.left = sl + (sw - newW)
+      this.width = newW
     })
     // South
     makeHandle('ui-window__resize-s', (_dx, dy, _sw, sh) => { this.height = sh + dy })
     // North
     makeHandle('ui-window__resize-n', (_dx, dy, _sw, sh, _sl, st) => {
-      const newH = sh - dy
-      if (newH >= this._minHeight) { this.height = newH; this.top = st + dy }
+      const newH = clampH(sh - dy)
+      this.top = st + (sh - newH)
+      this.height = newH
     })
     // Southeast
     makeHandle('ui-window__resize-se', (dx, dy, sw, sh) => { this.width = sw + dx; this.height = sh + dy })
     // Southwest
     makeHandle('ui-window__resize-sw', (dx, dy, sw, sh, sl) => {
-      const newW = sw - dx
-      if (newW >= this._minWidth) { this.width = newW; this.left = sl + dx }
+      const newW = clampW(sw - dx)
+      this.left = sl + (sw - newW)
+      this.width = newW
       this.height = sh + dy
     })
     // Northeast
     makeHandle('ui-window__resize-ne', (dx, dy, sw, sh, _sl, st) => {
       this.width = sw + dx
-      const newH = sh - dy
-      if (newH >= this._minHeight) { this.height = newH; this.top = st + dy }
+      const newH = clampH(sh - dy)
+      this.top = st + (sh - newH)
+      this.height = newH
     })
     // Northwest
     makeHandle('ui-window__resize-nw', (dx, dy, sw, sh, sl, st) => {
-      const newW = sw - dx
-      if (newW >= this._minWidth) { this.width = newW; this.left = sl + dx }
-      const newH = sh - dy
-      if (newH >= this._minHeight) { this.height = newH; this.top = st + dy }
+      const newW = clampW(sw - dx)
+      this.left = sl + (sw - newW)
+      this.width = newW
+      const newH = clampH(sh - dy)
+      this.top = st + (sh - newH)
+      this.height = newH
     })
   }
 

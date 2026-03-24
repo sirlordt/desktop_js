@@ -182,6 +182,8 @@ export interface UIWindowOptions {
   height?: number
   minWidth?: number
   minHeight?: number
+  maxWidth?: number
+  maxHeight?: number
   resizable?: boolean
   movable?: boolean
   closable?: boolean

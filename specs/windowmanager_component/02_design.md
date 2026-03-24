@@ -2,13 +2,13 @@
 
 ## Technical decisions
 
-### Two components: UIWindowManager + IUIWindow
+### Two components: UIWindowManager + UIWindow
 
 The system is split into two parts:
 
 1. **UIWindowManager** — The container that manages children. It handles z-ordering, minimize/restore state, close operations, and drag notifications. It is **agnostic** about what its children are — any element that implements the `IWindowChild` interface can be managed.
 
-2. **IUIWindow** — A concrete window implementation for testing and general use. Has a titlebar with title, close/minimize/maximize buttons, resizable body, and drag support. This is a consumer of UIWindowManager, not a dependency.
+2. **UIWindow** — A concrete window implementation for testing and general use. Has a titlebar with title, close/minimize/maximize buttons, resizable body, and drag support. This is a consumer of UIWindowManager, not a dependency.
 
 ### Message-based communication (child → parent)
 
@@ -35,9 +35,9 @@ UIWindowManager is a UIPanel (standalone `<div>`, uses UIView core) with added w
 - Hierarchy management (parent/children)
 - Theme sync, cleanup, event emitter
 
-### IUIWindow uses UIPanel + UIToolButton
+### UIWindow uses UIPanel + UIToolButton
 
-IUIWindow is built with:
+UIWindow is built with:
 - UIPanel for the root container and titlebar
 - UIToolButton for close, minimize, maximize buttons (with theme-appropriate icons)
 - Plain DOM for the content area
@@ -45,7 +45,7 @@ IUIWindow is built with:
 
 ### Standalone components (no Shadow DOM)
 
-Both UIWindowManager and IUIWindow are plain DOM — no web components, no Shadow DOM. This allows the window manager to directly control z-index and styles on its children.
+Both UIWindowManager and UIWindow are plain DOM — no web components, no Shadow DOM. This allows the window manager to directly control z-index and styles on its children.
 
 ## Architecture
 
@@ -63,9 +63,9 @@ UIWindowManager (extends UIPanel)
 │   └── e.g. taskbar, toolbar
 │
 └── [Floating children] — align=none (z-reordered on click)
-    └── e.g. IUIWindow instances
+    └── e.g. UIWindow instances
 
-IUIWindow (standalone class)
+UIWindow (standalone class)
 ├── UIPanel (root, position: absolute, draggable)
 │   ├── UIPanel (titlebar, align: top, height: ~28px)
 │   │   ├── <span> title text
@@ -174,9 +174,9 @@ class UIWindowManager extends UIPanel {
   //   'window-resize'   → { child: IWindowChild, width: number, height: number }
 }
 
-// ── IUIWindow options ──
+// ── UIWindow options ──
 
-interface IUIWindowOptions {
+interface UIWindowOptions {
   id?: string
   title?: string
   left?: number
@@ -193,10 +193,10 @@ interface IUIWindowOptions {
   icon?: HTMLElement | string   // custom icon in titlebar
 }
 
-// ── IUIWindow (concrete window) ──
+// ── UIWindow (concrete window) ──
 
-class IUIWindow implements IWindowChild {
-  constructor(options?: IUIWindowOptions)
+class UIWindow implements IWindowChild {
+  constructor(options?: UIWindowOptions)
 
   readonly windowId: string
   readonly element: HTMLElement
@@ -273,7 +273,7 @@ Restore from maximized:
 2. Set child.windowState = 'normal'
 ```
 
-## Drag behavior (IUIWindow)
+## Drag behavior (UIWindow)
 
 ```
 mousedown on titlebar:
@@ -294,7 +294,7 @@ mouseup on document:
 1. Stop drag
 ```
 
-## IUIWindow titlebar structure
+## UIWindow titlebar structure
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -314,7 +314,7 @@ mouseup on document:
 
 ## Theming
 
-- IUIWindow inherits colors from CSS variables: `--window-bg-color`, `--headerbar-bg-color`, `--headerbar-fg-color`, `--border-color`
+- UIWindow inherits colors from CSS variables: `--window-bg-color`, `--headerbar-bg-color`, `--headerbar-fg-color`, `--border-color`
 - WIN95 theme: 3D bevel on window border and titlebar, specific titlebar blue (#000080 light, #000050 dark)
 - GTK4 theme: rounded corners, subtle shadow, CSD-style titlebar
 - UIToolButton icons inherit `currentColor` so they follow the theme
@@ -323,11 +323,11 @@ mouseup on document:
 
 | File | Action | Description |
 |------|--------|-------------|
-| `src/components/common/types.ts` | modify | Add WindowChildState, WindowChildInfo, IWindowChild, UIWindowManagerOptions, IUIWindowOptions |
+| `src/components/common/types.ts` | modify | Add WindowChildState, WindowChildInfo, IWindowChild, UIWindowManagerOptions, UIWindowOptions |
 | `src/components/ui-window-manager/ui-window-manager.ts` | create | UIWindowManager class |
-| `src/components/ui-window/ui-window.ts` | create | IUIWindow class |
+| `src/components/ui-window/ui-window.ts` | create | UIWindow class |
 | `src/components/ui-window/ui-window.css` | create | Window styles (titlebar, buttons, body, themes) |
-| `src/demos/windows.ts` | create | WindowManager + IUIWindow demo |
+| `src/demos/windows.ts` | create | WindowManager + UIWindow demo |
 | `src/main.ts` | modify | Register windows demo |
 
 ## Discarded alternatives
@@ -335,5 +335,5 @@ mouseup on document:
 - **UIWindowManager as web component**: Discarded because it needs direct z-index control over children's DOM elements. Shadow DOM would block this.
 - **Children manage their own z-index**: Discarded because z-indexes need to be coordinated across all children. Only the parent knows the full ordering.
 - **Using CSS `order` instead of z-index**: Discarded because `order` affects flex layout, not stacking order. We need `z-index` on `position: absolute` children.
-- **Single monolithic Window class**: Discarded in favor of IWindowChild interface. This allows any component (not just IUIWindow) to be managed — e.g. a floating toolbar, a dialog, a panel.
+- **Single monolithic Window class**: Discarded in favor of IWindowChild interface. This allows any component (not just UIWindow) to be managed — e.g. a floating toolbar, a dialog, a panel.
 - **Drag via HTML5 drag-and-drop API**: Discarded because it shows a ghost image and doesn't allow real-time positioning. Using mousedown/mousemove gives pixel-perfect control.

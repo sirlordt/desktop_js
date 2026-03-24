@@ -1,0 +1,162 @@
+/* =====================
+   UIWindow — Structure
+   ===================== */
+.ui-window {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border: 1px solid var(--border-color);
+  background-color: var(--window-bg-color);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ui-window__titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  background-color: var(--headerbar-bg-color);
+  color: var(--headerbar-fg-color);
+  user-select: none;
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.ui-window__titlebar.focused {
+  background-color: var(--accent-bg-color);
+  color: var(--accent-fg-color);
+}
+
+.ui-window__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.ui-window__title {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ui-window__buttons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ui-window__buttons .ui-toolbtn {
+  border-radius: 4px;
+}
+
+.ui-window__buttons .ui-toolbtn:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.ui-window__buttons .ui-window__close-btn:hover {
+  background-color: var(--error-bg-color);
+  color: var(--error-fg-color, #fff);
+}
+
+.ui-window__body {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background-color: var(--view-bg-color);
+}
+
+/* =====================
+   Resize handles
+   ===================== */
+.ui-window__resize-e,
+.ui-window__resize-s,
+.ui-window__resize-se {
+  position: absolute;
+}
+
+.ui-window__resize-e {
+  top: 0; right: 0; width: 4px; height: 100%;
+  cursor: e-resize;
+}
+
+.ui-window__resize-s {
+  bottom: 0; left: 0; width: 100%; height: 4px;
+  cursor: s-resize;
+}
+
+.ui-window__resize-se {
+  bottom: 0; right: 0; width: 12px; height: 12px;
+  cursor: se-resize;
+}
+
+/* =====================
+   WIN95 Theme
+   ===================== */
+[data-theme^="win95"] .ui-window {
+  border-radius: 0;
+  border: 2px solid;
+  border-color: var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040) var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf);
+  box-shadow: none;
+}
+
+[data-theme^="win95"] .ui-window__titlebar {
+  background-color: #000080;
+  color: #ffffff;
+  padding: 2px 4px;
+}
+
+[data-theme^="win95"] .ui-window__titlebar.focused {
+  background-color: #000080;
+  color: #ffffff;
+}
+
+[data-theme="win95-dark"] .ui-window__titlebar {
+  background-color: #000050;
+}
+
+[data-theme="win95-dark"] .ui-window__titlebar.focused {
+  background-color: #000050;
+}
+
+[data-theme^="win95"] .ui-window__title {
+  font-weight: bold;
+  font-size: 12px;
+}
+
+[data-theme^="win95"] .ui-window__buttons {
+  gap: 1px;
+}
+
+[data-theme^="win95"] .ui-window__buttons .ui-toolbtn {
+  border-radius: 0;
+  border: 1px solid;
+  border-color: var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040) var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf);
+  background-color: var(--btn-3d-face, #c0c0c0);
+  color: #000;
+}
+
+[data-theme^="win95"] .ui-window__buttons .ui-toolbtn:hover {
+  background-color: var(--btn-3d-face, #c0c0c0);
+}
+
+[data-theme^="win95"] .ui-window__buttons .ui-toolbtn:active {
+  border-color: var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf) var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040);
+}
+
+[data-theme^="win95"] .ui-window__buttons .ui-window__close-btn:hover {
+  background-color: var(--btn-3d-face, #c0c0c0);
+  color: #000;
+}
+
+[data-theme^="win95"] .ui-window__body {
+  border-top: 1px solid var(--btn-3d-dark, #404040);
+}

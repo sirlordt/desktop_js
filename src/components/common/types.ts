@@ -137,3 +137,55 @@ export interface UIScrollBoxOptions {
   opacity?: number
   disabled?: boolean
 }
+
+// ── WindowManager types ──
+
+export type WindowChildState = 'normal' | 'minimized' | 'maximized'
+
+export interface WindowChildInfo {
+  id: string
+  state: WindowChildState
+  zIndex: number
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+export interface IWindowChild {
+  readonly windowId: string
+  readonly element: HTMLElement
+  windowState: WindowChildState
+  readonly isFloating: boolean
+  onFocused?(): void
+  onMinimized?(): void
+  onRestored?(): void
+  onClosed?(): void
+  setZIndex(z: number): void
+  setVisible(v: boolean): void
+}
+
+export interface UIWindowManagerOptions {
+  width?: number
+  height?: number
+  bg?: string
+  borderColor?: string
+  className?: string
+}
+
+export interface UIWindowOptions {
+  id?: string
+  title?: string
+  left?: number
+  top?: number
+  width?: number
+  height?: number
+  minWidth?: number
+  minHeight?: number
+  resizable?: boolean
+  closable?: boolean
+  minimizable?: boolean
+  maximizable?: boolean
+  titleBarHeight?: number
+  icon?: HTMLElement | string
+}

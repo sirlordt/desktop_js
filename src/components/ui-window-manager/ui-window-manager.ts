@@ -34,8 +34,8 @@ export class UIWindowManager extends UIPanel {
 
   private _bindKeyboard(): void {
     const handler = (e: KeyboardEvent) => {
-      // Ctrl+Tab or Ctrl+Shift+Tab to cycle windows
-      if (e.ctrlKey && e.key === 'Tab') {
+      // Alt+` (backtick) to cycle forward, Alt+Shift+` to cycle backward
+      if (e.altKey && (e.key === '`' || e.key === '~')) {
         e.preventDefault()
         if (e.shiftKey) {
           this.focusPrevious()

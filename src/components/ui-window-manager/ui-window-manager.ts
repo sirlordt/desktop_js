@@ -32,8 +32,8 @@ export class UIWindowManager extends UIPanel {
     this.element.tabIndex = -1
     this.element.style.outline = 'none'
 
-    this._cycleNext = options?.cycleNextShortcut ?? { key: '`', altKey: true }
-    this._cyclePrev = options?.cyclePrevShortcut ?? { key: '`', altKey: true, shiftKey: true }
+    this._cycleNext = options?.cycleNextShortcut ?? { key: 'F6' }
+    this._cyclePrev = options?.cyclePrevShortcut ?? { key: 'F6', shiftKey: true }
     this._bindKeyboard()
   }
 

@@ -1,4 +1,5 @@
 import { UIToolButton } from '../common/ui-tool-button'
+import { UIHint } from '../ui-hint/ui-hint'
 import { UIScrollBox } from '../ui-scrollbox/ui-scrollbox'
 import type { IWindowChild, WindowChildState, UIWindowOptions, ScrollMode } from '../common/types'
 import type { UIWindowManager } from '../ui-window-manager/ui-window-manager'
@@ -49,6 +50,9 @@ export class UIWindow implements IWindowChild {
   private _minBtn: UIToolButton | null = null
   private _maxBtn: UIToolButton | null = null
   private _btnSize: number
+  private _minHint: UIHint | null = null
+  private _maxHint: UIHint | null = null
+  private _closeHint: UIHint | null = null
 
   constructor(options?: UIWindowOptions) {
     const o = options ?? {}
@@ -142,6 +146,20 @@ export class UIWindow implements IWindowChild {
     }
 
     this.titleBarElement.appendChild(this._buttonsEl)
+
+    // Hints for standard buttons
+    if (o.showHints !== false) {
+      const hintOpts = { trigger: 'hover' as const, showDelay: 400, hideDelay: 100, arrow: true }
+      if (this._minBtn) {
+        this._minHint = new UIHint({ anchor: this._minBtn.element, content: 'Minimize', ...hintOpts })
+      }
+      if (this._maxBtn) {
+        this._maxHint = new UIHint({ anchor: this._maxBtn.element, content: 'Maximize', ...hintOpts })
+      }
+      if (this._closeBtn) {
+        this._closeHint = new UIHint({ anchor: this._closeBtn.element, content: 'Close', ...hintOpts })
+      }
+    }
 
     // Body
     this._bodyEl = document.createElement('div')
@@ -247,6 +265,7 @@ export class UIWindow implements IWindowChild {
     this._setResizeHandlesVisible(false)
     if (this._minBtn) this._minBtn.icon = 'chevron-up'
     if (this._maxBtn) this._maxBtn.icon = 'plus'
+    this._updateHintTexts('minimized')
   }
 
   onRestored(): void {
@@ -254,6 +273,7 @@ export class UIWindow implements IWindowChild {
     this._setResizeHandlesVisible(this._resizable)
     if (this._maxBtn) this._maxBtn.icon = 'plus'
     if (this._minBtn) this._minBtn.icon = 'minus'
+    this._updateHintTexts('normal')
   }
 
   onMaximized(): void {
@@ -261,9 +281,15 @@ export class UIWindow implements IWindowChild {
     this._setResizeHandlesVisible(false)
     if (this._maxBtn) this._maxBtn.icon = 'chevron-down'
     if (this._minBtn) this._minBtn.icon = 'minus'
+    this._updateHintTexts('maximized')
   }
 
   onClosed(): void {}
+
+  private _updateHintTexts(state: WindowChildState): void {
+    if (this._minHint) this._minHint.content = state === 'minimized' ? 'Restore' : 'Minimize'
+    if (this._maxHint) this._maxHint.content = state === 'maximized' ? 'Restore' : 'Maximize'
+  }
 
   setZIndex(z: number): void {
     this.element.style.zIndex = String(z)
@@ -438,6 +464,9 @@ export class UIWindow implements IWindowChild {
     if (this._destroyed) return
     this._destroyed = true
     this._scrollBox?.destroy()
+    this._minHint?.destroy()
+    this._maxHint?.destroy()
+    this._closeHint?.destroy()
     this._closeBtn?.destroy()
     this._minBtn?.destroy()
     this._maxBtn?.destroy()

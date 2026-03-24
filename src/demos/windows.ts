@@ -1,3 +1,4 @@
+import '../components/ui-button/ui-button'
 import { UIWindowManager } from '../components/ui-window-manager/ui-window-manager'
 import { UIWindow } from '../components/ui-window/ui-window'
 import { UIToolButton } from '../components/common/ui-tool-button'
@@ -11,18 +12,18 @@ export const windowsDemo: DemoRoute = {
 
   render: () => `
     <div style="display:flex;flex-direction:column;height:calc(100vh - 48px);">
-      <div style="padding:8px 16px;display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;">
-        <button id="wm-add">Add Window</button>
-        <button id="wm-add-no-title">No Title</button>
-        <button id="wm-add-center">Center Title</button>
-        <button id="wm-add-custom-btns">Custom Buttons</button>
-        <button id="wm-add-no-resize">No Resize</button>
-        <button id="wm-add-no-move">No Move</button>
-        <button id="wm-add-scrollable">Scrollable</button>
-        <button id="wm-add-config">Config Demo</button>
-        <button id="wm-minimize-all">Minimize All</button>
-        <button id="wm-restore-all">Restore All</button>
-        <button id="wm-close-all">Close All</button>
+      <div style="padding:8px 16px;display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;">
+        <ui-button id="wm-add" size="small" variant="solid" hint="Create a new window">Add Window</ui-button>
+        <ui-button id="wm-add-no-title" size="small" variant="outline" hint="Window without title text">No Title</ui-button>
+        <ui-button id="wm-add-center" size="small" variant="outline" hint="Window with centered title">Center Title</ui-button>
+        <ui-button id="wm-add-custom-btns" size="small" variant="outline" hint="Window with custom titlebar buttons">Custom Btns</ui-button>
+        <ui-button id="wm-add-no-resize" size="small" variant="outline" hint="Window that cannot be resized">No Resize</ui-button>
+        <ui-button id="wm-add-no-move" size="small" variant="outline" hint="Window that cannot be moved">No Move</ui-button>
+        <ui-button id="wm-add-scrollable" size="small" variant="outline" hint="Window with UIScrollBox content">Scrollable</ui-button>
+        <ui-button id="wm-add-config" size="small" variant="info" hint="Interactive property toggles">Config Demo</ui-button>
+        <ui-button id="wm-minimize-all" size="small" variant="warning" hint="Minimize all windows to grid">Minimize All</ui-button>
+        <ui-button id="wm-restore-all" size="small" variant="success" hint="Restore all minimized windows">Restore All</ui-button>
+        <ui-button id="wm-close-all" size="small" variant="danger" hint="Close all windows">Close All</ui-button>
         <span id="wm-status" style="font-size:12px;color:var(--button-disabled-fg-color);margin-left:auto;"></span>
       </div>
       <div id="wm-container" style="flex:1;min-height:0;position:relative;"></div>

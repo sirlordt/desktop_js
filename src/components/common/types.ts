@@ -197,4 +197,5 @@ export interface UIWindowOptions {
   rightElements?: HTMLElement[]
   scroll?: ScrollMode
   scrollBarSize?: ScrollBarSize
+  showHints?: boolean
 }

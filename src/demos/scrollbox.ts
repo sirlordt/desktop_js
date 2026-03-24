@@ -200,6 +200,7 @@ export const scrollboxDemo: DemoRoute = {
 
         const parentPanel = new UIPanel({
           name: 'parent', width: 600, height: 400,
+          position: 'absolute',
           bg: 'var(--sidebar-bg-color)', borderColor: 'var(--accent-bg-color)', borderWidth: 1,
         })
 

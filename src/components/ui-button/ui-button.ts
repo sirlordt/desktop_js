@@ -1,7 +1,15 @@
-import { UIView, UI_ATTRS } from '../common/ui-view'
+import { UIViewCore } from '../common/ui-view-core'
 import { UIHint } from '../ui-hint/ui-hint'
 import type { HintAlignment, UIHintOptions } from '../common/types'
 import styles from './ui-button.css?raw'
+
+/** Attributes handled by the layout core */
+const CORE_ATTRS = [
+  'size', 'position', 'left', 'top', 'width', 'height', 'right', 'bottom',
+  'visible', 'disabled', 'name', 'opacity',
+  'align',
+  'anchors-left', 'anchors-top', 'anchors-right', 'anchors-bottom',
+] as const
 
 const BUTTON_ATTRS = [
   'variant', 'toggle', 'pressed',
@@ -10,10 +18,13 @@ const BUTTON_ATTRS = [
   'hint', 'hint-alignment', 'hint-arrow',
 ] as const
 
-export class UIButton extends UIView {
+export class UIButton extends HTMLElement {
   static get observedAttributes() {
-    return [...UI_ATTRS, ...BUTTON_ATTRS]
+    return [...CORE_ATTRS, ...BUTTON_ATTRS]
   }
+
+  /** Layout core — manages positioning, events, cleanup, theme */
+  readonly core: UIViewCore
 
   private _btn!: HTMLButtonElement
   private _iconLeftEl!: HTMLSpanElement
@@ -24,6 +35,8 @@ export class UIButton extends UIView {
 
   constructor() {
     super()
+    this.core = new UIViewCore(this)
+
     const sr = this.attachShadow({ mode: 'open' })
 
     const sheet = document.createElement('style')
@@ -61,9 +74,9 @@ export class UIButton extends UIView {
   }
 
   connectedCallback() {
-    super.connectedCallback()
+    this.core.connect()
 
-    this._on(this._btn, 'click', this._handleClick)
+    this.core.addListener(this._btn, 'click', this._handleClick)
     this._updateIcons()
     this._updateLabel()
     this._updateTabIndex()
@@ -73,22 +86,23 @@ export class UIButton extends UIView {
     const leftSlot = this._iconLeftEl.querySelector('slot')
     const rightSlot = this._iconRightEl.querySelector('slot')
     const labelSlot = this._labelEl.querySelector('slot')
-    if (leftSlot) this._on(leftSlot, 'slotchange' as any, () => this._updateIcons())
-    if (rightSlot) this._on(rightSlot, 'slotchange' as any, () => this._updateIcons())
-    if (labelSlot) this._on(labelSlot, 'slotchange' as any, () => this._updateLabel())
+    if (leftSlot) this.core.addListener(leftSlot as any, 'slotchange' as any, () => this._updateIcons())
+    if (rightSlot) this.core.addListener(rightSlot as any, 'slotchange' as any, () => this._updateIcons())
+    if (labelSlot) this.core.addListener(labelSlot as any, 'slotchange' as any, () => this._updateLabel())
 
     this._updateHint()
   }
 
   disconnectedCallback() {
-    super.disconnectedCallback()
+    this.core.disconnect()
     this._destroyInternalHint()
   }
 
-  attributeChangedCallback(name: string, old: string | null, val: string | null) {
-    super.attributeChangedCallback(name, old, val)
+  attributeChangedCallback(name: string, _old: string | null, val: string | null) {
+    this.core.applyAttribute(name, val)
 
     if (name === 'disabled') {
+      this.core.viewDisabled = this.hasAttribute('disabled')
       this._btn.disabled = this.hasAttribute('disabled')
     }
     if (name.startsWith('icon')) {
@@ -102,6 +116,10 @@ export class UIButton extends UIView {
     }
     if (name === 'hint' || name === 'hint-alignment' || name === 'hint-arrow') {
       this._updateHint()
+    }
+
+    if (this.isConnected) {
+      this.core.applyLayout()
     }
   }
 
@@ -137,6 +155,27 @@ export class UIButton extends UIView {
     this._updateIcons()
   }
 
+  // ── Event emitter (framework-friendly) ──
+
+  on(event: string, handler: Function): this {
+    this.core.on(event, handler)
+    return this
+  }
+
+  off(event: string, handler: Function): this {
+    this.core.off(event, handler)
+    return this
+  }
+
+  // ── Destroy ──
+
+  destroy(): void {
+    this._destroyInternalHint()
+    this.core.destroy()
+  }
+
+  get isDestroyed(): boolean { return this.core.isDestroyed }
+
   // ── Private ──
 
   private _handleClick = () => {
@@ -150,7 +189,7 @@ export class UIButton extends UIView {
       this.pressed = !this.pressed
     }
 
-    this._emit('ui-click', { pressed: this.pressed })
+    this.core.emit('ui-click', { pressed: this.pressed })
   }
 
   private _updateIcons() {
@@ -246,10 +285,8 @@ export class UIButton extends UIView {
 
   // ── Hint integration ──
 
-  /** Get the current UIHint instance (internal or external) */
   get uiHint(): UIHint | null { return this._hint }
 
-  /** Set an external UIHint — pass null to remove and revert to attribute-based hint */
   set uiHint(hint: UIHint | null) {
     this._destroyInternalHint()
     if (hint) {
@@ -261,7 +298,6 @@ export class UIButton extends UIView {
     }
   }
 
-  /** Configure the internal hint with full options. Replaces any existing hint. */
   setHint(options: Partial<Omit<UIHintOptions, 'anchor'>>): UIHint {
     this._destroyInternalHint()
     this._hintExternal = false
@@ -289,12 +325,10 @@ export class UIButton extends UIView {
     const arrow = this.hasAttribute('hint-arrow')
 
     if (this._hint && !this._hintExternal) {
-      // Update existing internal hint
       this._hint.content = text
       this._hint.alignment = alignment
       this._hint.arrow = arrow
     } else {
-      // Create new internal hint
       this._hint = new UIHint({
         anchor: this,
         content: text,

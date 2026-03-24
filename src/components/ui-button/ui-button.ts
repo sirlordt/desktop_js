@@ -1,4 +1,4 @@
-import { UIViewCore } from '../common/ui-view-core'
+import { UIView } from '../common/ui-view'
 import { UIHint } from '../ui-hint/ui-hint'
 import type { HintAlignment, UIHintOptions } from '../common/types'
 import styles from './ui-button.css?raw'
@@ -24,7 +24,7 @@ export class UIButton extends HTMLElement {
   }
 
   /** Layout core — manages positioning, events, cleanup, theme */
-  readonly core: UIViewCore
+  readonly core: UIView
 
   private _btn!: HTMLButtonElement
   private _iconLeftEl!: HTMLSpanElement
@@ -35,7 +35,7 @@ export class UIButton extends HTMLElement {
 
   constructor() {
     super()
-    this.core = new UIViewCore(this)
+    this.core = new UIView(this)
 
     const sr = this.attachShadow({ mode: 'open' })
 

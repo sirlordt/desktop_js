@@ -13,11 +13,11 @@ const SIZE_HEIGHTS: Record<string, number> = {
 }
 
 /**
- * UIViewCore — reusable layout engine, event emitter, cleanup, and theme sync.
+ * UIView — reusable layout engine, event emitter, cleanup, and theme sync.
  * Works with any HTMLElement (div, custom element, etc.).
  * Does NOT require Shadow DOM or custom element registration.
  */
-export class UIViewCore {
+export class UIView {
 
   // ── The element this core manages ──
   readonly el: HTMLElement
@@ -48,8 +48,8 @@ export class UIViewCore {
   private _name: string = ''
 
   // ── Hierarchy ──
-  private _parent: UIViewCore | null = null
-  private _children: UIViewCore[] = []
+  private _parent: UIView | null = null
+  private _children: UIView[] = []
 
   // ── Lifecycle ──
   private _destroyed: boolean = false
@@ -220,8 +220,8 @@ export class UIViewCore {
   // Hierarchy
   // =====================
 
-  get parent(): UIViewCore | null { return this._parent }
-  set parent(newParent: UIViewCore | null) {
+  get parent(): UIView | null { return this._parent }
+  set parent(newParent: UIView | null) {
     if (this._parent === newParent) return
     if (this._parent) {
       this._parent._removeChild(this)
@@ -232,16 +232,16 @@ export class UIViewCore {
     }
   }
 
-  get children(): ReadonlyArray<UIViewCore> { return this._children }
+  get children(): ReadonlyArray<UIView> { return this._children }
 
-  addChild(child: UIViewCore): void { child.parent = this }
-  removeChild(child: UIViewCore): void { child.parent = null }
+  addChild(child: UIView): void { child.parent = this }
+  removeChild(child: UIView): void { child.parent = null }
 
-  private _addChild(child: UIViewCore): void {
+  private _addChild(child: UIView): void {
     if (!this._children.includes(child)) this._children.push(child)
   }
 
-  private _removeChild(child: UIViewCore): void {
+  private _removeChild(child: UIView): void {
     const idx = this._children.indexOf(child)
     if (idx !== -1) this._children.splice(idx, 1)
   }

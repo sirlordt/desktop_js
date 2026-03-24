@@ -1,4 +1,4 @@
-import { UIViewCore } from '../common/ui-view-core'
+import { UIView } from '../common/ui-view'
 import type { Align, Anchors, UISize, UIPosition } from '../common/types'
 
 export interface UIPanelOptions {
@@ -24,19 +24,19 @@ export interface UIPanelOptions {
 }
 
 /**
- * UIPanel — lightweight layout container using UIViewCore.
+ * UIPanel — lightweight layout container using UIView.
  * Creates a plain <div>, no Shadow DOM, no custom element.
  * Ideal for building docking layouts (top/bottom/left/right/client/center).
  */
 export class UIPanel {
-  readonly core: UIViewCore
+  readonly core: UIView
   private _bg: string = ''
   private _borderColor: string = ''
   private _borderWidth: number = 1
 
   constructor(options?: UIPanelOptions) {
     const el = document.createElement('div')
-    this.core = new UIViewCore(el)
+    this.core = new UIView(el)
 
     if (options) {
       const o = options
@@ -156,7 +156,7 @@ export class UIPanel {
     }
   }
 
-  get children(): ReadonlyArray<UIViewCore> { return this.core.children }
+  get children(): ReadonlyArray<UIView> { return this.core.children }
 
   // ── Lifecycle ──
 

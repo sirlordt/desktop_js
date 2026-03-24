@@ -1,5 +1,5 @@
 import { UIPanel } from '../ui-panel/ui-panel'
-import type { IWindowChild, WindowChildInfo, UIWindowManagerOptions } from '../common/types'
+import type { IWindowChild, WindowChildInfo, UIWindowManagerOptions, WindowCycleShortcut } from '../common/types'
 
 const Z_BASE = 10
 const Z_STEP = 10
@@ -14,6 +14,10 @@ export class UIWindowManager extends UIPanel {
   minimizeSlotWidth: number = 160
   minimizeSlotHeight: number = 28
 
+  // Keyboard shortcuts
+  private _cycleNext: WindowCycleShortcut
+  private _cyclePrev: WindowCycleShortcut
+
   constructor(options?: UIWindowManagerOptions) {
     super({
       width: options?.width,
@@ -27,21 +31,39 @@ export class UIWindowManager extends UIPanel {
     this.element.style.overflow = 'hidden'
     this.element.tabIndex = -1
     this.element.style.outline = 'none'
+
+    this._cycleNext = options?.cycleNextShortcut ?? { key: '`', altKey: true }
+    this._cyclePrev = options?.cyclePrevShortcut ?? { key: '`', altKey: true, shiftKey: true }
     this._bindKeyboard()
   }
 
-  // ── Keyboard window cycling ──
+  // ── Keyboard shortcuts ──
+
+  /** Change the shortcut for cycling to the next window */
+  set cycleNextShortcut(v: WindowCycleShortcut) { this._cycleNext = v }
+  get cycleNextShortcut(): WindowCycleShortcut { return this._cycleNext }
+
+  /** Change the shortcut for cycling to the previous window */
+  set cyclePrevShortcut(v: WindowCycleShortcut) { this._cyclePrev = v }
+  get cyclePrevShortcut(): WindowCycleShortcut { return this._cyclePrev }
+
+  private _matchShortcut(e: KeyboardEvent, s: WindowCycleShortcut): boolean {
+    if (e.key !== s.key && e.key.toLowerCase() !== s.key.toLowerCase()) return false
+    if (!!s.ctrlKey !== e.ctrlKey) return false
+    if (!!s.altKey !== e.altKey) return false
+    if (!!s.shiftKey !== e.shiftKey) return false
+    if (!!s.metaKey !== e.metaKey) return false
+    return true
+  }
 
   private _bindKeyboard(): void {
     const handler = (e: KeyboardEvent) => {
-      // Alt+` (backtick) to cycle forward, Alt+Shift+` to cycle backward
-      if (e.altKey && (e.key === '`' || e.key === '~')) {
+      if (this._matchShortcut(e, this._cycleNext)) {
         e.preventDefault()
-        if (e.shiftKey) {
-          this.focusPrevious()
-        } else {
-          this.focusNext()
-        }
+        this.focusNext()
+      } else if (this._matchShortcut(e, this._cyclePrev)) {
+        e.preventDefault()
+        this.focusPrevious()
       }
     }
     this.element.addEventListener('keydown', handler)

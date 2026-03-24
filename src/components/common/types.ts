@@ -165,12 +165,22 @@ export interface IWindowChild {
   setVisible(v: boolean): void
 }
 
+export interface WindowCycleShortcut {
+  key: string
+  ctrlKey?: boolean
+  altKey?: boolean
+  shiftKey?: boolean
+  metaKey?: boolean
+}
+
 export interface UIWindowManagerOptions {
   width?: number
   height?: number
   bg?: string
   borderColor?: string
   className?: string
+  cycleNextShortcut?: WindowCycleShortcut
+  cyclePrevShortcut?: WindowCycleShortcut
 }
 
 export interface UIWindowOptions {

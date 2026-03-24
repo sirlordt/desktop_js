@@ -5,6 +5,7 @@ export type ToolButtonIcon =
   | 'chevron-up' | 'chevron-down' | 'chevron-left' | 'chevron-right'
   | 'close' | 'plus' | 'minus'
   | 'dots-h' | 'dots-v'
+  | 'window-minimize' | 'window-maximize' | 'window-restore'
 
 export interface UIToolButtonOptions {
   icon?: ToolButtonIcon
@@ -157,6 +158,9 @@ export class UIToolButton {
       case 'minus': return this._buildSvgIcon('M3,8 L13,8')
       case 'dots-h': return this._buildDots('horizontal')
       case 'dots-v': return this._buildDots('vertical')
+      case 'window-minimize': return this._buildSvgIcon('M4,12 L12,12')
+      case 'window-maximize': return this._buildWindowMaximize()
+      case 'window-restore': return this._buildWindowRestore()
       default: return null
     }
   }
@@ -208,6 +212,51 @@ export class UIToolButton {
 
   private _buildSvgIcon(pathData: string): SVGSVGElement {
     return this._createSvg(pathData)
+  }
+
+  private _buildWindowMaximize(): SVGSVGElement {
+    const iconSize = Math.round(this._size * 0.6)
+    const ns = 'http://www.w3.org/2000/svg'
+    const svg = document.createElementNS(ns, 'svg')
+    svg.setAttribute('width', `${iconSize}`)
+    svg.setAttribute('height', `${iconSize}`)
+    svg.setAttribute('viewBox', '0 0 16 16')
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', 'currentColor')
+    svg.setAttribute('stroke-width', '1.5')
+    const rect = document.createElementNS(ns, 'rect')
+    rect.setAttribute('x', '3'); rect.setAttribute('y', '3')
+    rect.setAttribute('width', '10'); rect.setAttribute('height', '10')
+    rect.setAttribute('rx', '1')
+    svg.appendChild(rect)
+    return svg
+  }
+
+  private _buildWindowRestore(): SVGSVGElement {
+    const iconSize = Math.round(this._size * 0.6)
+    const ns = 'http://www.w3.org/2000/svg'
+    const svg = document.createElementNS(ns, 'svg')
+    svg.setAttribute('width', `${iconSize}`)
+    svg.setAttribute('height', `${iconSize}`)
+    svg.setAttribute('viewBox', '0 0 16 16')
+    svg.setAttribute('fill', 'none')
+    svg.setAttribute('stroke', 'currentColor')
+    svg.setAttribute('stroke-width', '1.5')
+    // Back square (offset top-right)
+    const back = document.createElementNS(ns, 'rect')
+    back.setAttribute('x', '5'); back.setAttribute('y', '2')
+    back.setAttribute('width', '9'); back.setAttribute('height', '9')
+    back.setAttribute('rx', '1')
+    svg.appendChild(back)
+    // Front square (offset bottom-left)
+    const front = document.createElementNS(ns, 'rect')
+    front.setAttribute('x', '2'); front.setAttribute('y', '5')
+    front.setAttribute('width', '9'); front.setAttribute('height', '9')
+    front.setAttribute('rx', '1')
+    front.setAttribute('fill', 'var(--headerbar-bg-color, #333)')
+    front.setAttribute('stroke', 'currentColor')
+    svg.appendChild(front)
+    return svg
   }
 
   private _createSvg(pathData: string): SVGSVGElement {

@@ -128,13 +128,13 @@ export class UIWindow implements IWindowChild {
     this._buttonsEl.className = 'ui-window__buttons'
 
     if (o.minimizable !== false) {
-      this._minBtn = new UIToolButton({ icon: 'minus', size: this._btnSize, className: 'ui-window__min-btn' })
+      this._minBtn = new UIToolButton({ icon: 'window-minimize', size: this._btnSize, className: 'ui-window__min-btn' })
       this._minBtn.onClick(() => this._requestMinimize())
       this._buttonsEl.appendChild(this._minBtn.element)
     }
 
     if (o.maximizable !== false) {
-      this._maxBtn = new UIToolButton({ icon: 'plus', size: this._btnSize, className: 'ui-window__max-btn' })
+      this._maxBtn = new UIToolButton({ icon: 'window-maximize', size: this._btnSize, className: 'ui-window__max-btn' })
       this._maxBtn.onClick(() => this._requestMaximize())
       this._buttonsEl.appendChild(this._maxBtn.element)
     }
@@ -263,24 +263,24 @@ export class UIWindow implements IWindowChild {
     this.titleBarElement.classList.remove('focused')
     this._bodyEl.style.display = 'none'
     this._setResizeHandlesVisible(false)
-    if (this._minBtn) this._minBtn.icon = 'chevron-up'
-    if (this._maxBtn) this._maxBtn.icon = 'plus'
+    if (this._minBtn) this._minBtn.icon = 'window-restore'
+    if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
     this._updateHintTexts('minimized')
   }
 
   onRestored(): void {
     this._bodyEl.style.display = ''
     this._setResizeHandlesVisible(this._resizable)
-    if (this._maxBtn) this._maxBtn.icon = 'plus'
-    if (this._minBtn) this._minBtn.icon = 'minus'
+    if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
+    if (this._minBtn) this._minBtn.icon = 'window-minimize'
     this._updateHintTexts('normal')
   }
 
   onMaximized(): void {
     this._bodyEl.style.display = ''
     this._setResizeHandlesVisible(false)
-    if (this._maxBtn) this._maxBtn.icon = 'chevron-down'
-    if (this._minBtn) this._minBtn.icon = 'minus'
+    if (this._maxBtn) this._maxBtn.icon = 'window-restore'
+    if (this._minBtn) this._minBtn.icon = 'window-minimize'
     this._updateHintTexts('maximized')
   }
 

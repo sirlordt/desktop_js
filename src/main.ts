@@ -5,6 +5,7 @@ import { buttonsDemo } from './demos/buttons'
 import { layoutDemo } from './demos/layout'
 import { hintsDemo } from './demos/hints'
 import { scrollbarDemo } from './demos/scrollbar'
+import { panelsDemo } from './demos/panels'
 
 // Register all demos here
 registerDemos([
@@ -13,6 +14,7 @@ registerDemos([
   layoutDemo,
   hintsDemo,
   scrollbarDemo,
+  panelsDemo,
 ])
 
 initApp()

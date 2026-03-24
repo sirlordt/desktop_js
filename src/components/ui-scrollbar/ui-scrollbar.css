@@ -237,6 +237,15 @@
   background-color: var(--sb-btn-hover-bg);
 }
 
+/* Override UIToolButton defaults inside scrollbar — scrollbar CSS handles all styling */
+.ui-scrollbar .ui-toolbtn {
+  opacity: 1;
+}
+.ui-scrollbar .ui-toolbtn:hover,
+.ui-scrollbar .ui-toolbtn:active {
+  opacity: 1;
+}
+
 .ui-scrollbar.small.horizontal .ui-scrollbar__btn  { width: 14px; height: 100%; }
 .ui-scrollbar.small.vertical .ui-scrollbar__btn    { height: 14px; width: 100%; }
 .ui-scrollbar.medium.horizontal .ui-scrollbar__btn { width: 20px; height: 100%; }

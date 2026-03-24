@@ -1,4 +1,6 @@
 import type { ScrollBarKind, ScrollBarSize, UIScrollBarOptions, TooltipColorRange, TooltipColorFn } from '../common/types'
+import { UIToolButton } from '../common/ui-tool-button'
+import type { ToolButtonIcon } from '../common/ui-tool-button'
 import './ui-scrollbar.css'
 
 const THUMB_MIN_SIZE = 20
@@ -33,12 +35,14 @@ export class UIScrollBar {
   // --- DOM ---
   private _el: HTMLDivElement
   private _startEl: HTMLDivElement
-  private _decBtn: HTMLDivElement
   private _trackEl: HTMLDivElement
   private _thumbEl: HTMLDivElement
   private _endEl: HTMLDivElement
-  private _incBtn: HTMLDivElement
   private _tooltipEl: HTMLDivElement | null = null
+
+  // --- Tool buttons ---
+  private _decToolBtn: UIToolButton
+  private _incToolBtn: UIToolButton
 
   // --- Event emitter ---
   private _listeners: Map<EventName, Set<EventHandler>> = new Map()
@@ -70,20 +74,40 @@ export class UIScrollBar {
     this.captureParentEvents = o.captureParentEvents ?? false
     this.wheelFactor = o.wheelFactor ?? 1
 
+    const btnSize = this._btnSize()
+    const isH = this._kind === 'horizontal'
+
     // Build DOM
     this._el = this._div('ui-scrollbar')
     this._startEl = this._div('ui-scrollbar__start')
-    this._decBtn = this._div('ui-scrollbar__btn ui-scrollbar__btn-dec')
     this._trackEl = this._div('ui-scrollbar__track')
     this._thumbEl = this._div('ui-scrollbar__thumb')
     this._endEl = this._div('ui-scrollbar__end')
-    this._incBtn = this._div('ui-scrollbar__btn ui-scrollbar__btn-inc')
 
-    this._setIcons()
+    // Create tool buttons for dec/inc
+    this._decToolBtn = new UIToolButton({
+      icon: (isH ? 'arrow-left' : 'arrow-up') as ToolButtonIcon,
+      size: btnSize,
+      repeat: true,
+      repeatDelay: 400,
+      repeatInterval: 50,
+      className: 'ui-scrollbar__btn ui-scrollbar__btn-dec',
+    })
+    this._decToolBtn.onClick(() => this.decrease())
 
-    this._startEl.appendChild(this._decBtn)
+    this._incToolBtn = new UIToolButton({
+      icon: (isH ? 'arrow-right' : 'arrow-down') as ToolButtonIcon,
+      size: btnSize,
+      repeat: true,
+      repeatDelay: 400,
+      repeatInterval: 50,
+      className: 'ui-scrollbar__btn ui-scrollbar__btn-inc',
+    })
+    this._incToolBtn.onClick(() => this.increase())
+
+    this._startEl.appendChild(this._decToolBtn.element)
     this._trackEl.appendChild(this._thumbEl)
-    this._endEl.appendChild(this._incBtn)
+    this._endEl.appendChild(this._incToolBtn.element)
     this._el.appendChild(this._startEl)
     this._el.appendChild(this._trackEl)
     this._el.appendChild(this._endEl)
@@ -139,6 +163,9 @@ export class UIScrollBar {
 
     cancelAnimationFrame(this._animatingThumb)
 
+    this._decToolBtn.destroy()
+    this._incToolBtn.destroy()
+
     for (const cleanup of this._cleanups) {
       cleanup()
     }
@@ -167,6 +194,8 @@ export class UIScrollBar {
   set disabled(value: boolean) {
     this._disabled = value
     this._el.classList.toggle('disabled', value)
+    this._decToolBtn.disabled = value
+    this._incToolBtn.disabled = value
   }
 
   // =====================
@@ -178,15 +207,15 @@ export class UIScrollBar {
   get thumbElement(): HTMLDivElement { return this._thumbEl }
   get startElement(): HTMLDivElement { return this._startEl }
   get endElement(): HTMLDivElement { return this._endEl }
-  get decButtonElement(): HTMLDivElement { return this._decBtn }
-  get incButtonElement(): HTMLDivElement { return this._incBtn }
+  get decButtonElement(): HTMLDivElement { return this._decToolBtn.element }
+  get incButtonElement(): HTMLDivElement { return this._incToolBtn.element }
 
   setVar(name: string, value: string): void {
     this._el.style.setProperty(name, value)
   }
 
   insertBeforeDecBtn(el: HTMLElement): void {
-    this._startEl.insertBefore(el, this._decBtn)
+    this._startEl.insertBefore(el, this._decToolBtn.element)
   }
 
   insertAfterIncBtn(el: HTMLElement): void {
@@ -196,15 +225,15 @@ export class UIScrollBar {
   get kind(): ScrollBarKind { return this._kind }
   set kind(v: ScrollBarKind) {
     this._kind = v
-    this._setIcons()
+    this._updateToolBtnIcons()
     this._applyClasses()
   }
 
   get size(): ScrollBarSize { return this._size }
   set size(v: ScrollBarSize) {
     this._size = v
+    this._updateToolBtnIcons()
     this._applyClasses()
-    this._setIcons()
   }
 
   get min(): number { return this._min }
@@ -247,48 +276,20 @@ export class UIScrollBar {
   }
 
   // =====================
-  // Icons
+  // Tool button helpers
   // =====================
 
-  private _triangle(direction: 'left' | 'right' | 'up' | 'down'): HTMLDivElement {
-    const el = document.createElement('div')
-    const px = this._size === 'large' ? 6 : this._size === 'medium' ? 4 : 3
-    const s = `${px}px`
-    const t = 'transparent'
-
-    el.style.width = '0'
-    el.style.height = '0'
-
-    switch (direction) {
-      case 'left':
-        el.style.borderTop = `${s} solid ${t}`
-        el.style.borderBottom = `${s} solid ${t}`
-        el.style.borderRight = `${s} solid currentColor`
-        break
-      case 'right':
-        el.style.borderTop = `${s} solid ${t}`
-        el.style.borderBottom = `${s} solid ${t}`
-        el.style.borderLeft = `${s} solid currentColor`
-        break
-      case 'up':
-        el.style.borderLeft = `${s} solid ${t}`
-        el.style.borderRight = `${s} solid ${t}`
-        el.style.borderBottom = `${s} solid currentColor`
-        break
-      case 'down':
-        el.style.borderLeft = `${s} solid ${t}`
-        el.style.borderRight = `${s} solid ${t}`
-        el.style.borderTop = `${s} solid currentColor`
-        break
-    }
-
-    return el
+  private _btnSize(): number {
+    return this._size === 'large' ? 28 : this._size === 'medium' ? 20 : 14
   }
 
-  private _setIcons(): void {
+  private _updateToolBtnIcons(): void {
     const isH = this._kind === 'horizontal'
-    this._decBtn.replaceChildren(this._triangle(isH ? 'left' : 'up'))
-    this._incBtn.replaceChildren(this._triangle(isH ? 'right' : 'down'))
+    const sz = this._btnSize()
+    this._decToolBtn.icon = (isH ? 'arrow-left' : 'arrow-up') as ToolButtonIcon
+    this._decToolBtn.size = sz
+    this._incToolBtn.icon = (isH ? 'arrow-right' : 'arrow-down') as ToolButtonIcon
+    this._incToolBtn.size = sz
   }
 
   // =====================
@@ -402,6 +403,9 @@ export class UIScrollBar {
   // =====================
 
   private _bindEvents(): void {
+    const decEl = this._decToolBtn.element
+    const incEl = this._incToolBtn.element
+
     // Keyboard
     this._on(this._el, 'keydown', (e) => {
       switch (e.key) {
@@ -430,18 +434,8 @@ export class UIScrollBar {
       this._refreshTooltip()
     }, { passive: false } as AddEventListenerOptions)
 
-    // Buttons — click + tooltip
-    this._on(this._decBtn, 'click', (e) => {
-      this.decrease()
-      if (this.showTooltip) this._showTooltipAt(e.clientX, e.clientY)
-    })
-    this._on(this._incBtn, 'click', (e) => {
-      this.increase()
-      if (this.showTooltip) this._showTooltipAt(e.clientX, e.clientY)
-    })
-
-    // Buttons — hover tooltip
-    for (const btn of [this._decBtn, this._incBtn]) {
+    // Buttons — hover tooltip (click is handled by UIToolButton repeat)
+    for (const btn of [decEl, incEl]) {
       this._on(btn, 'mouseenter', (e) => {
         if (this.showTooltip) this._showTooltipAt(e.clientX, e.clientY)
       })

@@ -1,0 +1,40 @@
+.ui-toolbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  color: inherit;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  line-height: 0;
+}
+
+.ui-toolbtn:hover {
+  opacity: 0.8;
+}
+
+.ui-toolbtn:active {
+  opacity: 0.6;
+}
+
+.ui-toolbtn.disabled {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.ui-toolbtn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 0;
+}
+
+.ui-toolbtn__icon svg {
+  display: block;
+}

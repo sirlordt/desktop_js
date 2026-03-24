@@ -213,12 +213,14 @@ export class UIWindow implements IWindowChild {
     this.titleBarElement.classList.remove('focused')
     this.contentElement.style.display = 'none'
     this._setResizeHandlesVisible(false)
+    if (this._minBtn) this._minBtn.icon = 'chevron-up'
   }
 
   onRestored(): void {
     this.contentElement.style.display = ''
     this._setResizeHandlesVisible(this._resizable)
     if (this._maxBtn) this._maxBtn.icon = 'plus'
+    if (this._minBtn) this._minBtn.icon = 'minus'
   }
 
   onMaximized(): void {
@@ -246,7 +248,12 @@ export class UIWindow implements IWindowChild {
   }
 
   private _requestMinimize(): void {
-    if (this.manager) this.manager.minimizeChild(this)
+    if (!this.manager) return
+    if (this.windowState === 'minimized') {
+      this.manager.restoreChild(this)
+    } else {
+      this.manager.minimizeChild(this)
+    }
   }
 
   private _requestMaximize(): void {

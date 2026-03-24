@@ -1,0 +1,49 @@
+/* =====================
+   UIScrollBox — Structure
+   ===================== */
+.ui-scrollbox {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ui-scrollbox__top-row,
+.ui-scrollbox__bottom-row {
+  display: flex;
+  flex-shrink: 0;
+  background-color: inherit;
+}
+
+.ui-scrollbox__middle-row {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  background-color: inherit;
+}
+
+.ui-scrollbox__content-clip {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ui-scrollbox__content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+
+.ui-scrollbox__corner {
+  flex-shrink: 0;
+  background-color: inherit;
+}
+
+/* Disabled state */
+.ui-scrollbox.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}

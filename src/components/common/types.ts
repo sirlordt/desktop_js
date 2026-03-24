@@ -98,3 +98,42 @@ export interface UIScrollBarOptions {
   tooltipColors?: TooltipColorRange[]
   onTooltipColor?: TooltipColorFn
 }
+
+// ── ScrollBox types ──
+
+export type ScrollMode = 'none' | 'vertical' | 'horizontal' | 'both'
+
+export type VerticalScrollPosition = 'left' | 'right' | 'both'
+
+export type HorizontalScrollPosition = 'top' | 'bottom' | 'both'
+
+export interface ScrollBoxScrollBarConfig {
+  hover?: boolean
+  showTooltip?: boolean
+  showStartZone?: boolean
+  showEndZone?: boolean
+}
+
+export interface UIScrollBoxOptions {
+  scroll?: ScrollMode
+  verticalScroll?: VerticalScrollPosition
+  horizontalScroll?: HorizontalScrollPosition
+  scrollBarSize?: ScrollBarSize
+  scrollBarHover?: boolean
+  scrollBarTooltip?: boolean
+  hScrollTopConfig?: ScrollBoxScrollBarConfig
+  hScrollBottomConfig?: ScrollBoxScrollBarConfig
+  vScrollLeftConfig?: ScrollBoxScrollBarConfig
+  vScrollRightConfig?: ScrollBoxScrollBarConfig
+  scrollStep?: number
+  wheelFactor?: number
+  altWheelHorizontal?: boolean
+  contentWidth?: number
+  contentHeight?: number
+  borderWidth?: number
+  borderColor?: string
+  borderStyle?: string
+  backgroundColor?: string
+  opacity?: number
+  disabled?: boolean
+}

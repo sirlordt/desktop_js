@@ -25,6 +25,45 @@ export class UIWindowManager extends UIPanel {
     })
 
     this.element.style.overflow = 'hidden'
+    this.element.tabIndex = -1
+    this.element.style.outline = 'none'
+    this._bindKeyboard()
+  }
+
+  // ── Keyboard window cycling ──
+
+  private _bindKeyboard(): void {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl+Tab or Ctrl+Shift+Tab to cycle windows
+      if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          this.focusPrevious()
+        } else {
+          this.focusNext()
+        }
+      }
+    }
+    this.element.addEventListener('keydown', handler)
+    this.core.cleanups.push(() => this.element.removeEventListener('keydown', handler))
+  }
+
+  /** Focus the next visible floating window in z-order */
+  focusNext(): void {
+    const visible = this._zOrder.filter(c => c.windowState !== 'minimized')
+    if (visible.length < 2) return
+    const currentIdx = this._focused ? visible.indexOf(this._focused) : -1
+    const nextIdx = (currentIdx + 1) % visible.length
+    this.bringToFront(visible[nextIdx])
+  }
+
+  /** Focus the previous visible floating window in z-order */
+  focusPrevious(): void {
+    const visible = this._zOrder.filter(c => c.windowState !== 'minimized')
+    if (visible.length < 2) return
+    const currentIdx = this._focused ? visible.indexOf(this._focused) : 0
+    const prevIdx = (currentIdx - 1 + visible.length) % visible.length
+    this.bringToFront(visible[prevIdx])
   }
 
   // ── Child management ──
@@ -40,7 +79,9 @@ export class UIWindowManager extends UIPanel {
       this._reassignZIndexes()
 
       const handler = () => {
-        if (child.windowState !== 'minimized') {
+        if (child.windowState === 'minimized') {
+          this.restoreChild(child)
+        } else {
           this.bringToFront(child)
         }
       }

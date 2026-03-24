@@ -183,9 +183,14 @@ export interface UIWindowOptions {
   minWidth?: number
   minHeight?: number
   resizable?: boolean
+  movable?: boolean
   closable?: boolean
   minimizable?: boolean
   maximizable?: boolean
   titleBarHeight?: number
   icon?: HTMLElement | string
+  showTitle?: boolean
+  titleAlign?: 'left' | 'center' | 'right'
+  leftElements?: HTMLElement[]
+  rightElements?: HTMLElement[]
 }

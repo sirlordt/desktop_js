@@ -6,8 +6,13 @@ const Z_STEP = 10
 
 export class UIWindowManager extends UIPanel {
   private _windows: IWindowChild[] = []
-  private _zOrder: IWindowChild[] = []  // sorted by z-index ascending (last = front)
+  private _zOrder: IWindowChild[] = []
   private _focused: IWindowChild | null = null
+
+  // Minimize grid
+  private _minimizeSlots: (IWindowChild | null)[] = []
+  minimizeSlotWidth: number = 160
+  minimizeSlotHeight: number = 28
 
   constructor(options?: UIWindowManagerOptions) {
     super({
@@ -19,7 +24,6 @@ export class UIWindowManager extends UIPanel {
       position: 'relative',
     })
 
-    // Click on manager background should not interfere
     this.element.style.overflow = 'hidden'
   }
 
@@ -30,13 +34,11 @@ export class UIWindowManager extends UIPanel {
     this._windows.push(child)
     this.element.appendChild(child.element)
 
-    // Ensure floating children are absolutely positioned
     if (child.isFloating) {
       child.element.style.position = 'absolute'
       this._zOrder.push(child)
       this._reassignZIndexes()
 
-      // Click on child brings to front
       const handler = () => {
         if (child.windowState !== 'minimized') {
           this.bringToFront(child)
@@ -46,7 +48,6 @@ export class UIWindowManager extends UIPanel {
       ;(child as any).__wm_mousedown = handler
     }
 
-    // Set manager reference if available
     if ('manager' in child) {
       ;(child as any).manager = this
     }
@@ -63,7 +64,10 @@ export class UIWindowManager extends UIPanel {
 
     if (this._focused === child) this._focused = null
 
-    // Remove click handler
+    // Free minimize slot
+    const slotIdx = this._minimizeSlots.indexOf(child)
+    if (slotIdx !== -1) this._minimizeSlots[slotIdx] = null
+
     const handler = (child as any).__wm_mousedown
     if (handler) {
       child.element.removeEventListener('mousedown', handler, true)
@@ -113,14 +117,30 @@ export class UIWindowManager extends UIPanel {
 
   minimizeChild(child: IWindowChild): void {
     if (child.windowState === 'minimized') return
+
+    // Save restore rect
+    ;(child as any).__restoreRect = {
+      left: parseInt(child.element.style.left) || 0,
+      top: parseInt(child.element.style.top) || 0,
+      width: parseInt(child.element.style.width) || 0,
+      height: parseInt(child.element.style.height) || 0,
+    }
+
     child.windowState = 'minimized'
-    child.setVisible(false)
     child.onMinimized?.()
+
+    // Place in minimize grid
+    const slot = this._allocateMinimizeSlot(child)
+    const pos = this._slotPosition(slot)
+    child.element.style.left = `${pos.left}px`
+    child.element.style.top = `${pos.top}px`
+    child.element.style.width = `${this.minimizeSlotWidth}px`
+    child.element.style.height = `${this.minimizeSlotHeight}px`
+
     this.core.emit('window-minimize', { child })
 
     if (this._focused === child) {
       this._focused = null
-      // Focus next visible floating child
       for (let i = this._zOrder.length - 1; i >= 0; i--) {
         const c = this._zOrder[i]
         if (c !== child && c.windowState !== 'minimized') {
@@ -133,8 +153,21 @@ export class UIWindowManager extends UIPanel {
 
   restoreChild(child: IWindowChild): void {
     if (child.windowState === 'normal') return
+
+    // Free minimize slot
+    const slotIdx = this._minimizeSlots.indexOf(child)
+    if (slotIdx !== -1) this._minimizeSlots[slotIdx] = null
+
+    // Restore rect
+    const rect = (child as any).__restoreRect
+    if (rect) {
+      child.element.style.left = `${rect.left}px`
+      child.element.style.top = `${rect.top}px`
+      child.element.style.width = `${rect.width}px`
+      child.element.style.height = `${rect.height}px`
+    }
+
     child.windowState = 'normal'
-    child.setVisible(true)
     child.onRestored?.()
     this.bringToFront(child)
     this.core.emit('window-restore', { child })
@@ -149,20 +182,36 @@ export class UIWindowManager extends UIPanel {
   maximizeChild(child: IWindowChild): void {
     if (child.windowState === 'maximized') return
 
-    // Save restore rect
-    ;(child as any).__restoreRect = {
-      left: parseInt(child.element.style.left) || 0,
-      top: parseInt(child.element.style.top) || 0,
-      width: parseInt(child.element.style.width) || 0,
-      height: parseInt(child.element.style.height) || 0,
+    // If minimized, free the slot first
+    const slotIdx = this._minimizeSlots.indexOf(child)
+    if (slotIdx !== -1) this._minimizeSlots[slotIdx] = null
+
+    // Save restore rect (only if not already minimized — minimized already saved it)
+    if (child.windowState !== 'minimized') {
+      ;(child as any).__restoreRect = {
+        left: parseInt(child.element.style.left) || 0,
+        top: parseInt(child.element.style.top) || 0,
+        width: parseInt(child.element.style.width) || 0,
+        height: parseInt(child.element.style.height) || 0,
+      }
     }
 
-    // Fill manager area
+    // Restore body visibility if was minimized
+    if (child.windowState === 'minimized') {
+      child.onRestored?.()
+    }
+
     child.element.style.left = '0px'
     child.element.style.top = '0px'
     child.element.style.width = `${this.element.clientWidth}px`
     child.element.style.height = `${this.element.clientHeight}px`
     child.windowState = 'maximized'
+
+    // Notify window of maximize (for icon toggle, handle hiding)
+    if ('onMaximized' in child && typeof (child as any).onMaximized === 'function') {
+      ;(child as any).onMaximized()
+    }
+
     this.bringToFront(child)
     this.core.emit('window-maximize', { child })
   }
@@ -185,24 +234,18 @@ export class UIWindowManager extends UIPanel {
 
   minimizeAll(): void {
     for (const child of [...this._zOrder]) {
-      if (child.windowState !== 'minimized') {
-        this.minimizeChild(child)
-      }
+      if (child.windowState !== 'minimized') this.minimizeChild(child)
     }
   }
 
   restoreAll(): void {
     for (const child of [...this._zOrder]) {
-      if (child.windowState === 'minimized') {
-        this.restoreChild(child)
-      }
+      if (child.windowState === 'minimized') this.restoreChild(child)
     }
   }
 
   closeAll(): void {
-    for (const child of [...this._windows]) {
-      this.closeChild(child)
-    }
+    for (const child of [...this._windows]) this.closeChild(child)
   }
 
   // ── State queries ──
@@ -232,11 +275,9 @@ export class UIWindowManager extends UIPanel {
     return this._windows.filter(c => c.isFloating)
   }
 
-  getFocused(): IWindowChild | null {
-    return this._focused
-  }
+  getFocused(): IWindowChild | null { return this._focused }
 
-  // ── Drag notification (called by children) ──
+  // ── Drag/resize notification ──
 
   notifyDrag(child: IWindowChild, left: number, top: number): void {
     this.core.emit('window-drag', { child, left, top })
@@ -244,6 +285,34 @@ export class UIWindowManager extends UIPanel {
 
   notifyResize(child: IWindowChild, width: number, height: number): void {
     this.core.emit('window-resize', { child, width, height })
+  }
+
+  // ── Minimize grid ──
+
+  private _allocateMinimizeSlot(child: IWindowChild): number {
+    // Find first empty slot
+    for (let i = 0; i < this._minimizeSlots.length; i++) {
+      if (this._minimizeSlots[i] === null) {
+        this._minimizeSlots[i] = child
+        return i
+      }
+    }
+    // Append new slot
+    this._minimizeSlots.push(child)
+    return this._minimizeSlots.length - 1
+  }
+
+  private _slotPosition(slotIndex: number): { left: number; top: number } {
+    const mgrW = this.element.clientWidth
+    const cols = Math.max(1, Math.floor(mgrW / this.minimizeSlotWidth))
+    const col = slotIndex % cols
+    const row = Math.floor(slotIndex / cols)
+    const mgrH = this.element.clientHeight
+
+    return {
+      left: col * this.minimizeSlotWidth,
+      top: mgrH - (row + 1) * this.minimizeSlotHeight,
+    }
   }
 
   // ── Internal ──

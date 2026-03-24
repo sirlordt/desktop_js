@@ -19,12 +19,18 @@ export class UIWindow implements IWindowChild {
   private _title: string
   private _titleEl: HTMLSpanElement
   private _buttonsEl: HTMLDivElement
+  private _leftSlot: HTMLDivElement
+  private _rightSlot: HTMLDivElement
   private _resizable: boolean
+  private _movable: boolean
+  private _showTitle: boolean
+  private _titleAlign: 'left' | 'center' | 'right'
   private _minWidth: number
   private _minHeight: number
   private _titleBarHeight: number
   private _cleanups: Array<() => void> = []
   private _destroyed: boolean = false
+  private _resizeHandles: HTMLDivElement[] = []
 
   // Drag state
   private _dragging: boolean = false
@@ -37,15 +43,20 @@ export class UIWindow implements IWindowChild {
   private _closeBtn: UIToolButton | null = null
   private _minBtn: UIToolButton | null = null
   private _maxBtn: UIToolButton | null = null
+  private _btnSize: number
 
   constructor(options?: UIWindowOptions) {
     const o = options ?? {}
     this.windowId = o.id ?? `window-${++windowCounter}`
     this._title = o.title ?? 'Window'
     this._resizable = o.resizable ?? true
+    this._movable = o.movable ?? true
+    this._showTitle = o.showTitle ?? true
+    this._titleAlign = o.titleAlign ?? 'left'
     this._minWidth = o.minWidth ?? 150
     this._minHeight = o.minHeight ?? 80
     this._titleBarHeight = o.titleBarHeight ?? 28
+    this._btnSize = Math.max(16, this._titleBarHeight - 8)
 
     // Root element
     this.element = document.createElement('div')
@@ -61,7 +72,15 @@ export class UIWindow implements IWindowChild {
     this.titleBarElement.className = 'ui-window__titlebar'
     this.titleBarElement.style.height = `${this._titleBarHeight}px`
 
-    // Icon slot
+    // Left slot (custom elements + icon)
+    this._leftSlot = document.createElement('div')
+    this._leftSlot.className = 'ui-window__left-slot'
+
+    if (o.leftElements) {
+      for (const el of o.leftElements) this._leftSlot.appendChild(el)
+    }
+
+    // Icon
     if (o.icon) {
       const iconEl = document.createElement('div')
       iconEl.className = 'ui-window__icon'
@@ -70,35 +89,47 @@ export class UIWindow implements IWindowChild {
       } else {
         iconEl.appendChild(o.icon)
       }
-      this.titleBarElement.appendChild(iconEl)
+      this._leftSlot.appendChild(iconEl)
     }
+
+    this.titleBarElement.appendChild(this._leftSlot)
 
     // Title text
     this._titleEl = document.createElement('span')
     this._titleEl.className = 'ui-window__title'
     this._titleEl.textContent = this._title
+    if (!this._showTitle) this._titleEl.style.display = 'none'
+    if (this._titleAlign !== 'left') this._titleEl.style.textAlign = this._titleAlign
     this.titleBarElement.appendChild(this._titleEl)
 
-    // Buttons container
+    // Right slot (custom elements before standard buttons)
+    this._rightSlot = document.createElement('div')
+    this._rightSlot.className = 'ui-window__right-slot'
+
+    if (o.rightElements) {
+      for (const el of o.rightElements) this._rightSlot.appendChild(el)
+    }
+
+    this.titleBarElement.appendChild(this._rightSlot)
+
+    // Standard buttons container
     this._buttonsEl = document.createElement('div')
     this._buttonsEl.className = 'ui-window__buttons'
 
-    const btnSize = Math.max(16, this._titleBarHeight - 8)
-
     if (o.minimizable !== false) {
-      this._minBtn = new UIToolButton({ icon: 'minus', size: btnSize, className: 'ui-window__min-btn' })
+      this._minBtn = new UIToolButton({ icon: 'minus', size: this._btnSize, className: 'ui-window__min-btn' })
       this._minBtn.onClick(() => this._requestMinimize())
       this._buttonsEl.appendChild(this._minBtn.element)
     }
 
     if (o.maximizable !== false) {
-      this._maxBtn = new UIToolButton({ icon: 'plus', size: btnSize, className: 'ui-window__max-btn' })
+      this._maxBtn = new UIToolButton({ icon: 'plus', size: this._btnSize, className: 'ui-window__max-btn' })
       this._maxBtn.onClick(() => this._requestMaximize())
       this._buttonsEl.appendChild(this._maxBtn.element)
     }
 
     if (o.closable !== false) {
-      this._closeBtn = new UIToolButton({ icon: 'close', size: btnSize, className: 'ui-window__close-btn' })
+      this._closeBtn = new UIToolButton({ icon: 'close', size: this._btnSize, className: 'ui-window__close-btn' })
       this._closeBtn.onClick(() => this._requestClose())
       this._buttonsEl.appendChild(this._closeBtn.element)
     }
@@ -112,7 +143,7 @@ export class UIWindow implements IWindowChild {
     this.element.appendChild(this.titleBarElement)
     this.element.appendChild(this.contentElement)
 
-    // Resize handles
+    // Resize handles (all 8)
     if (this._resizable) {
       this._createResizeHandles()
     }
@@ -129,6 +160,21 @@ export class UIWindow implements IWindowChild {
     this._titleEl.textContent = v
   }
 
+  get movable(): boolean { return this._movable }
+  set movable(v: boolean) { this._movable = v }
+
+  get showTitle(): boolean { return this._showTitle }
+  set showTitle(v: boolean) {
+    this._showTitle = v
+    this._titleEl.style.display = v ? '' : 'none'
+  }
+
+  get titleAlign(): 'left' | 'center' | 'right' { return this._titleAlign }
+  set titleAlign(v: 'left' | 'center' | 'right') {
+    this._titleAlign = v
+    this._titleEl.style.textAlign = v
+  }
+
   get left(): number { return parseInt(this.element.style.left) || 0 }
   set left(v: number) { this.element.style.left = `${v}px` }
 
@@ -141,11 +187,20 @@ export class UIWindow implements IWindowChild {
   get height(): number { return parseInt(this.element.style.height) || 0 }
   set height(v: number) { this.element.style.height = `${Math.max(this._minHeight, v)}px` }
 
+  // ── Custom elements ──
+
+  addLeftElement(el: HTMLElement): void {
+    this._leftSlot.appendChild(el)
+  }
+
+  addRightElement(el: HTMLElement): void {
+    this._rightSlot.appendChild(el)
+  }
+
   // ── IWindowChild implementation ──
 
   onFocused(): void {
     this.titleBarElement.classList.add('focused')
-    // Remove focused from siblings
     const parent = this.element.parentElement
     if (parent) {
       parent.querySelectorAll('.ui-window__titlebar.focused').forEach(el => {
@@ -156,9 +211,23 @@ export class UIWindow implements IWindowChild {
 
   onMinimized(): void {
     this.titleBarElement.classList.remove('focused')
+    this.contentElement.style.display = 'none'
+    this._setResizeHandlesVisible(false)
   }
 
-  onRestored(): void {}
+  onRestored(): void {
+    this.contentElement.style.display = ''
+    this._setResizeHandlesVisible(this._resizable)
+    if (this._maxBtn) this._maxBtn.icon = 'plus'
+  }
+
+  onMaximized(): void {
+    this._setResizeHandlesVisible(false)
+    if (this._maxBtn) {
+      // Change icon to "restore" (chevron-down as visual cue, or reuse close-like overlap)
+      this._maxBtn.icon = 'chevron-down'
+    }
+  }
 
   onClosed(): void {}
 
@@ -173,15 +242,11 @@ export class UIWindow implements IWindowChild {
   // ── Manager requests ──
 
   private _requestClose(): void {
-    if (this.manager) {
-      this.manager.closeChild(this)
-    }
+    if (this.manager) this.manager.closeChild(this)
   }
 
   private _requestMinimize(): void {
-    if (this.manager) {
-      this.manager.minimizeChild(this)
-    }
+    if (this.manager) this.manager.minimizeChild(this)
   }
 
   private _requestMaximize(): void {
@@ -197,9 +262,10 @@ export class UIWindow implements IWindowChild {
 
   private _bindDrag(): void {
     const onMouseDown = (e: MouseEvent) => {
-      // Only drag from titlebar, not from buttons
       if ((e.target as HTMLElement).closest('.ui-window__buttons')) return
-      if (this.windowState === 'maximized') return
+      if ((e.target as HTMLElement).closest('.ui-window__right-slot')) return
+      if (!this._movable) return
+      if (this.windowState === 'maximized' || this.windowState === 'minimized') return
 
       e.preventDefault()
       this._dragging = true
@@ -220,9 +286,7 @@ export class UIWindow implements IWindowChild {
       if (this.manager) this.manager.notifyDrag(this, this.left, this.top)
     }
 
-    const onMouseUp = () => {
-      this._dragging = false
-    }
+    const onMouseUp = () => { this._dragging = false }
 
     this.titleBarElement.addEventListener('mousedown', onMouseDown)
     document.addEventListener('mousemove', onMouseMove)
@@ -235,28 +299,30 @@ export class UIWindow implements IWindowChild {
     )
   }
 
-  // ── Resize ──
+  // ── Resize (all 8 handles) ──
+
+  private _setResizeHandlesVisible(v: boolean): void {
+    for (const h of this._resizeHandles) h.style.display = v ? '' : 'none'
+  }
 
   private _createResizeHandles(): void {
-    const makeHandle = (cls: string, onDrag: (dx: number, dy: number, startW: number, startH: number, startL: number, startT: number) => void) => {
+    const makeHandle = (cls: string, onDrag: (dx: number, dy: number, sw: number, sh: number, sl: number, st: number) => void) => {
       const handle = document.createElement('div')
       handle.className = cls
       this.element.appendChild(handle)
+      this._resizeHandles.push(handle)
 
       let startX = 0, startY = 0, startW = 0, startH = 0, startL = 0, startT = 0
       let resizing = false
 
       const onMouseDown = (e: MouseEvent) => {
-        if (this.windowState === 'maximized') return
+        if (this.windowState !== 'normal') return
         e.preventDefault()
         e.stopPropagation()
         resizing = true
-        startX = e.clientX
-        startY = e.clientY
-        startW = this.width
-        startH = this.height
-        startL = this.left
-        startT = this.top
+        startX = e.clientX; startY = e.clientY
+        startW = this.width; startH = this.height
+        startL = this.left; startT = this.top
       }
 
       const onMouseMove = (e: MouseEvent) => {
@@ -278,20 +344,40 @@ export class UIWindow implements IWindowChild {
       )
     }
 
-    // East (right edge)
-    makeHandle('ui-window__resize-e', (dx, _dy, sw) => {
-      this.width = sw + dx
+    // East
+    makeHandle('ui-window__resize-e', (dx, _dy, sw) => { this.width = sw + dx })
+    // West
+    makeHandle('ui-window__resize-w', (dx, _dy, sw, _sh, sl) => {
+      const newW = sw - dx
+      if (newW >= this._minWidth) { this.width = newW; this.left = sl + dx }
     })
-
-    // South (bottom edge)
-    makeHandle('ui-window__resize-s', (_dx, dy, _sw, sh) => {
+    // South
+    makeHandle('ui-window__resize-s', (_dx, dy, _sw, sh) => { this.height = sh + dy })
+    // North
+    makeHandle('ui-window__resize-n', (_dx, dy, _sw, sh, _sl, st) => {
+      const newH = sh - dy
+      if (newH >= this._minHeight) { this.height = newH; this.top = st + dy }
+    })
+    // Southeast
+    makeHandle('ui-window__resize-se', (dx, dy, sw, sh) => { this.width = sw + dx; this.height = sh + dy })
+    // Southwest
+    makeHandle('ui-window__resize-sw', (dx, dy, sw, sh, sl) => {
+      const newW = sw - dx
+      if (newW >= this._minWidth) { this.width = newW; this.left = sl + dx }
       this.height = sh + dy
     })
-
-    // Southeast (corner)
-    makeHandle('ui-window__resize-se', (dx, dy, sw, sh) => {
+    // Northeast
+    makeHandle('ui-window__resize-ne', (dx, dy, sw, sh, _sl, st) => {
       this.width = sw + dx
-      this.height = sh + dy
+      const newH = sh - dy
+      if (newH >= this._minHeight) { this.height = newH; this.top = st + dy }
+    })
+    // Northwest
+    makeHandle('ui-window__resize-nw', (dx, dy, sw, sh, sl, st) => {
+      const newW = sw - dx
+      if (newW >= this._minWidth) { this.width = newW; this.left = sl + dx }
+      const newH = sh - dy
+      if (newH >= this._minHeight) { this.height = newH; this.top = st + dy }
     })
   }
 

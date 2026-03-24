@@ -73,6 +73,8 @@ export class UIScrollBar {
     this.onTooltipColor = o.onTooltipColor ?? null
     this.captureParentEvents = o.captureParentEvents ?? false
     this.wheelFactor = o.wheelFactor ?? 1
+    this._customWidth = o.customWidth ?? 0
+    this._customHeight = o.customHeight ?? 0
 
     const btnSize = this._btnSize()
     const isH = this._kind === 'horizontal'
@@ -104,6 +106,9 @@ export class UIScrollBar {
       className: 'ui-scrollbar__btn ui-scrollbar__btn-inc',
     })
     this._incToolBtn.onClick(() => this.increase())
+
+    // Cross-axis must fill the scrollbar, not be square
+    this._fixToolBtnCrossAxis()
 
     this._startEl.appendChild(this._decToolBtn.element)
     this._trackEl.appendChild(this._thumbEl)
@@ -279,8 +284,30 @@ export class UIScrollBar {
   // Tool button helpers
   // =====================
 
+  private _customWidth: number = 0
+  private _customHeight: number = 0
+
   private _btnSize(): number {
-    return this._size === 'large' ? 28 : this._size === 'medium' ? 20 : 14
+    switch (this._size) {
+      case 'tiny': return 10
+      case 'small': return 14
+      case 'medium': return 20
+      case 'large': return 28
+      case 'xlarge': return 36
+      case 'custom': return this._kind === 'horizontal' ? this._customHeight || 20 : this._customWidth || 20
+    }
+  }
+
+  /** Cross-axis of buttons must fill the scrollbar, not be square */
+  private _fixToolBtnCrossAxis(): void {
+    const isH = this._kind === 'horizontal'
+    for (const btn of [this._decToolBtn, this._incToolBtn]) {
+      if (isH) {
+        btn.element.style.height = '100%'
+      } else {
+        btn.element.style.width = '100%'
+      }
+    }
   }
 
   private _updateToolBtnIcons(): void {
@@ -290,6 +317,7 @@ export class UIScrollBar {
     this._decToolBtn.size = sz
     this._incToolBtn.icon = (isH ? 'arrow-right' : 'arrow-down') as ToolButtonIcon
     this._incToolBtn.size = sz
+    this._fixToolBtnCrossAxis()
   }
 
   // =====================
@@ -307,6 +335,15 @@ export class UIScrollBar {
     this._el.className = `ui-scrollbar ${this._kind} ${this._size} ${theme}`
     if (this._hover) this._el.classList.add('hover-mode')
     if (this._disabled) this._el.classList.add('disabled')
+
+    // Custom size: apply explicit dimensions
+    if (this._size === 'custom') {
+      if (this._kind === 'horizontal') {
+        if (this._customHeight) this._el.style.height = `${this._customHeight}px`
+      } else {
+        if (this._customWidth) this._el.style.width = `${this._customWidth}px`
+      }
+    }
   }
 
   private _on<K extends keyof HTMLElementEventMap>(

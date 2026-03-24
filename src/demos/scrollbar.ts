@@ -1,4 +1,5 @@
 import { UIScrollBar } from '../components/ui-scrollbar/ui-scrollbar'
+import { UIToolButton } from '../components/common/ui-tool-button'
 import type { ScrollBarSize, UIScrollBarOptions } from '../components/common/types'
 import type { DemoRoute } from '../header'
 
@@ -19,10 +20,10 @@ export const scrollbarDemo: DemoRoute = {
 
     const container = document.getElementById('scrollbar-demo-content')!
 
-    const sizes: ScrollBarSize[] = ['small', 'medium', 'large']
+    const sizes: ScrollBarSize[] = ['tiny', 'small', 'medium', 'large', 'xlarge']
 
     for (const sz of sizes) {
-      const vHeight = sz === 'large' ? '120px' : sz === 'medium' ? '100px' : '80px'
+      const vHeight = sz === 'xlarge' ? '140px' : sz === 'large' ? '120px' : sz === 'medium' ? '100px' : sz === 'small' ? '80px' : '60px'
       const hWidth = '200px'
 
       const section = document.createElement('section')
@@ -67,36 +68,23 @@ export const scrollbarDemo: DemoRoute = {
       // --- Custom buttons ---
       addRow(section, 'Custom buttons (before/after)', (row) => {
         const s = sb({ kind: 'horizontal', size: sz, max: 100, value: 50, showTooltip: true }, '260px')
-        const btnSize = sz === 'large' ? '28px' : sz === 'medium' ? '20px' : '14px'
-        const lineW = sz === 'large' ? '10px' : sz === 'medium' ? '8px' : '6px'
-        const lineH = sz === 'large' ? '3px' : '2px'
+        const btnPx = sz === 'xlarge' ? 36 : sz === 'large' ? 28 : sz === 'medium' ? 20 : sz === 'small' ? 14 : 10
 
-        const before = document.createElement('div')
-        before.className = 'ui-scrollbar__btn'
-        Object.assign(before.style, {
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: btnSize, height: '100%', cursor: 'pointer',
+        const minusBtn = new UIToolButton({
+          icon: 'minus', size: btnPx,
+          className: 'ui-scrollbar__btn',
         })
-        const minusLine = document.createElement('div')
-        Object.assign(minusLine.style, { width: lineW, height: lineH, backgroundColor: 'currentColor' })
-        before.appendChild(minusLine)
-        before.addEventListener('click', () => s.decrease(10))
-        s.insertBeforeDecBtn(before)
+        minusBtn.element.style.height = '100%'
+        minusBtn.onClick(() => s.decrease(10))
+        s.insertBeforeDecBtn(minusBtn.element)
 
-        const after = document.createElement('div')
-        after.className = 'ui-scrollbar__btn'
-        Object.assign(after.style, {
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: btnSize, height: '100%', cursor: 'pointer', position: 'relative',
+        const plusBtn = new UIToolButton({
+          icon: 'plus', size: btnPx,
+          className: 'ui-scrollbar__btn',
         })
-        const plusH = document.createElement('div')
-        Object.assign(plusH.style, { width: lineW, height: lineH, backgroundColor: 'currentColor', position: 'absolute' })
-        const plusV = document.createElement('div')
-        Object.assign(plusV.style, { width: lineH, height: lineW, backgroundColor: 'currentColor', position: 'absolute' })
-        after.appendChild(plusH)
-        after.appendChild(plusV)
-        after.addEventListener('click', () => s.increase(10))
-        s.insertAfterIncBtn(after)
+        plusBtn.element.style.height = '100%'
+        plusBtn.onClick(() => s.increase(10))
+        s.insertAfterIncBtn(plusBtn.element)
 
         row.appendChild(s.element)
         allSbs.push(s)
@@ -243,6 +231,103 @@ export const scrollbarDemo: DemoRoute = {
       container.appendChild(section)
     }
 
+    // --- Custom size section ---
+    const customSection = document.createElement('section')
+    customSection.className = 'demo-section'
+    const customTitle = document.createElement('h2')
+    customTitle.textContent = 'Size: custom'
+    customSection.appendChild(customTitle)
+
+    // Horizontal custom sizes
+    addRow(customSection, 'Custom horizontal sizes (8px, 16px, 24px, 42px)', (row) => {
+      for (const h of [8, 16, 24, 42]) {
+        const wrapper = document.createElement('div')
+        wrapper.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center;'
+        const lbl = document.createElement('span')
+        lbl.textContent = `${h}px`
+        lbl.style.cssText = 'font-size:10px;color:var(--button-disabled-fg-color);'
+        wrapper.appendChild(lbl)
+        const s = sb({ kind: 'horizontal', size: 'custom', customHeight: h, max: 100, value: 40, showTooltip: true }, '200px')
+        wrapper.appendChild(s.element)
+        row.appendChild(wrapper)
+        allSbs.push(s)
+      }
+    })
+
+    // Vertical custom sizes
+    addRow(customSection, 'Custom vertical sizes (8px, 16px, 24px, 42px)', (row) => {
+      for (const w of [8, 16, 24, 42]) {
+        const wrapper = document.createElement('div')
+        wrapper.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center;'
+        const lbl = document.createElement('span')
+        lbl.textContent = `${w}px`
+        lbl.style.cssText = 'font-size:10px;color:var(--button-disabled-fg-color);'
+        wrapper.appendChild(lbl)
+        const s = sb({ kind: 'vertical', size: 'custom', customWidth: w, max: 100, value: 60, showTooltip: true }, undefined, '120px')
+        wrapper.appendChild(s.element)
+        row.appendChild(wrapper)
+        allSbs.push(s)
+      }
+    })
+
+    // No buttons
+    addRow(customSection, 'No buttons (6px, 12px, 24px)', (row) => {
+      for (const h of [6, 12, 24]) {
+        const wrapper = document.createElement('div')
+        wrapper.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center;'
+        const lbl = document.createElement('span')
+        lbl.textContent = `${h}px`
+        lbl.style.cssText = 'font-size:10px;color:var(--button-disabled-fg-color);'
+        wrapper.appendChild(lbl)
+        const s = sb({ kind: 'horizontal', size: 'custom', customHeight: h, max: 100, value: 50, showStartZone: false, showEndZone: false }, '200px')
+        wrapper.appendChild(s.element)
+        row.appendChild(wrapper)
+        allSbs.push(s)
+      }
+    })
+
+    // Hover mode custom
+    addRow(customSection, 'Hover mode (16px, 24px, 36px)', (row) => {
+      for (const h of [16, 24, 36]) {
+        const wrapper = document.createElement('div')
+        wrapper.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center;'
+        const lbl = document.createElement('span')
+        lbl.textContent = `${h}px`
+        lbl.style.cssText = 'font-size:10px;color:var(--button-disabled-fg-color);'
+        wrapper.appendChild(lbl)
+        const s = sb({ kind: 'horizontal', size: 'custom', customHeight: h, max: 100, value: 40, hover: true, showTooltip: true }, '200px')
+        wrapper.appendChild(s.element)
+        row.appendChild(wrapper)
+        allSbs.push(s)
+      }
+    })
+
+    // Fixed thumb + custom size + tooltip
+    addRow(customSection, 'Fixed thumb 30% on custom sizes', (row) => {
+      for (const h of [12, 20, 32]) {
+        const wrapper = document.createElement('div')
+        wrapper.style.cssText = 'display:flex;flex-direction:column;gap:4px;align-items:center;'
+        const lbl = document.createElement('span')
+        lbl.textContent = `${h}px`
+        lbl.style.cssText = 'font-size:10px;color:var(--button-disabled-fg-color);'
+        wrapper.appendChild(lbl)
+        const s = sb({ kind: 'horizontal', size: 'custom', customHeight: h, max: 500, value: 150, thumbSize: '30%', showTooltip: true }, '200px')
+        wrapper.appendChild(s.element)
+        row.appendChild(wrapper)
+        allSbs.push(s)
+      }
+    })
+
+    // Disabled custom
+    addRow(customSection, 'Disabled (24px)', (row) => {
+      const h = sb({ kind: 'horizontal', size: 'custom', customHeight: 24, max: 100, value: 40, disabled: true }, '200px')
+      const v = sb({ kind: 'vertical', size: 'custom', customWidth: 24, max: 100, value: 60, disabled: true }, undefined, '120px')
+      row.appendChild(h.element); row.appendChild(v.element)
+      allSbs.push(h, v)
+    })
+
+    container.appendChild(customSection)
+
     // --- Layout integration ---
     const layoutSection = document.createElement('section')
     layoutSection.className = 'demo-section'
@@ -310,8 +395,8 @@ function sb(opts: UIScrollBarOptions, width?: string, height?: string): UIScroll
 }
 
 function makeCustomBtn(size: ScrollBarSize, icon: 'square' | 'circle'): HTMLDivElement {
-  const btnPx = size === 'large' ? 28 : size === 'medium' ? 20 : 14
-  const iconPx = size === 'large' ? 8 : size === 'medium' ? 6 : 4
+  const btnPx = size === 'xlarge' ? 36 : size === 'large' ? 28 : size === 'medium' ? 20 : size === 'small' ? 14 : 10
+  const iconPx = size === 'xlarge' ? 10 : size === 'large' ? 8 : size === 'medium' ? 6 : size === 'small' ? 4 : 3
 
   const btn = document.createElement('div')
   btn.className = 'ui-scrollbar__btn'

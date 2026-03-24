@@ -163,7 +163,7 @@ export class UIToolButton {
 
   private _buildTriangle(direction: 'up' | 'down' | 'left' | 'right'): HTMLDivElement {
     const el = document.createElement('div')
-    const px = Math.max(3, Math.round(this._size * 0.22))
+    const px = Math.max(2, Math.round(this._size * 0.25))
     const s = `${px}px`
     const t = 'transparent'
 

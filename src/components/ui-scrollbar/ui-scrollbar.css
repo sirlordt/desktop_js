@@ -194,12 +194,18 @@
 }
 
 /* --- Sizes --- */
+.ui-scrollbar.horizontal.tiny   { flex-direction: row; height: 10px; border-radius: 5px; }
+.ui-scrollbar.vertical.tiny     { flex-direction: column; width: 10px; border-radius: 5px; }
 .ui-scrollbar.horizontal.small  { flex-direction: row; height: 14px; border-radius: 7px; }
 .ui-scrollbar.vertical.small    { flex-direction: column; width: 14px; border-radius: 7px; }
 .ui-scrollbar.horizontal.medium { flex-direction: row; height: 20px; border-radius: 10px; }
 .ui-scrollbar.vertical.medium   { flex-direction: column; width: 20px; border-radius: 10px; }
 .ui-scrollbar.horizontal.large  { flex-direction: row; height: 28px; border-radius: 14px; }
 .ui-scrollbar.vertical.large    { flex-direction: column; width: 28px; border-radius: 14px; }
+.ui-scrollbar.horizontal.xlarge { flex-direction: row; height: 36px; border-radius: 18px; }
+.ui-scrollbar.vertical.xlarge   { flex-direction: column; width: 36px; border-radius: 18px; }
+.ui-scrollbar.horizontal.custom { flex-direction: row; border-radius: var(--sb-custom-radius, 10px); }
+.ui-scrollbar.vertical.custom   { flex-direction: column; border-radius: var(--sb-custom-radius, 10px); }
 
 /* =====================
    Start / End zones
@@ -246,12 +252,16 @@
   opacity: 1;
 }
 
+.ui-scrollbar.tiny.horizontal .ui-scrollbar__btn   { width: 10px; height: 100%; }
+.ui-scrollbar.tiny.vertical .ui-scrollbar__btn     { height: 10px; width: 100%; }
 .ui-scrollbar.small.horizontal .ui-scrollbar__btn  { width: 14px; height: 100%; }
 .ui-scrollbar.small.vertical .ui-scrollbar__btn    { height: 14px; width: 100%; }
 .ui-scrollbar.medium.horizontal .ui-scrollbar__btn { width: 20px; height: 100%; }
 .ui-scrollbar.medium.vertical .ui-scrollbar__btn   { height: 20px; width: 100%; }
 .ui-scrollbar.large.horizontal .ui-scrollbar__btn  { width: 28px; height: 100%; }
 .ui-scrollbar.large.vertical .ui-scrollbar__btn    { height: 28px; width: 100%; }
+.ui-scrollbar.xlarge.horizontal .ui-scrollbar__btn { width: 36px; height: 100%; }
+.ui-scrollbar.xlarge.vertical .ui-scrollbar__btn   { height: 36px; width: 100%; }
 
 /* =====================
    Track
@@ -288,9 +298,11 @@
   background-color: var(--sb-thumb-drag-bg);
 }
 
+.ui-scrollbar.tiny .ui-scrollbar__thumb   { border-radius: 3px; }
 .ui-scrollbar.small .ui-scrollbar__thumb  { border-radius: 5px; }
 .ui-scrollbar.medium .ui-scrollbar__thumb { border-radius: 8px; }
 .ui-scrollbar.large .ui-scrollbar__thumb  { border-radius: 12px; }
+.ui-scrollbar.xlarge .ui-scrollbar__thumb { border-radius: 16px; }
 
 .ui-scrollbar.horizontal .ui-scrollbar__thumb { top: 1px; bottom: 1px; height: auto; }
 .ui-scrollbar.vertical .ui-scrollbar__thumb   { left: 1px; right: 1px; width: auto; }
@@ -327,12 +339,18 @@
 .ui-scrollbar.horizontal.hover-mode .ui-scrollbar__track { margin-top: auto; margin-bottom: auto; border-radius: 2px; }
 .ui-scrollbar.vertical.hover-mode .ui-scrollbar__track   { margin-left: auto; margin-right: auto; border-radius: 2px; }
 
+.ui-scrollbar.tiny.horizontal.hover-mode .ui-scrollbar__track   { height: 3px; }
+.ui-scrollbar.tiny.vertical.hover-mode .ui-scrollbar__track     { width: 3px; }
 .ui-scrollbar.small.horizontal.hover-mode .ui-scrollbar__track  { height: 4px; }
 .ui-scrollbar.small.vertical.hover-mode .ui-scrollbar__track    { width: 4px; }
 .ui-scrollbar.medium.horizontal.hover-mode .ui-scrollbar__track { height: 6px; }
 .ui-scrollbar.medium.vertical.hover-mode .ui-scrollbar__track   { width: 6px; }
 .ui-scrollbar.large.horizontal.hover-mode .ui-scrollbar__track  { height: 8px; }
 .ui-scrollbar.large.vertical.hover-mode .ui-scrollbar__track    { width: 8px; }
+.ui-scrollbar.xlarge.horizontal.hover-mode .ui-scrollbar__track { height: 10px; }
+.ui-scrollbar.xlarge.vertical.hover-mode .ui-scrollbar__track   { width: 10px; }
+.ui-scrollbar.custom.horizontal.hover-mode .ui-scrollbar__track { height: 6px; }
+.ui-scrollbar.custom.vertical.hover-mode .ui-scrollbar__track   { width: 6px; }
 
 /* Expanded */
 .ui-scrollbar.hover-mode.hover-active .ui-scrollbar__start,

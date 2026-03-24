@@ -63,7 +63,7 @@ export interface UIHintOptions {
 
 export type ScrollBarKind = 'horizontal' | 'vertical'
 
-export type ScrollBarSize = 'small' | 'medium' | 'large'
+export type ScrollBarSize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | 'custom'
 
 export interface TooltipColorRange {
   from: number
@@ -79,6 +79,8 @@ export type TooltipColorFn = (value: number, min: number, max: number) =>
 export interface UIScrollBarOptions {
   kind?: ScrollBarKind
   size?: ScrollBarSize
+  customWidth?: number
+  customHeight?: number
   min?: number
   max?: number
   value?: number

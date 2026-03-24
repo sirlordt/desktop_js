@@ -1,0 +1,363 @@
+/* =====================
+   UIScrollBar — Structure + Theming
+   ===================== */
+
+/* =====================
+   CSS Custom Properties (defaults — overridden by theme detection)
+   ===================== */
+.ui-scrollbar {
+  --sb-track-bg: transparent;
+  --sb-track-hover-bg: transparent;
+  --sb-thumb-bg: #888;
+  --sb-thumb-hover-bg: #666;
+  --sb-thumb-drag-bg: #444;
+  --sb-thumb-border: 1px solid transparent;
+  --sb-thumb-radius: 7px;
+  --sb-btn-bg: transparent;
+  --sb-btn-hover-bg: transparent;
+  --sb-btn-color: #888;
+  --sb-tooltip-bg: rgba(0, 0, 0, 0.75);
+  --sb-tooltip-color: #fff;
+}
+
+/* =====================
+   GTK4 Light
+   ===================== */
+.ui-scrollbar.gtk4-light {
+  --sb-track-bg: #e8e8e8;
+  --sb-track-hover-bg: #d8d8d8;
+  --sb-thumb-bg: #a0a0a0;
+  --sb-thumb-hover-bg: #888;
+  --sb-thumb-drag-bg: #666;
+  --sb-thumb-border: 1px solid #909090;
+  --sb-btn-bg: #e0e0e0;
+  --sb-btn-hover-bg: #c8c8c8;
+  --sb-btn-color: #555;
+}
+
+/* =====================
+   GTK4 Dark
+   ===================== */
+.ui-scrollbar.gtk4-dark {
+  --sb-track-bg: #2a2a2a;
+  --sb-track-hover-bg: #383838;
+  --sb-thumb-bg: #666;
+  --sb-thumb-hover-bg: #888;
+  --sb-thumb-drag-bg: #aaa;
+  --sb-thumb-border: 1px solid #555;
+  --sb-btn-bg: #333;
+  --sb-btn-hover-bg: #444;
+  --sb-btn-color: #ccc;
+}
+
+/* =====================
+   WIN95 Structure
+   ===================== */
+.ui-scrollbar.win95-light,
+.ui-scrollbar.win95-dark { border-radius: 0 !important; }
+
+.ui-scrollbar.win95-light .ui-scrollbar__thumb,
+.ui-scrollbar.win95-dark .ui-scrollbar__thumb { border-radius: 0 !important; }
+
+.ui-scrollbar.win95-light .ui-scrollbar__btn,
+.ui-scrollbar.win95-dark .ui-scrollbar__btn,
+.ui-scrollbar.win95-light .ui-scrollbar__thumb,
+.ui-scrollbar.win95-dark .ui-scrollbar__thumb {
+  border-style: solid;
+  border-width: 1px;
+}
+
+.ui-scrollbar.win95-light .ui-scrollbar__start,
+.ui-scrollbar.win95-dark .ui-scrollbar__start,
+.ui-scrollbar.win95-light .ui-scrollbar__end,
+.ui-scrollbar.win95-dark .ui-scrollbar__end {
+  border: none;
+  gap: 0;
+}
+
+.ui-scrollbar.win95-light .ui-scrollbar__track,
+.ui-scrollbar.win95-dark .ui-scrollbar__track { border: none; }
+
+.ui-scrollbar.win95-light.horizontal .ui-scrollbar__thumb,
+.ui-scrollbar.win95-dark.horizontal .ui-scrollbar__thumb { top: 0; bottom: 0; }
+.ui-scrollbar.win95-light.vertical .ui-scrollbar__thumb,
+.ui-scrollbar.win95-dark.vertical .ui-scrollbar__thumb { left: 0; right: 0; }
+
+.ui-scrollbar.win95-light.hover-mode .ui-scrollbar__track,
+.ui-scrollbar.win95-dark.hover-mode .ui-scrollbar__track,
+.ui-scrollbar.win95-light.hover-mode.hover-active .ui-scrollbar__track,
+.ui-scrollbar.win95-dark.hover-mode.hover-active .ui-scrollbar__track {
+  border-radius: 0;
+}
+
+/* =====================
+   WIN95 Light
+   ===================== */
+.ui-scrollbar.win95-light {
+  --sb-track-bg: #c0c0c0;
+  --sb-track-hover-bg: #c0c0c0;
+  --sb-thumb-bg: #c0c0c0;
+  --sb-thumb-hover-bg: #c0c0c0;
+  --sb-thumb-drag-bg: #c0c0c0;
+  --sb-thumb-border: none;
+  --sb-btn-bg: #c0c0c0;
+  --sb-btn-hover-bg: #c0c0c0;
+  --sb-btn-color: #000;
+}
+
+.ui-scrollbar.win95-light .ui-scrollbar__start,
+.ui-scrollbar.win95-light .ui-scrollbar__end { background-color: transparent; }
+
+.ui-scrollbar.win95-light .ui-scrollbar__btn {
+  background-color: #c0c0c0;
+  border-color: #dfdfdf #404040 #404040 #dfdfdf;
+}
+.ui-scrollbar.win95-light .ui-scrollbar__btn:active {
+  border-color: #404040 #dfdfdf #dfdfdf #404040;
+}
+
+.ui-scrollbar.win95-light .ui-scrollbar__thumb {
+  background-color: #c0c0c0;
+  border-color: #dfdfdf #404040 #404040 #dfdfdf;
+}
+.ui-scrollbar.win95-light .ui-scrollbar__thumb:hover { background-color: #c0c0c0; }
+.ui-scrollbar.win95-light .ui-scrollbar__thumb.dragging {
+  background-color: #c0c0c0;
+  border-color: #404040 #dfdfdf #dfdfdf #404040;
+}
+
+.ui-scrollbar.win95-light .ui-scrollbar__track {
+  background-color: #e0e0e0;
+  background-image:
+    linear-gradient(45deg, #c8c8c8 25%, transparent 25%, transparent 75%, #c8c8c8 75%),
+    linear-gradient(45deg, #c8c8c8 25%, transparent 25%, transparent 75%, #c8c8c8 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+  border-color: transparent;
+}
+
+/* =====================
+   WIN95 Dark
+   ===================== */
+.ui-scrollbar.win95-dark {
+  --sb-track-bg: #404040;
+  --sb-track-hover-bg: #404040;
+  --sb-thumb-bg: #585858;
+  --sb-thumb-hover-bg: #585858;
+  --sb-thumb-drag-bg: #585858;
+  --sb-thumb-border: none;
+  --sb-btn-bg: #585858;
+  --sb-btn-hover-bg: #585858;
+  --sb-btn-color: #ddd;
+}
+
+.ui-scrollbar.win95-dark .ui-scrollbar__start,
+.ui-scrollbar.win95-dark .ui-scrollbar__end { background-color: transparent; }
+
+.ui-scrollbar.win95-dark .ui-scrollbar__btn {
+  background-color: #585858;
+  border-color: #808080 #2a2a2a #2a2a2a #808080;
+}
+.ui-scrollbar.win95-dark .ui-scrollbar__btn:active {
+  border-color: #2a2a2a #808080 #808080 #2a2a2a;
+}
+
+.ui-scrollbar.win95-dark .ui-scrollbar__thumb {
+  background-color: #585858;
+  border-color: #808080 #2a2a2a #2a2a2a #808080;
+}
+.ui-scrollbar.win95-dark .ui-scrollbar__thumb:hover { background-color: #585858; }
+.ui-scrollbar.win95-dark .ui-scrollbar__thumb.dragging {
+  background-color: #585858;
+  border-color: #2a2a2a #808080 #808080 #2a2a2a;
+}
+
+.ui-scrollbar.win95-dark .ui-scrollbar__track {
+  background-color: #404040;
+  background-image:
+    linear-gradient(45deg, #353535 25%, transparent 25%, transparent 75%, #353535 75%),
+    linear-gradient(45deg, #353535 25%, transparent 25%, transparent 75%, #353535 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+}
+
+/* =====================
+   Base
+   ===================== */
+.ui-scrollbar {
+  display: flex;
+  box-sizing: border-box;
+  position: relative;
+  outline: none;
+  overflow: hidden;
+  background-color: var(--sb-track-bg);
+}
+
+/* --- Sizes --- */
+.ui-scrollbar.horizontal.small  { flex-direction: row; height: 14px; border-radius: 7px; }
+.ui-scrollbar.vertical.small    { flex-direction: column; width: 14px; border-radius: 7px; }
+.ui-scrollbar.horizontal.medium { flex-direction: row; height: 20px; border-radius: 10px; }
+.ui-scrollbar.vertical.medium   { flex-direction: column; width: 20px; border-radius: 10px; }
+.ui-scrollbar.horizontal.large  { flex-direction: row; height: 28px; border-radius: 14px; }
+.ui-scrollbar.vertical.large    { flex-direction: column; width: 28px; border-radius: 14px; }
+
+/* =====================
+   Start / End zones
+   ===================== */
+.ui-scrollbar__start,
+.ui-scrollbar__end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: var(--sb-btn-bg);
+}
+
+.ui-scrollbar.horizontal .ui-scrollbar__start,
+.ui-scrollbar.horizontal .ui-scrollbar__end { flex-direction: row; height: 100%; }
+
+.ui-scrollbar.vertical .ui-scrollbar__start,
+.ui-scrollbar.vertical .ui-scrollbar__end { flex-direction: column; width: 100%; }
+
+/* =====================
+   Buttons (icons)
+   ===================== */
+.ui-scrollbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  color: var(--sb-btn-color);
+  background-color: var(--sb-btn-bg);
+}
+
+.ui-scrollbar__btn:hover {
+  background-color: var(--sb-btn-hover-bg);
+}
+
+.ui-scrollbar.small.horizontal .ui-scrollbar__btn  { width: 14px; height: 100%; }
+.ui-scrollbar.small.vertical .ui-scrollbar__btn    { height: 14px; width: 100%; }
+.ui-scrollbar.medium.horizontal .ui-scrollbar__btn { width: 20px; height: 100%; }
+.ui-scrollbar.medium.vertical .ui-scrollbar__btn   { height: 20px; width: 100%; }
+.ui-scrollbar.large.horizontal .ui-scrollbar__btn  { width: 28px; height: 100%; }
+.ui-scrollbar.large.vertical .ui-scrollbar__btn    { height: 28px; width: 100%; }
+
+/* =====================
+   Track
+   ===================== */
+.ui-scrollbar__track {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  background-color: var(--sb-track-bg);
+}
+
+.ui-scrollbar__track:hover {
+  background-color: var(--sb-track-hover-bg);
+}
+
+/* =====================
+   Thumb
+   ===================== */
+.ui-scrollbar__thumb {
+  position: absolute;
+  box-sizing: border-box;
+  cursor: pointer;
+  background-color: var(--sb-thumb-bg);
+  border: var(--sb-thumb-border);
+  border-radius: var(--sb-thumb-radius);
+}
+
+.ui-scrollbar__thumb:hover {
+  background-color: var(--sb-thumb-hover-bg);
+}
+
+.ui-scrollbar__thumb.dragging {
+  background-color: var(--sb-thumb-drag-bg);
+}
+
+.ui-scrollbar.small .ui-scrollbar__thumb  { border-radius: 5px; }
+.ui-scrollbar.medium .ui-scrollbar__thumb { border-radius: 8px; }
+.ui-scrollbar.large .ui-scrollbar__thumb  { border-radius: 12px; }
+
+.ui-scrollbar.horizontal .ui-scrollbar__thumb { top: 1px; bottom: 1px; height: auto; }
+.ui-scrollbar.vertical .ui-scrollbar__thumb   { left: 1px; right: 1px; width: auto; }
+
+/* =====================
+   Hover mode
+   ===================== */
+.ui-scrollbar.hover-mode {
+  background-color: transparent !important;
+}
+
+.ui-scrollbar.hover-mode .ui-scrollbar__start,
+.ui-scrollbar.hover-mode .ui-scrollbar__end {
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease, max-width 0.15s ease, max-height 0.15s ease;
+}
+
+.ui-scrollbar.horizontal.hover-mode .ui-scrollbar__start,
+.ui-scrollbar.horizontal.hover-mode .ui-scrollbar__end { max-width: 0; }
+
+.ui-scrollbar.vertical.hover-mode .ui-scrollbar__start,
+.ui-scrollbar.vertical.hover-mode .ui-scrollbar__end { max-height: 0; }
+
+.ui-scrollbar.hover-mode .ui-scrollbar__thumb {
+  transition: opacity 0.15s ease;
+  opacity: 0.4;
+}
+
+.ui-scrollbar.hover-mode .ui-scrollbar__track {
+  transition: height 0.15s ease, width 0.15s ease, border-radius 0.15s ease;
+}
+
+.ui-scrollbar.horizontal.hover-mode .ui-scrollbar__track { margin-top: auto; margin-bottom: auto; border-radius: 2px; }
+.ui-scrollbar.vertical.hover-mode .ui-scrollbar__track   { margin-left: auto; margin-right: auto; border-radius: 2px; }
+
+.ui-scrollbar.small.horizontal.hover-mode .ui-scrollbar__track  { height: 4px; }
+.ui-scrollbar.small.vertical.hover-mode .ui-scrollbar__track    { width: 4px; }
+.ui-scrollbar.medium.horizontal.hover-mode .ui-scrollbar__track { height: 6px; }
+.ui-scrollbar.medium.vertical.hover-mode .ui-scrollbar__track   { width: 6px; }
+.ui-scrollbar.large.horizontal.hover-mode .ui-scrollbar__track  { height: 8px; }
+.ui-scrollbar.large.vertical.hover-mode .ui-scrollbar__track    { width: 8px; }
+
+/* Expanded */
+.ui-scrollbar.hover-mode.hover-active .ui-scrollbar__start,
+.ui-scrollbar.hover-mode.hover-active .ui-scrollbar__end { opacity: 1; }
+
+.ui-scrollbar.horizontal.hover-mode.hover-active .ui-scrollbar__start,
+.ui-scrollbar.horizontal.hover-mode.hover-active .ui-scrollbar__end { max-width: 100px; }
+
+.ui-scrollbar.vertical.hover-mode.hover-active .ui-scrollbar__start,
+.ui-scrollbar.vertical.hover-mode.hover-active .ui-scrollbar__end { max-height: 100px; }
+
+.ui-scrollbar.horizontal.hover-mode.hover-active .ui-scrollbar__track { height: 100%; border-radius: 0; }
+.ui-scrollbar.vertical.hover-mode.hover-active .ui-scrollbar__track   { width: 100%; border-radius: 0; }
+
+.ui-scrollbar.hover-mode.hover-active .ui-scrollbar__thumb { opacity: 1; }
+
+/* =====================
+   Disabled
+   ===================== */
+.ui-scrollbar.disabled {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* =====================
+   Tooltip
+   ===================== */
+.ui-scrollbar-tooltip {
+  position: fixed;
+  padding: 2px 6px;
+  font-size: 11px;
+  background-color: var(--sb-tooltip-bg, rgba(0, 0, 0, 0.75));
+  color: var(--sb-tooltip-color, #fff);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 9999;
+}

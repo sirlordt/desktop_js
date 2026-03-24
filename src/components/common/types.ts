@@ -58,3 +58,41 @@ export interface UIHintOptions {
   disabled?: boolean
   name?: string
 }
+
+// ── ScrollBar types ──
+
+export type ScrollBarKind = 'horizontal' | 'vertical'
+
+export type ScrollBarSize = 'small' | 'medium' | 'large'
+
+export interface TooltipColorRange {
+  from: number
+  to: number
+  bg?: string
+  color?: string
+  bold?: boolean
+}
+
+export type TooltipColorFn = (value: number, min: number, max: number) =>
+  { bg?: string; color?: string; bold?: boolean } | null
+
+export interface UIScrollBarOptions {
+  kind?: ScrollBarKind
+  size?: ScrollBarSize
+  min?: number
+  max?: number
+  value?: number
+  step?: number
+  pageStep?: number
+  thumbSize?: number | string | null
+  showTooltip?: boolean
+  captureParentEvents?: boolean
+  showStartZone?: boolean
+  showEndZone?: boolean
+  hover?: boolean
+  focusable?: boolean
+  disabled?: boolean
+  wheelFactor?: number
+  tooltipColors?: TooltipColorRange[]
+  onTooltipColor?: TooltipColorFn
+}

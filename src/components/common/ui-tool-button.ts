@@ -253,7 +253,7 @@ export class UIToolButton {
     front.setAttribute('x', '2'); front.setAttribute('y', '5')
     front.setAttribute('width', '9'); front.setAttribute('height', '9')
     front.setAttribute('rx', '1')
-    front.setAttribute('fill', 'var(--headerbar-bg-color, #333)')
+    front.setAttribute('fill', 'var(--_wm-restore-bg, var(--headerbar-bg-color, #333))')
     front.setAttribute('stroke', 'currentColor')
     svg.appendChild(front)
     return svg

@@ -65,6 +65,11 @@
 
 .ui-window__buttons .ui-toolbtn {
   border-radius: 4px;
+  --_wm-restore-bg: var(--headerbar-bg-color);
+}
+
+.ui-window__titlebar.focused .ui-window__buttons .ui-toolbtn {
+  --_wm-restore-bg: var(--accent-bg-color);
 }
 
 .ui-window__buttons .ui-toolbtn:hover {
@@ -151,6 +156,7 @@
 }
 
 [data-theme^="win95"] .ui-window__buttons .ui-toolbtn {
+  --_wm-restore-bg: var(--btn-3d-face, #c0c0c0);
   border-radius: 0;
   border: 1px solid;
   border-color: var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040) var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf);

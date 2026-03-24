@@ -12,7 +12,7 @@
   --sb-thumb-hover-bg: #666;
   --sb-thumb-drag-bg: #444;
   --sb-thumb-border: 1px solid transparent;
-  --sb-thumb-radius: 7px;
+  --sb-thumb-radius: 9999px;
   --sb-btn-bg: transparent;
   --sb-btn-hover-bg: transparent;
   --sb-btn-color: #888;
@@ -191,21 +191,22 @@
   outline: none;
   overflow: hidden;
   background-color: var(--sb-track-bg);
+  border-radius: 9999px;
 }
 
 /* --- Sizes --- */
-.ui-scrollbar.horizontal.tiny   { flex-direction: row; height: 10px; border-radius: 5px; }
-.ui-scrollbar.vertical.tiny     { flex-direction: column; width: 10px; border-radius: 5px; }
-.ui-scrollbar.horizontal.small  { flex-direction: row; height: 14px; border-radius: 7px; }
-.ui-scrollbar.vertical.small    { flex-direction: column; width: 14px; border-radius: 7px; }
-.ui-scrollbar.horizontal.medium { flex-direction: row; height: 20px; border-radius: 10px; }
-.ui-scrollbar.vertical.medium   { flex-direction: column; width: 20px; border-radius: 10px; }
-.ui-scrollbar.horizontal.large  { flex-direction: row; height: 28px; border-radius: 14px; }
-.ui-scrollbar.vertical.large    { flex-direction: column; width: 28px; border-radius: 14px; }
-.ui-scrollbar.horizontal.xlarge { flex-direction: row; height: 36px; border-radius: 18px; }
-.ui-scrollbar.vertical.xlarge   { flex-direction: column; width: 36px; border-radius: 18px; }
-.ui-scrollbar.horizontal.custom { flex-direction: row; border-radius: var(--sb-custom-radius, 10px); }
-.ui-scrollbar.vertical.custom   { flex-direction: column; border-radius: var(--sb-custom-radius, 10px); }
+.ui-scrollbar.horizontal.tiny   { flex-direction: row; height: 10px; }
+.ui-scrollbar.vertical.tiny     { flex-direction: column; width: 10px; }
+.ui-scrollbar.horizontal.small  { flex-direction: row; height: 14px; }
+.ui-scrollbar.vertical.small    { flex-direction: column; width: 14px; }
+.ui-scrollbar.horizontal.medium { flex-direction: row; height: 20px; }
+.ui-scrollbar.vertical.medium   { flex-direction: column; width: 20px; }
+.ui-scrollbar.horizontal.large  { flex-direction: row; height: 28px; }
+.ui-scrollbar.vertical.large    { flex-direction: column; width: 28px; }
+.ui-scrollbar.horizontal.xlarge { flex-direction: row; height: 36px; }
+.ui-scrollbar.vertical.xlarge   { flex-direction: column; width: 36px; }
+.ui-scrollbar.horizontal.custom { flex-direction: row; }
+.ui-scrollbar.vertical.custom   { flex-direction: column; }
 
 /* =====================
    Start / End zones
@@ -297,12 +298,6 @@
 .ui-scrollbar__thumb.dragging {
   background-color: var(--sb-thumb-drag-bg);
 }
-
-.ui-scrollbar.tiny .ui-scrollbar__thumb   { border-radius: 3px; }
-.ui-scrollbar.small .ui-scrollbar__thumb  { border-radius: 5px; }
-.ui-scrollbar.medium .ui-scrollbar__thumb { border-radius: 8px; }
-.ui-scrollbar.large .ui-scrollbar__thumb  { border-radius: 12px; }
-.ui-scrollbar.xlarge .ui-scrollbar__thumb { border-radius: 16px; }
 
 .ui-scrollbar.horizontal .ui-scrollbar__thumb { top: 1px; bottom: 1px; height: auto; }
 .ui-scrollbar.vertical .ui-scrollbar__thumb   { left: 1px; right: 1px; width: auto; }

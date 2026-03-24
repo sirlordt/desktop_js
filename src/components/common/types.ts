@@ -193,4 +193,6 @@ export interface UIWindowOptions {
   titleAlign?: 'left' | 'center' | 'right'
   leftElements?: HTMLElement[]
   rightElements?: HTMLElement[]
+  scroll?: ScrollMode
+  scrollBarSize?: ScrollBarSize
 }

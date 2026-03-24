@@ -1,5 +1,6 @@
 import { UIToolButton } from '../common/ui-tool-button'
-import type { IWindowChild, WindowChildState, UIWindowOptions } from '../common/types'
+import { UIScrollBox } from '../ui-scrollbox/ui-scrollbox'
+import type { IWindowChild, WindowChildState, UIWindowOptions, ScrollMode } from '../common/types'
 import type { UIWindowManager } from '../ui-window-manager/ui-window-manager'
 import './ui-window.css'
 
@@ -10,6 +11,8 @@ export class UIWindow implements IWindowChild {
   readonly element: HTMLDivElement
   readonly contentElement: HTMLDivElement
   readonly titleBarElement: HTMLDivElement
+  private _scrollBox: UIScrollBox | null = null
+  private _bodyEl: HTMLDivElement
 
   windowState: WindowChildState = 'normal'
   readonly isFloating: boolean = true
@@ -136,12 +139,31 @@ export class UIWindow implements IWindowChild {
 
     this.titleBarElement.appendChild(this._buttonsEl)
 
-    // Body / content
-    this.contentElement = document.createElement('div')
-    this.contentElement.className = 'ui-window__body'
+    // Body
+    this._bodyEl = document.createElement('div')
+    this._bodyEl.className = 'ui-window__body'
+
+    const scroll: ScrollMode | undefined = o.scroll
+    if (scroll && scroll !== 'none') {
+      // Use UIScrollBox for scrollable content
+      this._scrollBox = new UIScrollBox({
+        scroll,
+        scrollBarSize: o.scrollBarSize ?? 'small',
+        borderWidth: 0,
+      })
+      this._scrollBox.element.style.width = '100%'
+      this._scrollBox.element.style.height = '100%'
+      this._bodyEl.appendChild(this._scrollBox.element)
+      this._bodyEl.style.overflow = 'hidden'
+      this.contentElement = this._scrollBox.contentElement
+    } else {
+      // No scroll — overflow hidden, no native scrollbars
+      this._bodyEl.style.overflow = 'hidden'
+      this.contentElement = this._bodyEl
+    }
 
     this.element.appendChild(this.titleBarElement)
-    this.element.appendChild(this.contentElement)
+    this.element.appendChild(this._bodyEl)
 
     // Resize handles (all 8)
     if (this._resizable) {
@@ -182,10 +204,16 @@ export class UIWindow implements IWindowChild {
   set top(v: number) { this.element.style.top = `${v}px` }
 
   get width(): number { return parseInt(this.element.style.width) || 0 }
-  set width(v: number) { this.element.style.width = `${Math.max(this._minWidth, v)}px` }
+  set width(v: number) {
+    this.element.style.width = `${Math.max(this._minWidth, v)}px`
+    this._scrollBox?.refresh()
+  }
 
   get height(): number { return parseInt(this.element.style.height) || 0 }
-  set height(v: number) { this.element.style.height = `${Math.max(this._minHeight, v)}px` }
+  set height(v: number) {
+    this.element.style.height = `${Math.max(this._minHeight, v)}px`
+    this._scrollBox?.refresh()
+  }
 
   // ── Custom elements ──
 
@@ -211,21 +239,21 @@ export class UIWindow implements IWindowChild {
 
   onMinimized(): void {
     this.titleBarElement.classList.remove('focused')
-    this.contentElement.style.display = 'none'
+    this._bodyEl.style.display = 'none'
     this._setResizeHandlesVisible(false)
     if (this._minBtn) this._minBtn.icon = 'chevron-up'
     if (this._maxBtn) this._maxBtn.icon = 'plus'
   }
 
   onRestored(): void {
-    this.contentElement.style.display = ''
+    this._bodyEl.style.display = ''
     this._setResizeHandlesVisible(this._resizable)
     if (this._maxBtn) this._maxBtn.icon = 'plus'
     if (this._minBtn) this._minBtn.icon = 'minus'
   }
 
   onMaximized(): void {
-    this.contentElement.style.display = ''
+    this._bodyEl.style.display = ''
     this._setResizeHandlesVisible(false)
     if (this._maxBtn) this._maxBtn.icon = 'chevron-down'
     if (this._minBtn) this._minBtn.icon = 'minus'
@@ -390,9 +418,13 @@ export class UIWindow implements IWindowChild {
 
   // ── Destroy ──
 
+  /** The UIScrollBox instance if scroll is enabled, null otherwise */
+  get scrollBox(): UIScrollBox | null { return this._scrollBox }
+
   destroy(): void {
     if (this._destroyed) return
     this._destroyed = true
+    this._scrollBox?.destroy()
     this._closeBtn?.destroy()
     this._minBtn?.destroy()
     this._maxBtn?.destroy()

@@ -23,7 +23,7 @@ export const scrollbarDemo: DemoRoute = {
     const sizes: ScrollBarSize[] = ['tiny', 'small', 'medium', 'large', 'xlarge']
 
     for (const sz of sizes) {
-      const vHeight = sz === 'xlarge' ? '140px' : sz === 'large' ? '120px' : sz === 'medium' ? '100px' : sz === 'small' ? '80px' : '60px'
+      const vHeight = sz === 'xlarge' ? '220px' : sz === 'large' ? '180px' : sz === 'medium' ? '150px' : sz === 'small' ? '120px' : '100px'
       const hWidth = '200px'
 
       const section = document.createElement('section')
@@ -92,9 +92,12 @@ export const scrollbarDemo: DemoRoute = {
 
       // --- Stacked buttons after ---
       addRow(section, 'Stacked after (2 extra)', (row) => {
+        // Vertical needs extra height: 4 buttons (arrow + 2 custom + arrow) + track space
+        const btnPx = sz === 'xlarge' ? 36 : sz === 'large' ? 28 : sz === 'medium' ? 20 : sz === 'small' ? 14 : 10
+        const stackedVHeight = `${btnPx * 4 + 80}px`
         for (const kind of ['horizontal', 'vertical'] as const) {
           const w = kind === 'horizontal' ? '280px' : undefined
-          const h = kind === 'vertical' ? '150px' : undefined
+          const h = kind === 'vertical' ? stackedVHeight : undefined
           const s = sb({ kind, size: sz, max: 100, value: 50 }, w, h)
 
           for (let i = 0; i < 2; i++) {

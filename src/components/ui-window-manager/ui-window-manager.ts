@@ -1,13 +1,17 @@
 import { UIPanel } from '../ui-panel/ui-panel'
-import type { IWindowChild, WindowChildInfo, UIWindowManagerOptions, WindowCycleShortcut } from '../common/types'
+import type { IWindowChild, WindowChildInfo, UIWindowManagerOptions, WindowCycleShortcut, WindowState } from '../common/types'
 
 const Z_BASE = 10
 const Z_STEP = 10
+const ANIM_DURATION = 200
 
 export class UIWindowManager extends UIPanel {
   private _windows: IWindowChild[] = []
   private _zOrder: IWindowChild[] = []
+  private _zOrderTopmost: IWindowChild[] = []
   private _focused: IWindowChild | null = null
+  private _animating: Set<IWindowChild> = new Set()
+  private _modalStack: { child: IWindowChild; backdrop: HTMLDivElement }[] = []
 
   // Minimize grid
   private _minimizeSlots: (IWindowChild | null)[] = []
@@ -17,6 +21,9 @@ export class UIWindowManager extends UIPanel {
   // Keyboard shortcuts
   private _cycleNext: WindowCycleShortcut
   private _cyclePrev: WindowCycleShortcut
+
+  /** Enable/disable animations (default: true) */
+  animated: boolean = true
 
   constructor(options?: UIWindowManagerOptions) {
     super({
@@ -32,8 +39,8 @@ export class UIWindowManager extends UIPanel {
     this.element.tabIndex = -1
     this.element.style.outline = 'none'
 
-    this._cycleNext = options?.cycleNextShortcut ?? { key: 'F6' }
-    this._cyclePrev = options?.cyclePrevShortcut ?? { key: 'F6', shiftKey: true }
+    this._cycleNext = options?.cycleNextShortcut ?? { key: 'F6', altKey: true }
+    this._cyclePrev = options?.cyclePrevShortcut ?? { key: 'F6', altKey: true, shiftKey: true }
     this._bindKeyboard()
   }
 
@@ -64,57 +71,75 @@ export class UIWindowManager extends UIPanel {
       } else if (this._matchShortcut(e, this._cyclePrev)) {
         e.preventDefault()
         this.focusPrevious()
+      } else if (this._focused) {
+        // Window action shortcuts
+        if (e.key === 'F7' && this._focused.kind !== 'tool' && !this._focused.modal) {
+          e.preventDefault()
+          if (this._focused.windowState === 'minimized') {
+            this.restoreChild(this._focused)
+          } else {
+            this.minimizeChild(this._focused)
+          }
+        } else if (e.key === 'F8' && this._focused.kind !== 'tool' && !this._focused.modal) {
+          e.preventDefault()
+          if (this._focused.windowState === 'maximized') {
+            this.restoreMaximized(this._focused)
+          } else {
+            this.maximizeChild(this._focused)
+          }
+        } else if (e.key === 'F9') {
+          e.preventDefault()
+          this.closeChild(this._focused)
+        }
       }
     }
-    this.element.addEventListener('keydown', handler)
-    this.core.cleanups.push(() => this.element.removeEventListener('keydown', handler))
+    document.addEventListener('keydown', handler, true)
+    this.core.cleanups.push(() => document.removeEventListener('keydown', handler, true))
   }
 
-  /** Focus the next window in z-order. Restores minimized windows. */
+  /** Stable cycle order: normal windows first, then topmost */
+  private get _cycleOrder(): IWindowChild[] {
+    const normal = this._windows.filter(c => !c.topmost)
+    const topmost = this._windows.filter(c => c.topmost)
+    return [...normal, ...topmost]
+  }
+
+  /** Focus the next window in cycle order. Disabled when a window is maximized. */
   focusNext(): void {
-    if (this._zOrder.length < 2) return
-    const currentIdx = this._focused ? this._zOrder.indexOf(this._focused) : -1
-    const nextIdx = (currentIdx + 1) % this._zOrder.length
-    this._focusWindow(this._zOrder[nextIdx])
+    const all = this._cycleOrder
+    if (all.length < 2) return
+    if (this._focused?.windowState === 'maximized') return
+    const currentIdx = this._focused ? all.indexOf(this._focused) : -1
+    const nextIdx = (currentIdx + 1) % all.length
+    this._setFocus(all[nextIdx])
   }
 
-  /** Focus the previous window in z-order. Restores minimized windows. */
+  /** Focus the previous window in cycle order. Disabled when a window is maximized. */
   focusPrevious(): void {
-    if (this._zOrder.length < 2) return
-    const currentIdx = this._focused ? this._zOrder.indexOf(this._focused) : 0
-    const prevIdx = (currentIdx - 1 + this._zOrder.length) % this._zOrder.length
-    this._focusWindow(this._zOrder[prevIdx])
+    const all = this._cycleOrder
+    if (all.length < 2) return
+    if (this._focused?.windowState === 'maximized') return
+    const currentIdx = this._focused ? all.indexOf(this._focused) : 0
+    const prevIdx = (currentIdx - 1 + all.length) % all.length
+    this._setFocus(all[prevIdx])
   }
 
-  private _focusWindow(child: IWindowChild): void {
-    if (child.windowState === 'minimized') {
-      // Check if we can restore or maximize
-      const canRestore = !('_minBtn' in child) || (child as any)._minBtn !== null
-      const canMaximize = !('_maxBtn' in child) || (child as any)._maxBtn !== null
-
-      if (canRestore) {
-        this.restoreChild(child)
-      } else if (canMaximize) {
-        this.maximizeChild(child)
+  /** Set focus on a child, reordering within its own z-order group */
+  private _setFocus(child: IWindowChild): void {
+    if (this._focused !== child) {
+      const prev = this._focused
+      this._focused = child
+      if (prev?.onBlurred) prev.onBlurred()
+      // Bring to front within its own group
+      const zList = this._zOrderFor(child)
+      const idx = zList.indexOf(child)
+      if (idx !== -1) {
+        zList.splice(idx, 1)
+        zList.push(child)
+        this._reassignZIndexes()
       }
-      // If neither, skip — try next window
-      else {
-        this._focusNextSkipping(child)
-      }
-    } else {
-      this.bringToFront(child)
-    }
-  }
-
-  private _focusNextSkipping(skip: IWindowChild): void {
-    const idx = this._zOrder.indexOf(skip)
-    if (idx === -1) return
-    for (let i = 1; i < this._zOrder.length; i++) {
-      const next = this._zOrder[(idx + i) % this._zOrder.length]
-      if (next.windowState !== 'minimized') {
-        this.bringToFront(next)
-        return
-      }
+      child.onFocused?.()
+      this.core.emit('window-focus', { child })
     }
   }
 
@@ -127,7 +152,7 @@ export class UIWindowManager extends UIPanel {
 
     if (child.isFloating) {
       child.element.style.position = 'absolute'
-      this._zOrder.push(child)
+      this._zOrderFor(child).push(child)
       this._reassignZIndexes()
 
       const handler = () => {
@@ -144,6 +169,23 @@ export class UIWindowManager extends UIPanel {
     if ('manager' in child) {
       ;(child as any).manager = this
     }
+
+    // Modal: show backdrop
+    if (child.modal) {
+      this._pushModal(child)
+    }
+
+    // Open animation
+    if (this.animated) {
+      const el = child.element
+      el.classList.add('wm-anim-open-start')
+      void el.offsetHeight
+      el.classList.add('wm-anim')
+      el.classList.remove('wm-anim-open-start')
+      const onEnd = () => { el.classList.remove('wm-anim'); el.removeEventListener('transitionend', onEnd) }
+      el.addEventListener('transitionend', onEnd)
+      setTimeout(onEnd, ANIM_DURATION + 50)
+    }
   }
 
   removeWindow(child: IWindowChild): void {
@@ -152,8 +194,9 @@ export class UIWindowManager extends UIPanel {
 
     this._windows.splice(idx, 1)
 
-    const zIdx = this._zOrder.indexOf(child)
-    if (zIdx !== -1) this._zOrder.splice(zIdx, 1)
+    const zList = this._zOrderFor(child)
+    const zIdx = zList.indexOf(child)
+    if (zIdx !== -1) zList.splice(zIdx, 1)
 
     if (this._focused === child) this._focused = null
 
@@ -175,6 +218,11 @@ export class UIWindowManager extends UIPanel {
       ;(child as any).manager = null
     }
 
+    // Modal: remove backdrop
+    if (child.modal) {
+      this._popModal(child)
+    }
+
     this._reassignZIndexes()
   }
 
@@ -182,15 +230,20 @@ export class UIWindowManager extends UIPanel {
 
   bringToFront(child: IWindowChild): void {
     if (!child.isFloating) return
-    const idx = this._zOrder.indexOf(child)
+    const zList = this._zOrderFor(child)
+    const idx = zList.indexOf(child)
     if (idx === -1) return
+    // If a modal is active, only the top modal can be interacted with
+    if (this._modalChild && child !== this._modalChild) return
 
-    this._zOrder.splice(idx, 1)
-    this._zOrder.push(child)
+    zList.splice(idx, 1)
+    zList.push(child)
     this._reassignZIndexes()
 
     if (this._focused !== child) {
+      const prev = this._focused
       this._focused = child
+      if (prev?.onBlurred) prev.onBlurred()
       child.onFocused?.()
       this.core.emit('window-focus', { child })
     }
@@ -198,18 +251,27 @@ export class UIWindowManager extends UIPanel {
 
   sendToBack(child: IWindowChild): void {
     if (!child.isFloating) return
-    const idx = this._zOrder.indexOf(child)
+    const zList = this._zOrderFor(child)
+    const idx = zList.indexOf(child)
     if (idx === -1) return
 
-    this._zOrder.splice(idx, 1)
-    this._zOrder.unshift(child)
+    zList.splice(idx, 1)
+    zList.unshift(child)
     this._reassignZIndexes()
   }
 
   // ── State operations ──
 
+  /** Emit a cancellable before-* event. Returns true if cancelled. */
+  private _emitBefore(event: string, child: IWindowChild): boolean {
+    const detail = { child, cancelled: false }
+    this.core.emit(event, detail)
+    return detail.cancelled
+  }
+
   minimizeChild(child: IWindowChild): void {
     if (child.windowState === 'minimized') return
+    if (this._emitBefore('before-minimize', child)) return
 
     // Save restore rect only from normal state — maximized already saved it
     if (child.windowState === 'normal') {
@@ -224,23 +286,35 @@ export class UIWindowManager extends UIPanel {
     child.windowState = 'minimized'
     child.onMinimized?.()
 
-    // Place in minimize grid
+    // Place in minimize grid (animated)
     const slot = this._allocateMinimizeSlot(child)
     const pos = this._slotPosition(slot)
-    child.element.style.left = `${pos.left}px`
-    child.element.style.top = `${pos.top}px`
-    child.element.style.width = `${this.minimizeSlotWidth}px`
-    child.element.style.height = `${this.minimizeSlotHeight}px`
+    this._animateTransition(child, () => {
+      child.element.style.left = `${pos.left}px`
+      child.element.style.top = `${pos.top}px`
+      child.element.style.width = `${this.minimizeSlotWidth}px`
+      child.element.style.height = `${this.minimizeSlotHeight}px`
+    })
 
     this.core.emit('window-minimize', { child })
 
     if (this._focused === child) {
       this._focused = null
-      for (let i = this._zOrder.length - 1; i >= 0; i--) {
-        const c = this._zOrder[i]
+      const all = this._cycleOrder
+      // Try to focus a non-minimized window first
+      for (let i = all.length - 1; i >= 0; i--) {
+        const c = all[i]
         if (c !== child && c.windowState !== 'minimized') {
           this.bringToFront(c)
-          break
+          return
+        }
+      }
+      // All minimized — focus the first one in the minimize grid
+      for (let i = 0; i < this._minimizeSlots.length; i++) {
+        const c = this._minimizeSlots[i]
+        if (c && c !== child) {
+          this.bringToFront(c)
+          return
         }
       }
     }
@@ -253,29 +327,49 @@ export class UIWindowManager extends UIPanel {
     const slotIdx = this._minimizeSlots.indexOf(child)
     if (slotIdx !== -1) this._minimizeSlots[slotIdx] = null
 
-    // Restore rect
-    const rect = (child as any).__restoreRect
-    if (rect) {
-      child.element.style.left = `${rect.left}px`
-      child.element.style.top = `${rect.top}px`
-      child.element.style.width = `${rect.width}px`
-      child.element.style.height = `${rect.height}px`
-    }
-
     child.windowState = 'normal'
     child.onRestored?.()
+
+    // Animate to restore rect
+    const rect = (child as any).__restoreRect
+    if (rect) {
+      this._animateTransition(child, () => {
+        child.element.style.left = `${rect.left}px`
+        child.element.style.top = `${rect.top}px`
+        child.element.style.width = `${rect.width}px`
+        child.element.style.height = `${rect.height}px`
+      })
+    }
+
     this.bringToFront(child)
     this.core.emit('window-restore', { child })
   }
 
   closeChild(child: IWindowChild): void {
+    if (this._emitBefore('before-close', child)) return
     child.onClosed?.()
     this.core.emit('window-close', { child })
-    this.removeWindow(child)
+
+    if (this.animated && !this._animating.has(child)) {
+      const el = child.element
+      el.classList.add('wm-anim', 'wm-anim-close')
+      const finish = () => { this.removeWindow(child) }
+      const onEnd = (e: TransitionEvent) => {
+        if (e.target !== el) return
+        el.removeEventListener('transitionend', onEnd)
+        clearTimeout(fallback)
+        finish()
+      }
+      el.addEventListener('transitionend', onEnd)
+      const fallback = window.setTimeout(finish, ANIM_DURATION + 50)
+    } else {
+      this.removeWindow(child)
+    }
   }
 
   maximizeChild(child: IWindowChild): void {
     if (child.windowState === 'maximized') return
+    if (this._emitBefore('before-maximize', child)) return
 
     // If minimized, free the slot first
     const slotIdx = this._minimizeSlots.indexOf(child)
@@ -296,10 +390,6 @@ export class UIWindowManager extends UIPanel {
       child.onRestored?.()
     }
 
-    child.element.style.left = '0px'
-    child.element.style.top = '0px'
-    child.element.style.width = `${this.element.clientWidth}px`
-    child.element.style.height = `${this.element.clientHeight}px`
     child.windowState = 'maximized'
 
     // Notify window of maximize (for icon toggle, handle hiding)
@@ -307,21 +397,33 @@ export class UIWindowManager extends UIPanel {
       ;(child as any).onMaximized()
     }
 
+    const w = this.element.clientWidth
+    const h = this.element.clientHeight
+    this._animateTransition(child, () => {
+      child.element.style.left = '0px'
+      child.element.style.top = '0px'
+      child.element.style.width = `${w}px`
+      child.element.style.height = `${h}px`
+    })
+
     this.bringToFront(child)
     this.core.emit('window-maximize', { child })
   }
 
   restoreMaximized(child: IWindowChild): void {
     if (child.windowState !== 'maximized') return
-    const rect = (child as any).__restoreRect
-    if (rect) {
-      child.element.style.left = `${rect.left}px`
-      child.element.style.top = `${rect.top}px`
-      child.element.style.width = `${rect.width}px`
-      child.element.style.height = `${rect.height}px`
-    }
     child.windowState = 'normal'
     child.onRestored?.()
+
+    const rect = (child as any).__restoreRect
+    if (rect) {
+      this._animateTransition(child, () => {
+        child.element.style.left = `${rect.left}px`
+        child.element.style.top = `${rect.top}px`
+        child.element.style.width = `${rect.width}px`
+        child.element.style.height = `${rect.height}px`
+      })
+    }
     this.core.emit('window-restore', { child })
   }
 
@@ -372,6 +474,82 @@ export class UIWindowManager extends UIPanel {
 
   getFocused(): IWindowChild | null { return this._focused }
 
+  /** Find a window by its ID */
+  getById(id: string): IWindowChild | null {
+    return this._windows.find(c => c.windowId === id) ?? null
+  }
+
+  /** Find windows matching a predicate */
+  findWindows(predicate: (child: IWindowChild) => boolean): IWindowChild[] {
+    return this._windows.filter(predicate)
+  }
+
+  /** Find first window matching a predicate */
+  findWindow(predicate: (child: IWindowChild) => boolean): IWindowChild | null {
+    return this._windows.find(predicate) ?? null
+  }
+
+  /** Check if any window is in a given state */
+  hasState(state: WindowState): boolean {
+    return this._windows.some(c => c.windowState === state)
+  }
+
+  /** Get all managed windows */
+  getAll(): IWindowChild[] {
+    return [...this._windows]
+  }
+
+  /** Find first window by title */
+  getByTitle(title: string): IWindowChild | null {
+    return this._windows.find(c => c.title === title) ?? null
+  }
+
+  /** Find all windows by exact title */
+  getAllByTitle(title: string): IWindowChild[] {
+    return this._windows.filter(c => c.title === title)
+  }
+
+  /** Search windows by partial title (case-insensitive) */
+  searchByTitle(query: string): IWindowChild[] {
+    const q = query.toLowerCase()
+    return this._windows.filter(c => c.title?.toLowerCase().includes(q))
+  }
+
+  /** Get the maximized window excluding a specific child, or null */
+  getMaximizedExcluding(exclude: IWindowChild): IWindowChild | null {
+    return this._windows.find(c => c !== exclude && c.windowState === 'maximized') ?? null
+  }
+
+  /** Activate a window: restore maximized others, restore if minimized, bring to front */
+  activateWindow(child: IWindowChild): void {
+    // Restore any other maximized window first
+    const maximized = this.getMaximizedExcluding(child)
+    if (maximized) this.restoreMaximized(maximized)
+
+    // Restore if minimized
+    if (child.windowState === 'minimized') {
+      this.restoreChild(child)
+    } else {
+      this.bringToFront(child)
+    }
+  }
+
+  /** Change a window's topmost state dynamically */
+  setTopmost(child: IWindowChild, topmost: boolean): void {
+    const current = child.topmost ?? false
+    if (current === topmost) return
+    // Remove from current z-order list
+    const oldList = current ? this._zOrderTopmost : this._zOrder
+    const idx = oldList.indexOf(child)
+    if (idx !== -1) oldList.splice(idx, 1)
+    // Update the property
+    ;(child as any).topmost = topmost
+    // Add to new z-order list
+    const newList = topmost ? this._zOrderTopmost : this._zOrder
+    newList.push(child)
+    this._reassignZIndexes()
+  }
+
   // ── Drag/resize notification ──
 
   notifyDrag(child: IWindowChild, left: number, top: number): void {
@@ -410,11 +588,89 @@ export class UIWindowManager extends UIPanel {
     }
   }
 
+  // ── Animation helpers ──
+
+  /** Enable CSS transition on child, run a callback to set target state, clean up after transition. */
+  private _animateTransition(child: IWindowChild, apply: () => void, done?: () => void): void {
+    if (!this.animated || this._animating.has(child)) {
+      apply()
+      done?.()
+      return
+    }
+    this._animating.add(child)
+    const el = child.element
+    el.classList.add('wm-anim')
+
+    // Force layout so current position is the "from" state
+    void el.offsetHeight
+
+    apply()
+
+    const cleanup = () => {
+      el.classList.remove('wm-anim')
+      this._animating.delete(child)
+      done?.()
+    }
+
+    const onEnd = (e: TransitionEvent) => {
+      if (e.target !== el) return
+      el.removeEventListener('transitionend', onEnd)
+      clearTimeout(fallback)
+      cleanup()
+    }
+    el.addEventListener('transitionend', onEnd)
+    // Fallback in case transitionend doesn't fire
+    const fallback = window.setTimeout(cleanup, ANIM_DURATION + 50)
+  }
+
+  // ── Modal ──
+
+  private get _modalChild(): IWindowChild | null {
+    return this._modalStack.length > 0 ? this._modalStack[this._modalStack.length - 1].child : null
+  }
+
+  private _pushModal(child: IWindowChild): void {
+    const backdrop = document.createElement('div')
+    backdrop.className = 'ui-wm-backdrop'
+    const zBase = 9990 + this._modalStack.length * 10
+    Object.assign(backdrop.style, {
+      position: 'absolute',
+      inset: '0',
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      zIndex: String(zBase),
+    })
+    this.element.appendChild(backdrop)
+    child.setZIndex(zBase + 1)
+    this._modalStack.push({ child, backdrop })
+  }
+
+  private _popModal(child: IWindowChild): void {
+    const idx = this._modalStack.findIndex(m => m.child === child)
+    if (idx === -1) return
+    this._modalStack[idx].backdrop.remove()
+    this._modalStack.splice(idx, 1)
+  }
+
   // ── Internal ──
 
+  /** Get the z-order list a child belongs to */
+  private _zOrderFor(child: IWindowChild): IWindowChild[] {
+    return child.topmost ? this._zOrderTopmost : this._zOrder
+  }
+
   private _reassignZIndexes(): void {
+    // Normal windows: Z_BASE + i * Z_STEP
     for (let i = 0; i < this._zOrder.length; i++) {
-      this._zOrder[i].setZIndex(Z_BASE + i * Z_STEP)
+      if (!this._zOrder[i].modal) {
+        this._zOrder[i].setZIndex(Z_BASE + i * Z_STEP)
+      }
+    }
+    // Topmost windows: start above all normal windows
+    const topmostBase = Z_BASE + this._zOrder.length * Z_STEP + 100
+    for (let i = 0; i < this._zOrderTopmost.length; i++) {
+      if (!this._zOrderTopmost[i].modal) {
+        this._zOrderTopmost[i].setZIndex(topmostBase + i * Z_STEP)
+      }
     }
   }
 

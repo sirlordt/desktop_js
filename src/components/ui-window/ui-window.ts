@@ -1,7 +1,7 @@
 import { UIToolButton } from '../common/ui-tool-button'
 import { UIHint } from '../ui-hint/ui-hint'
 import { UIScrollBox } from '../ui-scrollbox/ui-scrollbox'
-import type { IWindowChild, WindowChildState, UIWindowOptions, ScrollMode } from '../common/types'
+import type { IWindowChild, WindowState, WindowKind, UIWindowOptions, ScrollMode, TitleAlign } from '../common/types'
 import type { UIWindowManager } from '../ui-window-manager/ui-window-manager'
 import './ui-window.css'
 
@@ -15,8 +15,10 @@ export class UIWindow implements IWindowChild {
   private _scrollBox: UIScrollBox | null = null
   private _bodyEl: HTMLDivElement
 
-  windowState: WindowChildState = 'normal'
+  windowState: WindowState = 'normal'
   readonly isFloating: boolean = true
+  readonly modal: boolean = false
+  readonly topmost: boolean = false
 
   manager: UIWindowManager | null = null
 
@@ -25,10 +27,11 @@ export class UIWindow implements IWindowChild {
   private _buttonsEl: HTMLDivElement
   private _leftSlot: HTMLDivElement
   private _rightSlot: HTMLDivElement
+  private _kind: WindowKind
   private _resizable: boolean
   private _movable: boolean
   private _showTitle: boolean
-  private _titleAlign: 'left' | 'center' | 'right'
+  private _titleAlign: TitleAlign
   private _minWidth: number
   private _minHeight: number
   private _maxWidth: number
@@ -46,28 +49,37 @@ export class UIWindow implements IWindowChild {
   private _dragStartTop: number = 0
 
   // Buttons
+  private _foldBtn: UIToolButton | null = null
   private _closeBtn: UIToolButton | null = null
   private _minBtn: UIToolButton | null = null
   private _maxBtn: UIToolButton | null = null
   private _btnSize: number
+  private _foldHint: UIHint | null = null
   private _minHint: UIHint | null = null
   private _maxHint: UIHint | null = null
   private _closeHint: UIHint | null = null
-  private _lastFocusedElement: HTMLElement | null = null
+  private _folded: boolean = false
+  private _foldVisible: boolean = false
+  private _foldRestoreHeight: number = 0
 
   constructor(options?: UIWindowOptions) {
     const o = options ?? {}
+    this._kind = o.kind ?? 'normal'
+    const isTool = this._kind === 'tool'
     this.windowId = o.id ?? `window-${++windowCounter}`
     this._title = o.title ?? 'Window'
     this._resizable = o.resizable ?? true
     this._movable = o.movable ?? true
+    this.autoUnfold = o.autoUnfold ?? false
+    ;(this as any).modal = o.modal ?? false
+    ;(this as any).topmost = o.topmost ?? false
     this._showTitle = o.showTitle ?? true
     this._titleAlign = o.titleAlign ?? 'left'
     this._minWidth = o.minWidth ?? 150
     this._minHeight = o.minHeight ?? 80
     this._maxWidth = o.maxWidth ?? Infinity
     this._maxHeight = o.maxHeight ?? Infinity
-    this._titleBarHeight = o.titleBarHeight ?? 28
+    this._titleBarHeight = o.titleBarHeight ?? (isTool ? 21 : 28)
     this._btnSize = Math.max(16, this._titleBarHeight - 8)
 
     // Root element
@@ -80,6 +92,7 @@ export class UIWindow implements IWindowChild {
     this.element.style.top = `${o.top ?? 50}px`
     this.element.style.width = `${o.width ?? 300}px`
     this.element.style.height = `${o.height ?? 200}px`
+    if (isTool) this.element.classList.add('ui-window--tool')
 
     // Titlebar
     this.titleBarElement = document.createElement('div')
@@ -112,7 +125,7 @@ export class UIWindow implements IWindowChild {
     this._titleEl = document.createElement('span')
     this._titleEl.className = 'ui-window__title'
     this._titleEl.textContent = this._title
-    if (!this._showTitle) this._titleEl.style.display = 'none'
+    if (!this._showTitle) this.titleBarElement.style.display = 'none'
     if (this._titleAlign !== 'left') this._titleEl.style.textAlign = this._titleAlign
     this.titleBarElement.appendChild(this._titleEl)
 
@@ -130,13 +143,23 @@ export class UIWindow implements IWindowChild {
     this._buttonsEl = document.createElement('div')
     this._buttonsEl.className = 'ui-window__buttons'
 
-    if (o.minimizable !== false) {
+    if (o.foldable !== false) {
+      this._foldBtn = new UIToolButton({ icon: 'chevron-up', size: this._btnSize, className: 'ui-window__fold-btn' })
+      this._foldBtn.onClick(() => this._toggleFold())
+      // Hidden by default — show via foldable setter
+      this._foldVisible = !!o.foldable
+      if (!o.foldable) this._foldBtn.element.style.display = 'none'
+      this._buttonsEl.appendChild(this._foldBtn.element)
+    }
+
+    const noMinMax = isTool || this.modal
+    if (!noMinMax && o.minimizable !== false) {
       this._minBtn = new UIToolButton({ icon: 'window-minimize', size: this._btnSize, className: 'ui-window__min-btn' })
       this._minBtn.onClick(() => this._requestMinimize())
       this._buttonsEl.appendChild(this._minBtn.element)
     }
 
-    if (o.maximizable !== false) {
+    if (!noMinMax && o.maximizable !== false) {
       this._maxBtn = new UIToolButton({ icon: 'window-maximize', size: this._btnSize, className: 'ui-window__max-btn' })
       this._maxBtn.onClick(() => this._requestMaximize())
       this._buttonsEl.appendChild(this._maxBtn.element)
@@ -153,14 +176,17 @@ export class UIWindow implements IWindowChild {
     // Hints for standard buttons
     if (o.showHints !== false) {
       const hintOpts = { trigger: 'hover' as const, showDelay: 400, hideDelay: 100, arrow: true }
+      if (this._foldBtn) {
+        this._foldHint = new UIHint({ anchor: this._foldBtn.element, content: 'Fold', ...hintOpts })
+      }
       if (this._minBtn) {
-        this._minHint = new UIHint({ anchor: this._minBtn.element, content: 'Minimize', ...hintOpts })
+        this._minHint = new UIHint({ anchor: this._minBtn.element, content: 'Minimize (F7)', ...hintOpts })
       }
       if (this._maxBtn) {
-        this._maxHint = new UIHint({ anchor: this._maxBtn.element, content: 'Maximize', ...hintOpts })
+        this._maxHint = new UIHint({ anchor: this._maxBtn.element, content: 'Maximize (F8)', ...hintOpts })
       }
       if (this._closeBtn) {
-        this._closeHint = new UIHint({ anchor: this._closeBtn.element, content: 'Close', ...hintOpts })
+        this._closeHint = new UIHint({ anchor: this._closeBtn.element, content: 'Close (F9)', ...hintOpts })
       }
     }
 
@@ -175,6 +201,7 @@ export class UIWindow implements IWindowChild {
         scroll,
         scrollBarSize: o.scrollBarSize ?? 'small',
         borderWidth: 0,
+        backgroundColor: 'inherit',
       })
       this._scrollBox.element.style.width = '100%'
       this._scrollBox.element.style.height = '100%'
@@ -200,6 +227,7 @@ export class UIWindow implements IWindowChild {
 
     // Focus trap — Tab cycles only within this window
     this._bindFocusTrap()
+
   }
 
   // ── Properties ──
@@ -210,17 +238,19 @@ export class UIWindow implements IWindowChild {
     this._titleEl.textContent = v
   }
 
+  get kind(): WindowKind { return this._kind }
+
   get movable(): boolean { return this._movable }
   set movable(v: boolean) { this._movable = v }
 
   get showTitle(): boolean { return this._showTitle }
   set showTitle(v: boolean) {
     this._showTitle = v
-    this._titleEl.style.display = v ? '' : 'none'
+    this.titleBarElement.style.display = v ? '' : 'none'
   }
 
-  get titleAlign(): 'left' | 'center' | 'right' { return this._titleAlign }
-  set titleAlign(v: 'left' | 'center' | 'right') {
+  get titleAlign(): TitleAlign { return this._titleAlign }
+  set titleAlign(v: TitleAlign) {
     this._titleAlign = v
     this._titleEl.style.textAlign = v
   }
@@ -243,6 +273,83 @@ export class UIWindow implements IWindowChild {
     this._scrollBox?.refresh()
   }
 
+  get minWidth(): number { return this._minWidth }
+  set minWidth(v: number) { this._minWidth = v }
+
+  get minHeight(): number { return this._minHeight }
+  set minHeight(v: number) { this._minHeight = v }
+
+  get maxWidth(): number { return this._maxWidth }
+  set maxWidth(v: number) { this._maxWidth = v }
+
+  get maxHeight(): number { return this._maxHeight }
+  set maxHeight(v: number) { this._maxHeight = v }
+
+  /** Change scroll mode dynamically. Rebuilds the body content area. */
+  setScroll(mode: ScrollMode, scrollBarSize?: 'tiny' | 'small' | 'medium' | 'large'): void {
+    // Remember which element had focus (will be lost during DOM rebuild)
+    const prevFocused = document.activeElement as HTMLElement | null
+    const hadFocusInBody = prevFocused && this._bodyEl.contains(prevFocused)
+
+    // Save current body children
+    const children: Node[] = []
+    const source = this.contentElement
+    while (source.firstChild) {
+      children.push(source.removeChild(source.firstChild))
+    }
+
+    // Destroy existing scrollbox
+    if (this._scrollBox) {
+      this._scrollBox.destroy()
+      this._scrollBox = null
+    }
+
+    // Clear body
+    this._bodyEl.innerHTML = ''
+
+    if (mode !== 'none') {
+      this._scrollBox = new UIScrollBox({
+        scroll: mode,
+        scrollBarSize: scrollBarSize ?? 'small',
+        borderWidth: 0,
+        backgroundColor: 'inherit',
+      })
+      this._scrollBox.element.style.width = '100%'
+      this._scrollBox.element.style.height = '100%'
+      this._bodyEl.appendChild(this._scrollBox.element)
+      this._bodyEl.style.overflow = 'hidden'
+      ;(this as any).contentElement = this._scrollBox.contentElement
+    } else {
+      this._bodyEl.style.overflow = 'hidden'
+      ;(this as any).contentElement = this._bodyEl
+    }
+
+    // Restore children
+    for (const child of children) {
+      this.contentElement.appendChild(child)
+    }
+
+    // Restore focus that was lost during DOM rebuild
+    if (hadFocusInBody && prevFocused && this._bodyEl.contains(prevFocused)) {
+      prevFocused.focus({ preventScroll: true })
+    }
+
+    // Auto-detect content size for scrollbox and make focused element visible
+    if (this._scrollBox) {
+      requestAnimationFrame(() => {
+        if (!this._scrollBox) return
+        const content = this._scrollBox.contentElement
+        this._scrollBox.contentWidth = content.scrollWidth
+        this._scrollBox.contentHeight = content.scrollHeight
+        this._scrollBox.refresh()
+        // Make the previously focused element visible
+        if (hadFocusInBody && prevFocused && this.contentElement.contains(prevFocused)) {
+          this._scrollBox.scrollIntoView(prevFocused)
+        }
+      })
+    }
+  }
+
   // ── Custom elements ──
 
   addLeftElement(el: HTMLElement): void {
@@ -251,6 +358,88 @@ export class UIWindow implements IWindowChild {
 
   addRightElement(el: HTMLElement): void {
     this._rightSlot.appendChild(el)
+  }
+
+  get folded(): boolean { return this._folded }
+
+  get foldable(): boolean { return this._foldVisible }
+  set foldable(v: boolean) {
+    this._foldVisible = v
+    if (this._foldBtn) this._foldBtn.element.style.display = v ? '' : 'none'
+    if (!v && this._folded) this._unfold()
+  }
+
+  autoUnfold: boolean = false
+
+  /** Programmatic fold */
+  fold(): void { this._fold() }
+
+  /** Programmatic unfold */
+  unfold(): void { this._unfold() }
+
+  private _toggleFold(): void {
+    if (this.windowState !== 'normal') return
+    if (this._folded) {
+      this._unfold()
+    } else {
+      this._fold()
+    }
+  }
+
+  private _emitFoldEvent(folding: boolean): boolean {
+    if (!this.manager) return false
+    const detail = { child: this, folding, cancelled: false }
+    this.manager.core.emit('before-fold', detail)
+    return detail.cancelled
+  }
+
+  private _fold(): void {
+    if (this._folded || this.windowState !== 'normal') return
+    if (this._emitFoldEvent(true)) return
+    this._folded = true
+    this._foldRestoreHeight = this.height
+    // Animate: transition height, then hide body
+    this.element.classList.add('wm-anim')
+    void this.element.offsetHeight
+    this._bodyEl.style.display = 'none'
+    this._setResizeHandlesVisible(false)
+    this.element.style.height = `${this._titleBarHeight}px`
+    const cleanup = () => { this.element.classList.remove('wm-anim') }
+    const onEnd = (e: Event) => { if (e.target === this.element) { cleanup(); this.element.removeEventListener('transitionend', onEnd) } }
+    this.element.addEventListener('transitionend', onEnd)
+    setTimeout(cleanup, 250)
+    if (this._foldBtn) this._foldBtn.icon = 'chevron-down'
+    if (this._foldHint) this._foldHint.content = 'Unfold'
+    if (this.manager) this.manager.core.emit('window-fold', { child: this, folded: true })
+  }
+
+  private _unfold(): void {
+    if (!this._folded) return
+    if (this._emitFoldEvent(false)) return
+    this._folded = false
+    // Animate: show body, transition height back
+    this._bodyEl.style.display = ''
+    this._setResizeHandlesVisible(this._resizable)
+    this.element.classList.add('wm-anim')
+    void this.element.offsetHeight
+    this.element.style.height = `${this._foldRestoreHeight}px`
+    const cleanup = () => { this.element.classList.remove('wm-anim') }
+    const onEnd = (e: Event) => { if (e.target === this.element) { cleanup(); this.element.removeEventListener('transitionend', onEnd) } }
+    this.element.addEventListener('transitionend', onEnd)
+    setTimeout(cleanup, 250)
+    if (this._foldBtn) this._foldBtn.icon = 'chevron-up'
+    if (this._foldHint) this._foldHint.content = 'Fold'
+    if (this.manager) this.manager.core.emit('window-fold', { child: this, folded: false })
+  }
+
+  /** Flash the titlebar and shake the window to attract attention without stealing focus */
+  flash(count: number = 3): void {
+    if (this._destroyed) return
+    this.element.classList.add('ui-window--flash')
+    const duration = count * 300
+    setTimeout(() => {
+      this.element.classList.remove('ui-window--flash')
+    }, duration)
   }
 
   // ── IWindowChild implementation ──
@@ -263,31 +452,43 @@ export class UIWindow implements IWindowChild {
         if (el !== this.titleBarElement) el.classList.remove('focused')
       })
     }
-    // Restore last focused element, or focus first body element
-    if (this._lastFocusedElement && this.element.contains(this._lastFocusedElement)) {
-      this._lastFocusedElement.focus()
+    // Restore last focused element, or fall back to first focusable
+    if (this._lastFocusedEl && this._bodyEl.contains(this._lastFocusedEl)) {
+      this._lastFocusedEl.focus({ preventScroll: true })
     } else {
-      const bodyFocusable = this._getBodyFocusableElements()
-      if (bodyFocusable.length > 0) {
-        bodyFocusable[0].focus()
-      } else {
-        this.element.focus()
-      }
+      const els = this._getBodyFocusable()
+      if (els.length > 0) els[0].focus({ preventScroll: true })
     }
+    if (!this._hasActiveHScroll()) this._bodyEl.scrollLeft = 0
+    if (!this._hasActiveVScroll()) this._bodyEl.scrollTop = 0
+  }
+
+  onBlurred(): void {
+    this.titleBarElement.classList.remove('focused')
   }
 
   onMinimized(): void {
     this.titleBarElement.classList.remove('focused')
     this._bodyEl.style.display = 'none'
     this._setResizeHandlesVisible(false)
+    if (this._foldBtn) this._foldBtn.element.style.display = 'none'
     if (this._minBtn) this._minBtn.icon = 'window-restore'
     if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
     this._updateHintTexts('minimized')
   }
 
   onRestored(): void {
-    this._bodyEl.style.display = ''
-    this._setResizeHandlesVisible(this._resizable)
+    // If folded, restore to folded state (body hidden, titlebar height)
+    if (this._folded && !this.autoUnfold) {
+      this._bodyEl.style.display = 'none'
+      this._setResizeHandlesVisible(false)
+      this.element.style.height = `${this._titleBarHeight}px`
+    } else {
+      if (this._folded) this._unfold()
+      this._bodyEl.style.display = ''
+      this._setResizeHandlesVisible(this._resizable)
+    }
+    if (this._foldBtn && this.foldable) this._foldBtn.element.style.display = ''
     if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
     if (this._minBtn) this._minBtn.icon = 'window-minimize'
     this._updateHintTexts('normal')
@@ -296,6 +497,7 @@ export class UIWindow implements IWindowChild {
   onMaximized(): void {
     this._bodyEl.style.display = ''
     this._setResizeHandlesVisible(false)
+    if (this._foldBtn) this._foldBtn.element.style.display = 'none'
     if (this._maxBtn) this._maxBtn.icon = 'window-restore'
     if (this._minBtn) this._minBtn.icon = 'window-minimize'
     this._updateHintTexts('maximized')
@@ -303,9 +505,9 @@ export class UIWindow implements IWindowChild {
 
   onClosed(): void {}
 
-  private _updateHintTexts(state: WindowChildState): void {
-    if (this._minHint) this._minHint.content = state === 'minimized' ? 'Restore' : 'Minimize'
-    if (this._maxHint) this._maxHint.content = state === 'maximized' ? 'Restore' : 'Maximize'
+  private _updateHintTexts(state: WindowState): void {
+    if (this._minHint) this._minHint.content = state === 'minimized' ? 'Restore (F7)' : 'Minimize (F7)'
+    if (this._maxHint) this._maxHint.content = state === 'maximized' ? 'Restore (F8)' : 'Maximize (F8)'
   }
 
   setZIndex(z: number): void {
@@ -323,7 +525,7 @@ export class UIWindow implements IWindowChild {
   }
 
   private _requestMinimize(): void {
-    if (!this.manager) return
+    if (!this.manager || this._kind === 'tool' || this.modal) return
     if (this.windowState === 'minimized') {
       this.manager.restoreChild(this)
     } else {
@@ -332,7 +534,7 @@ export class UIWindow implements IWindowChild {
   }
 
   private _requestMaximize(): void {
-    if (!this.manager) return
+    if (!this.manager || this._kind === 'tool' || this.modal) return
     if (this.windowState === 'maximized') {
       this.manager.restoreMaximized(this)
     } else {
@@ -472,61 +674,85 @@ export class UIWindow implements IWindowChild {
     })
   }
 
-  // ── Focus management ──
+  // ── Scroll helpers ──
 
-  private _focusableSelector = '.ui-toolbtn:not(.disabled), ui-button, button, [href], input, select, textarea'
-
-  private _getBodyFocusableElements(): HTMLElement[] {
-    return Array.from(this._bodyEl.querySelectorAll(this._focusableSelector)) as HTMLElement[]
+  private _hasActiveHScroll(): boolean {
+    if (!this._scrollBox) return false
+    const sb = this._scrollBox.hScrollBottom ?? this._scrollBox.hScrollTop
+    return sb !== null && sb.element.style.display !== 'none'
   }
 
-  private _getAllFocusable(): HTMLElement[] {
-    return Array.from(this.element.querySelectorAll(this._focusableSelector)) as HTMLElement[]
+  private _hasActiveVScroll(): boolean {
+    if (!this._scrollBox) return false
+    const sb = this._scrollBox.vScrollRight ?? this._scrollBox.vScrollLeft
+    return sb !== null && sb.element.style.display !== 'none'
+  }
+
+  // ── Focus cycle ──
+  // Tab/Shift+Tab cycles through [data-focusable] children in the body.
+  // The window just calls .focus() — each child handles its own visual focus.
+  // Titlebar buttons are NOT part of the cycle.
+
+  private _lastFocusedEl: HTMLElement | null = null
+
+  private _getBodyFocusable(): HTMLElement[] {
+    return Array.from(this._bodyEl.querySelectorAll('[data-focusable]')).filter(el => {
+      return !(el as HTMLInputElement).disabled
+    }) as HTMLElement[]
   }
 
   private _bindFocusTrap(): void {
-    // Track focus to remember last position
-    this.element.addEventListener('focusin', (e: Event) => {
+    // Track which element last had focus inside the body
+    this._bodyEl.addEventListener('focusin', (e: Event) => {
       const target = e.target as HTMLElement
-      if (target && target !== this.element) {
-        this._lastFocusedElement = target
+      if (target && target !== this._bodyEl) {
+        this._lastFocusedEl = target
       }
     })
 
-    // Intercept Tab at the document level when this window is focused
+    // Click on body: focus the target if [data-focusable], otherwise prevent focus loss
+    this._bodyEl.addEventListener('mousedown', (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest('[data-focusable]') as HTMLElement | null
+      if (target) {
+        target.focus()
+      } else {
+        // Clicking empty body area — prevent browser from moving focus away
+        e.preventDefault()
+      }
+    })
+
+    // Tab/Shift+Tab cycle within body focusable elements
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
-      // Only trap if focus is inside this window
-      if (!this.element.contains(document.activeElement)) return
+      if (!this.titleBarElement.classList.contains('focused')) return
 
-      const focusable = this._getAllFocusable()
-      if (focusable.length === 0) return
+      const els = this._getBodyFocusable()
+      if (els.length === 0) return
 
-      // Find current index
-      let idx = -1
+      e.preventDefault()
+
+      // Find current focused index
       const active = document.activeElement as HTMLElement
-      for (let i = 0; i < focusable.length; i++) {
-        if (focusable[i] === active || focusable[i].contains(active)) {
-          idx = i
-          break
-        }
+      let idx = -1
+      for (let i = 0; i < els.length; i++) {
+        if (els[i] === active || els[i].contains(active)) { idx = i; break }
       }
 
+      let target: HTMLElement
       if (e.shiftKey) {
-        // Shift+Tab: if at first or not found, wrap to last
-        if (idx <= 0) {
-          e.preventDefault()
-          focusable[focusable.length - 1].focus()
-        }
-        // else: let browser handle normally (moves to previous in DOM)
+        const prev = idx <= 0 ? els.length - 1 : idx - 1
+        target = els[prev]
       } else {
-        // Tab: if at last or not found, wrap to first
-        if (idx >= focusable.length - 1 || idx === -1) {
-          e.preventDefault()
-          focusable[0].focus()
-        }
-        // else: let browser handle normally (moves to next in DOM)
+        const next = (idx + 1) % els.length
+        target = els[next]
       }
+      target.focus({ preventScroll: true })
+      // Scroll into view via scrollbox, or reset native scroll
+      if (this._scrollBox) {
+        this._scrollBox.scrollIntoView(target)
+      }
+      if (!this._hasActiveHScroll()) this._bodyEl.scrollLeft = 0
+      if (!this._hasActiveVScroll()) this._bodyEl.scrollTop = 0
     }
 
     document.addEventListener('keydown', handler, true)
@@ -542,9 +768,11 @@ export class UIWindow implements IWindowChild {
     if (this._destroyed) return
     this._destroyed = true
     this._scrollBox?.destroy()
+    this._foldHint?.destroy()
     this._minHint?.destroy()
     this._maxHint?.destroy()
     this._closeHint?.destroy()
+    this._foldBtn?.destroy()
     this._closeBtn?.destroy()
     this._minBtn?.destroy()
     this._maxBtn?.destroy()

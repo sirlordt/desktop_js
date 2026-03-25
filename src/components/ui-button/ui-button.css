@@ -112,8 +112,8 @@
   --_btn-border-color: var(--accent-hover-color);
 }
 
-:host(:not([variant])) .ui-btn:active,
-:host([variant="solid"]) .ui-btn:active,
+:host(:not([variant])) .ui-btn:hover:active,
+:host([variant="solid"]) .ui-btn:hover:active,
 :host(:not([variant])[pressed]) .ui-btn,
 :host([variant="solid"][pressed]) .ui-btn {
   --_btn-bg: var(--accent-active-color);
@@ -134,7 +134,7 @@
   --_btn-fg: var(--accent-fg-color);
 }
 
-:host([variant="outline"]) .ui-btn:active,
+:host([variant="outline"]) .ui-btn:hover:active,
 :host([variant="outline"][pressed]) .ui-btn {
   --_btn-bg: var(--accent-active-color);
   --_btn-fg: var(--accent-fg-color);
@@ -154,7 +154,7 @@
   --_btn-bg: var(--button-hover-bg-color);
 }
 
-:host([variant="ghost"]) .ui-btn:active,
+:host([variant="ghost"]) .ui-btn:hover:active,
 :host([variant="ghost"][pressed]) .ui-btn {
   --_btn-bg: var(--button-active-bg-color);
 }
@@ -176,7 +176,7 @@
   filter: brightness(0.9);
 }
 
-:host([variant="danger"]) .ui-btn:active,
+:host([variant="danger"]) .ui-btn:hover:active,
 :host([variant="danger"][pressed]) .ui-btn {
   filter: brightness(0.8);
 }
@@ -198,7 +198,7 @@
   filter: brightness(0.9);
 }
 
-:host([variant="warning"]) .ui-btn:active,
+:host([variant="warning"]) .ui-btn:hover:active,
 :host([variant="warning"][pressed]) .ui-btn {
   filter: brightness(0.8);
 }
@@ -217,7 +217,7 @@
   --_btn-border-color: var(--accent-hover-color);
 }
 
-:host([variant="info"]) .ui-btn:active,
+:host([variant="info"]) .ui-btn:hover:active,
 :host([variant="info"][pressed]) .ui-btn {
   --_btn-bg: var(--accent-active-color);
   --_btn-border-color: var(--accent-active-color);
@@ -240,7 +240,7 @@
   filter: brightness(0.9);
 }
 
-:host([variant="success"]) .ui-btn:active,
+:host([variant="success"]) .ui-btn:hover:active,
 :host([variant="success"][pressed]) .ui-btn {
   filter: brightness(0.8);
 }
@@ -271,13 +271,13 @@
 
 /* ── Pressed (toggle) — GTK4 scale effect ── */
 
-:host(:not([variant])) .ui-btn:active,
-:host([variant="solid"]) .ui-btn:active,
-:host([variant="outline"]) .ui-btn:active,
-:host([variant="danger"]) .ui-btn:active,
-:host([variant="warning"]) .ui-btn:active,
-:host([variant="info"]) .ui-btn:active,
-:host([variant="success"]) .ui-btn:active {
+:host(:not([variant])) .ui-btn:hover:active,
+:host([variant="solid"]) .ui-btn:hover:active,
+:host([variant="outline"]) .ui-btn:hover:active,
+:host([variant="danger"]) .ui-btn:hover:active,
+:host([variant="warning"]) .ui-btn:hover:active,
+:host([variant="info"]) .ui-btn:hover:active,
+:host([variant="success"]) .ui-btn:hover:active {
   transform: scale(0.98);
 }
 
@@ -394,8 +394,32 @@
 
 /* WIN95 Hover: no background change (authentic Win95 behavior) */
 
-/* WIN95 Active/Pressed: 3D inset (sunken) + shift content 1px down-right */
+/* WIN95: reset to raised when mouse leaves while pressed */
 :host(.win95) .ui-btn:active,
+:host(.win95:not([variant])) .ui-btn:active,
+:host(.win95[variant="solid"]) .ui-btn:active,
+:host(.win95[variant="outline"]) .ui-btn:active,
+:host(.win95[variant="ghost"]) .ui-btn:active,
+:host(.win95[variant="danger"]) .ui-btn:active,
+:host(.win95[variant="warning"]) .ui-btn:active,
+:host(.win95[variant="info"]) .ui-btn:active,
+:host(.win95[variant="success"]) .ui-btn:active {
+  transform: none;
+  filter: none;
+  background: var(--btn-3d-face);
+  box-shadow:
+    inset 1px 1px 0 var(--btn-3d-light),
+    inset 2px 2px 0 var(--btn-3d-mid-light),
+    inset -1px -1px 0 var(--btn-3d-dark),
+    inset -2px -2px 0 var(--btn-3d-mid-dark);
+  padding-top: var(--_win95-pad-v);
+  padding-left: var(--_win95-pad-h);
+  padding-bottom: var(--_win95-pad-v);
+  padding-right: var(--_win95-pad-h);
+}
+
+/* WIN95 Active/Pressed: 3D inset (sunken) + shift content 1px down-right */
+:host(.win95) .ui-btn:hover:active,
 :host(.win95[pressed]) .ui-btn {
   transform: none;
   filter: none;
@@ -412,12 +436,12 @@
 }
 
 /* WIN95 Solid + status pressed: double white line bottom-right */
-:host(.win95:not([variant])) .ui-btn:active,
-:host(.win95[variant="solid"]) .ui-btn:active,
-:host(.win95[variant="danger"]) .ui-btn:active,
-:host(.win95[variant="warning"]) .ui-btn:active,
-:host(.win95[variant="info"]) .ui-btn:active,
-:host(.win95[variant="success"]) .ui-btn:active,
+:host(.win95:not([variant])) .ui-btn:hover:active,
+:host(.win95[variant="solid"]) .ui-btn:hover:active,
+:host(.win95[variant="danger"]) .ui-btn:hover:active,
+:host(.win95[variant="warning"]) .ui-btn:hover:active,
+:host(.win95[variant="info"]) .ui-btn:hover:active,
+:host(.win95[variant="success"]) .ui-btn:hover:active,
 :host(.win95:not([variant])[pressed]) .ui-btn,
 :host(.win95[variant="solid"][pressed]) .ui-btn,
 :host(.win95[variant="danger"][pressed]) .ui-btn,
@@ -452,7 +476,7 @@
 }
 
 /* Shift focus rect with content when pressed */
-:host(.win95) .ui-btn:active:focus::after,
+:host(.win95) .ui-btn:hover:active:focus::after,
 :host(.win95[pressed]) .ui-btn:focus::after {
   top: 6px;
   left: 6px;

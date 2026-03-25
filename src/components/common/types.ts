@@ -1,11 +1,24 @@
-export type DimensionKind = 'set' | 'dynamic'
+export const DimensionKind = {
+  Set: 'set',
+  Dynamic: 'dynamic',
+} as const
+export type DimensionKind = typeof DimensionKind[keyof typeof DimensionKind]
 
 export interface DimensionProp {
   kind: DimensionKind
   value: number
 }
 
-export type Align = 'none' | 'left' | 'top' | 'right' | 'bottom' | 'center' | 'client'
+export const Align = {
+  None: 'none',
+  Left: 'left',
+  Top: 'top',
+  Right: 'right',
+  Bottom: 'bottom',
+  Center: 'center',
+  Client: 'client',
+} as const
+export type Align = typeof Align[keyof typeof Align]
 
 export interface Anchors {
   toLeft: boolean
@@ -21,22 +34,54 @@ export interface Rect {
   height: number
 }
 
-export type UISize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | 'custom'
+export const UISize = {
+  Tiny: 'tiny',
+  Small: 'small',
+  Medium: 'medium',
+  Large: 'large',
+  XLarge: 'xlarge',
+  Custom: 'custom',
+} as const
+export type UISize = typeof UISize[keyof typeof UISize]
 
-export type UIPosition = 'fluid' | 'relative' | 'absolute'
+export const UIPosition = {
+  Fluid: 'fluid',
+  Relative: 'relative',
+  Absolute: 'absolute',
+} as const
+export type UIPosition = typeof UIPosition[keyof typeof UIPosition]
 
 // ── Hint types ──
 
-export type HintAlignment =
-  | 'BottomLeft' | 'BottomCenter' | 'BottomRight'
-  | 'RightTop'   | 'RightCenter'  | 'RightBottom'
-  | 'TopLeft'    | 'TopCenter'    | 'TopRight'
-  | 'LeftTop'    | 'LeftCenter'   | 'LeftBottom'
-  | 'MouseCursor'
+export const HintAlignment = {
+  BottomLeft: 'BottomLeft',
+  BottomCenter: 'BottomCenter',
+  BottomRight: 'BottomRight',
+  RightTop: 'RightTop',
+  RightCenter: 'RightCenter',
+  RightBottom: 'RightBottom',
+  TopLeft: 'TopLeft',
+  TopCenter: 'TopCenter',
+  TopRight: 'TopRight',
+  LeftTop: 'LeftTop',
+  LeftCenter: 'LeftCenter',
+  LeftBottom: 'LeftBottom',
+  MouseCursor: 'MouseCursor',
+} as const
+export type HintAlignment = typeof HintAlignment[keyof typeof HintAlignment]
 
-export type HintTrigger = 'hover' | 'click' | 'programmatic'
+export const HintTrigger = {
+  Hover: 'hover',
+  Click: 'click',
+  Programmatic: 'programmatic',
+} as const
+export type HintTrigger = typeof HintTrigger[keyof typeof HintTrigger]
 
-export type HintAnimation = 'fade' | 'none'
+export const HintAnimation = {
+  Fade: 'fade',
+  None: 'none',
+} as const
+export type HintAnimation = typeof HintAnimation[keyof typeof HintAnimation]
 
 export interface UIHintOptions {
   anchor: HTMLElement
@@ -61,9 +106,21 @@ export interface UIHintOptions {
 
 // ── ScrollBar types ──
 
-export type ScrollBarKind = 'horizontal' | 'vertical'
+export const ScrollBarKind = {
+  Horizontal: 'horizontal',
+  Vertical: 'vertical',
+} as const
+export type ScrollBarKind = typeof ScrollBarKind[keyof typeof ScrollBarKind]
 
-export type ScrollBarSize = 'tiny' | 'small' | 'medium' | 'large' | 'xlarge' | 'custom'
+export const ScrollBarSize = {
+  Tiny: 'tiny',
+  Small: 'small',
+  Medium: 'medium',
+  Large: 'large',
+  XLarge: 'xlarge',
+  Custom: 'custom',
+} as const
+export type ScrollBarSize = typeof ScrollBarSize[keyof typeof ScrollBarSize]
 
 export interface TooltipColorRange {
   from: number
@@ -101,11 +158,27 @@ export interface UIScrollBarOptions {
 
 // ── ScrollBox types ──
 
-export type ScrollMode = 'none' | 'vertical' | 'horizontal' | 'both'
+export const ScrollMode = {
+  None: 'none',
+  Vertical: 'vertical',
+  Horizontal: 'horizontal',
+  Both: 'both',
+} as const
+export type ScrollMode = typeof ScrollMode[keyof typeof ScrollMode]
 
-export type VerticalScrollPosition = 'left' | 'right' | 'both'
+export const VerticalScrollPosition = {
+  Left: 'left',
+  Right: 'right',
+  Both: 'both',
+} as const
+export type VerticalScrollPosition = typeof VerticalScrollPosition[keyof typeof VerticalScrollPosition]
 
-export type HorizontalScrollPosition = 'top' | 'bottom' | 'both'
+export const HorizontalScrollPosition = {
+  Top: 'top',
+  Bottom: 'bottom',
+  Both: 'both',
+} as const
+export type HorizontalScrollPosition = typeof HorizontalScrollPosition[keyof typeof HorizontalScrollPosition]
 
 export interface ScrollBoxScrollBarConfig {
   hover?: boolean
@@ -140,11 +213,16 @@ export interface UIScrollBoxOptions {
 
 // ── WindowManager types ──
 
-export type WindowChildState = 'normal' | 'minimized' | 'maximized'
+export const WindowState = {
+  Normal: 'normal',
+  Minimized: 'minimized',
+  Maximized: 'maximized',
+} as const
+export type WindowState = typeof WindowState[keyof typeof WindowState]
 
 export interface WindowChildInfo {
   id: string
-  state: WindowChildState
+  state: WindowState
   zIndex: number
   left: number
   top: number
@@ -155,15 +233,33 @@ export interface WindowChildInfo {
 export interface IWindowChild {
   readonly windowId: string
   readonly element: HTMLElement
-  windowState: WindowChildState
+  title?: string
+  readonly kind?: WindowKind
+  readonly modal?: boolean
+  readonly topmost?: boolean
+  windowState: WindowState
   readonly isFloating: boolean
   onFocused?(): void
+  onBlurred?(): void
   onMinimized?(): void
   onRestored?(): void
   onClosed?(): void
   setZIndex(z: number): void
   setVisible(v: boolean): void
 }
+
+export const WindowKind = {
+  Normal: 'normal',
+  Tool: 'tool',
+} as const
+export type WindowKind = typeof WindowKind[keyof typeof WindowKind]
+
+export const TitleAlign = {
+  Left: 'left',
+  Center: 'center',
+  Right: 'right',
+} as const
+export type TitleAlign = typeof TitleAlign[keyof typeof TitleAlign]
 
 export interface WindowCycleShortcut {
   key: string
@@ -184,6 +280,7 @@ export interface UIWindowManagerOptions {
 }
 
 export interface UIWindowOptions {
+  kind?: WindowKind
   id?: string
   title?: string
   left?: number
@@ -197,12 +294,16 @@ export interface UIWindowOptions {
   resizable?: boolean
   movable?: boolean
   closable?: boolean
+  foldable?: boolean
+  autoUnfold?: boolean
+  modal?: boolean
+  topmost?: boolean
   minimizable?: boolean
   maximizable?: boolean
   titleBarHeight?: number
   icon?: HTMLElement | string
   showTitle?: boolean
-  titleAlign?: 'left' | 'center' | 'right'
+  titleAlign?: TitleAlign
   leftElements?: HTMLElement[]
   rightElements?: HTMLElement[]
   scroll?: ScrollMode

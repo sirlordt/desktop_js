@@ -78,6 +78,12 @@
 .ui-scrollbar.win95-light .ui-scrollbar__track,
 .ui-scrollbar.win95-dark .ui-scrollbar__track { border: none; }
 
+/* WIN95: no hover effects on thumb or buttons */
+.ui-scrollbar.win95-light .ui-scrollbar__thumb,
+.ui-scrollbar.win95-dark .ui-scrollbar__thumb,
+.ui-scrollbar.win95-light .ui-scrollbar__btn,
+.ui-scrollbar.win95-dark .ui-scrollbar__btn { cursor: default; }
+
 .ui-scrollbar.win95-light.horizontal .ui-scrollbar__thumb,
 .ui-scrollbar.win95-dark.horizontal .ui-scrollbar__thumb { top: 0; bottom: 0; }
 .ui-scrollbar.win95-light.vertical .ui-scrollbar__thumb,
@@ -247,10 +253,14 @@
 /* Override UIToolButton defaults inside scrollbar — scrollbar CSS handles all styling */
 .ui-scrollbar .ui-toolbtn {
   opacity: 1;
+  outline: none;
 }
 .ui-scrollbar .ui-toolbtn:hover,
 .ui-scrollbar .ui-toolbtn:active {
   opacity: 1;
+}
+.ui-scrollbar .ui-toolbtn:focus {
+  outline: none;
 }
 
 .ui-scrollbar.tiny.horizontal .ui-scrollbar__btn   { width: 10px; height: 100%; }

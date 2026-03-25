@@ -110,6 +110,10 @@ export class UIScrollBar {
     // Cross-axis must fill the scrollbar, not be square
     this._fixToolBtnCrossAxis()
 
+    // Scrollbar buttons should not be in Tab order
+    this._decToolBtn.element.tabIndex = -1
+    this._incToolBtn.element.tabIndex = -1
+
     this._startEl.appendChild(this._decToolBtn.element)
     this._trackEl.appendChild(this._thumbEl)
     this._endEl.appendChild(this._incToolBtn.element)
@@ -212,8 +216,8 @@ export class UIScrollBar {
   get thumbElement(): HTMLDivElement { return this._thumbEl }
   get startElement(): HTMLDivElement { return this._startEl }
   get endElement(): HTMLDivElement { return this._endEl }
-  get decButtonElement(): HTMLDivElement { return this._decToolBtn.element }
-  get incButtonElement(): HTMLDivElement { return this._incToolBtn.element }
+  get decButtonElement(): HTMLElement { return this._decToolBtn.element }
+  get incButtonElement(): HTMLElement { return this._incToolBtn.element }
 
   setVar(name: string, value: string): void {
     this._el.style.setProperty(name, value)
@@ -388,6 +392,7 @@ export class UIScrollBar {
     } else {
       thumbSize = Math.max(THUMB_MIN_SIZE, usable * (this.pageStep / (range + this.pageStep)))
     }
+    thumbSize = Math.min(thumbSize, usable)
 
     const ratio = (this._value - this._min) / range
     const thumbPos = ratio * (usable - thumbSize)
@@ -413,9 +418,9 @@ export class UIScrollBar {
 
   private _getThumbSize(trackSize: number): number {
     const usable = trackSize
-    if (this.thumbSize !== null) return this._resolveThumbSize(usable)
+    if (this.thumbSize !== null) return Math.min(this._resolveThumbSize(usable), usable)
     const range = this._max - this._min
-    return Math.max(THUMB_MIN_SIZE, usable * (this.pageStep / (range + this.pageStep)))
+    return Math.min(usable, Math.max(THUMB_MIN_SIZE, usable * (this.pageStep / (range + this.pageStep))))
   }
 
   // =====================

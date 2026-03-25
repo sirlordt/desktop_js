@@ -173,6 +173,31 @@ export class UIScrollBox {
     if (canV && dy !== 0) this.scrollY = this._scrollY + dy
   }
 
+  /** Scroll the minimum amount needed to make a child element fully visible */
+  scrollIntoView(el: HTMLElement): void {
+    if (!this._contentEl.contains(el)) return
+    const clipRect = this._contentClip.getBoundingClientRect()
+    const elRect = el.getBoundingClientRect()
+    const canH = this._scroll === 'horizontal' || this._scroll === 'both'
+    const canV = this._scroll === 'vertical' || this._scroll === 'both'
+
+    if (canH) {
+      if (elRect.left < clipRect.left) {
+        this.scrollX = this._scrollX - (clipRect.left - elRect.left)
+      } else if (elRect.right > clipRect.right) {
+        this.scrollX = this._scrollX + (elRect.right - clipRect.right)
+      }
+    }
+
+    if (canV) {
+      if (elRect.top < clipRect.top) {
+        this.scrollY = this._scrollY - (clipRect.top - elRect.top)
+      } else if (elRect.bottom > clipRect.bottom) {
+        this.scrollY = this._scrollY + (elRect.bottom - clipRect.bottom)
+      }
+    }
+  }
+
   onScroll(handler: ScrollEventHandler): this {
     this._scrollListeners.add(handler)
     return this
@@ -387,6 +412,7 @@ export class UIScrollBox {
     for (const sb of [this._hScrollTop, this._hScrollBottom]) {
       if (sb) {
         sb.max = maxX
+        sb.pageStep = visW
         sb.value = this._scrollX
         sb.element.style.display = needH ? '' : 'none'
       }
@@ -394,6 +420,7 @@ export class UIScrollBox {
     for (const sb of [this._vScrollLeft, this._vScrollRight]) {
       if (sb) {
         sb.max = maxY
+        sb.pageStep = visH
         sb.value = this._scrollY
         sb.element.style.display = needV ? '' : 'none'
       }

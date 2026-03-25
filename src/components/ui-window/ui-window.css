@@ -12,6 +12,49 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
+/* =====================
+   Animations
+   ===================== */
+.ui-window.wm-anim {
+  transition: left 0.2s ease, top 0.2s ease, width 0.2s ease, height 0.2s ease,
+              transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Open: start hidden, animate in */
+.ui-window.wm-anim-open-start {
+  transform: scale(0.85);
+  opacity: 0;
+}
+
+/* Close: animate out */
+.ui-window.wm-anim-close {
+  transform: scale(0.85);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Flash: titlebar blink + shake */
+.ui-window.ui-window--flash {
+  animation: ui-window-shake 0.3s ease infinite;
+}
+
+.ui-window.ui-window--flash .ui-window__titlebar {
+  animation: ui-window-flash-titlebar 0.3s ease infinite;
+}
+
+@keyframes ui-window-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  40% { transform: translateX(3px); }
+  60% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes ui-window-flash-titlebar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .ui-window__titlebar {
   display: flex;
   align-items: center;
@@ -83,7 +126,7 @@
 
 .ui-window__body {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   position: relative;
   background-color: var(--view-bg-color);
 }
@@ -164,17 +207,21 @@
   color: #000;
 }
 
-[data-theme^="win95"] .ui-window__buttons .ui-toolbtn:hover {
-  background-color: var(--btn-3d-face, #c0c0c0);
+[data-theme^="win95"] .ui-window__titlebar.focused .ui-window__buttons .ui-toolbtn {
+  --_wm-restore-bg: var(--btn-3d-face, #c0c0c0);
 }
 
+
+[data-theme^="win95"] .ui-window__buttons .ui-toolbtn:hover,
 [data-theme^="win95"] .ui-window__buttons .ui-toolbtn:active {
-  border-color: var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf) var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040);
-}
-
-[data-theme^="win95"] .ui-window__buttons .ui-window__close-btn:hover {
   background-color: var(--btn-3d-face, #c0c0c0);
   color: #000;
+  opacity: 1;
+  border-color: var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040) var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf);
+}
+
+[data-theme^="win95"] .ui-window__buttons .ui-toolbtn:hover:active {
+  border-color: var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf) var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040);
 }
 
 /* WIN95: close button separated from min/max */
@@ -184,4 +231,44 @@
 
 [data-theme^="win95"] .ui-window__body {
   border-top: 1px solid var(--btn-3d-dark, #404040);
+  background-color: var(--btn-3d-face, #c0c0c0);
+}
+
+/* WIN95 Dark: scrollbars inside windows follow btn-face scheme */
+[data-theme="win95-dark"] .ui-window .ui-scrollbar {
+  --sb-track-bg: var(--btn-3d-face);
+  --sb-track-hover-bg: var(--btn-3d-face);
+  --sb-thumb-bg: var(--btn-3d-face);
+  --sb-thumb-hover-bg: var(--btn-3d-face);
+  --sb-thumb-drag-bg: var(--btn-3d-face);
+  --sb-btn-bg: var(--btn-3d-face);
+  --sb-btn-hover-bg: var(--btn-3d-face);
+  --sb-btn-color: var(--button-fg-color);
+}
+
+[data-theme="win95-dark"] .ui-window .ui-scrollbar__btn {
+  background-color: var(--btn-3d-face);
+  border-color: var(--btn-3d-light) var(--btn-3d-dark) var(--btn-3d-dark) var(--btn-3d-light);
+}
+[data-theme="win95-dark"] .ui-window .ui-scrollbar__btn:active {
+  border-color: var(--btn-3d-dark) var(--btn-3d-light) var(--btn-3d-light) var(--btn-3d-dark);
+}
+
+[data-theme="win95-dark"] .ui-window .ui-scrollbar__thumb,
+[data-theme="win95-dark"] .ui-window .ui-scrollbar__thumb:hover {
+  background-color: var(--btn-3d-face);
+  border-color: var(--btn-3d-light) var(--btn-3d-dark) var(--btn-3d-dark) var(--btn-3d-light);
+}
+[data-theme="win95-dark"] .ui-window .ui-scrollbar__thumb.dragging {
+  background-color: var(--btn-3d-face);
+  border-color: var(--btn-3d-dark) var(--btn-3d-light) var(--btn-3d-light) var(--btn-3d-dark);
+}
+
+[data-theme="win95-dark"] .ui-window .ui-scrollbar__track {
+  background-color: #a0a0a0;
+  background-image:
+    linear-gradient(45deg, #909090 25%, transparent 25%, transparent 75%, #909090 75%),
+    linear-gradient(45deg, #909090 25%, transparent 25%, transparent 75%, #909090 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
 }

@@ -17,6 +17,10 @@
   opacity: 0.8;
 }
 
+.ui-toolbtn:focus {
+  outline: none;
+}
+
 .ui-toolbtn:active {
   opacity: 0.6;
 }

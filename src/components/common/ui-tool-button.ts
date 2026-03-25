@@ -28,7 +28,7 @@ export class UIToolButton {
   private _repeatInterval: number
   private _destroyed: boolean = false
 
-  private _el: HTMLDivElement
+  private _el: HTMLButtonElement
   private _iconEl: HTMLDivElement
 
   private _clickHandlers: Set<() => void> = new Set()
@@ -48,15 +48,14 @@ export class UIToolButton {
     this._repeatDelay = o.repeatDelay ?? 400
     this._repeatInterval = o.repeatInterval ?? 50
 
-    this._el = document.createElement('div')
+    this._el = document.createElement('button')
+    this._el.type = 'button'
     this._el.className = 'ui-toolbtn'
     if (o.className) this._el.classList.add(...o.className.split(/\s+/))
 
     this._iconEl = document.createElement('div')
     this._iconEl.className = 'ui-toolbtn__icon'
     this._el.appendChild(this._iconEl)
-
-    this._el.tabIndex = 0
     this._applySize()
     this._renderIcon()
 
@@ -67,7 +66,7 @@ export class UIToolButton {
 
   // ── Public API ──
 
-  get element(): HTMLDivElement { return this._el }
+  get element(): HTMLButtonElement { return this._el }
   get iconElement(): HTMLDivElement { return this._iconEl }
 
   get icon(): ToolButtonIcon | null { return this._icon }
@@ -243,18 +242,17 @@ export class UIToolButton {
     svg.setAttribute('fill', 'none')
     svg.setAttribute('stroke', 'currentColor')
     svg.setAttribute('stroke-width', '1.5')
+    svg.style.overflow = 'visible'
     // Back square (offset top-right)
     const back = document.createElementNS(ns, 'rect')
     back.setAttribute('x', '5'); back.setAttribute('y', '2')
     back.setAttribute('width', '9'); back.setAttribute('height', '9')
-    back.setAttribute('rx', '1')
     svg.appendChild(back)
     // Front square (offset bottom-left)
     const front = document.createElementNS(ns, 'rect')
     front.setAttribute('x', '2'); front.setAttribute('y', '5')
     front.setAttribute('width', '9'); front.setAttribute('height', '9')
-    front.setAttribute('rx', '1')
-    front.setAttribute('fill', 'var(--_wm-restore-bg, var(--headerbar-bg-color, #333))')
+    front.style.fill = 'var(--_wm-restore-bg, var(--headerbar-bg-color, #333))'
     front.setAttribute('stroke', 'currentColor')
     svg.appendChild(front)
     return svg

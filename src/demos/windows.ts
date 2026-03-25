@@ -3,6 +3,7 @@ import { UIWindowManager } from '../components/ui-window-manager/ui-window-manag
 import { UIWindow } from '../components/ui-window/ui-window'
 import { UIToolButton } from '../components/common/ui-tool-button'
 import type { DemoRoute } from '../header'
+import type { TitleAlign } from '../components/common/types'
 
 let wm: UIWindowManager | null = null
 
@@ -21,6 +22,7 @@ export const windowsDemo: DemoRoute = {
         <ui-button id="wm-add-no-move" size="small" variant="outline" hint="Window that cannot be moved">No Move</ui-button>
         <ui-button id="wm-add-scrollable" size="small" variant="outline" hint="Window with UIScrollBox content">Scrollable</ui-button>
         <ui-button id="wm-add-config" size="small" variant="info" hint="Interactive property toggles">Config Demo</ui-button>
+        <ui-button id="wm-add-modal" size="small" variant="danger" hint="Open a modal dialog">Modal</ui-button>
         <ui-button id="wm-minimize-all" size="small" variant="warning" hint="Minimize all windows to grid">Minimize All</ui-button>
         <ui-button id="wm-restore-all" size="small" variant="success" hint="Restore all minimized windows">Restore All</ui-button>
         <ui-button id="wm-close-all" size="small" variant="danger" hint="Close all windows">Close All</ui-button>
@@ -60,10 +62,20 @@ export const windowsDemo: DemoRoute = {
 
     const colors = ['#3584e4', '#33d17a', '#e01b24', '#f5c211', '#8b5cf6', '#f97316', '#06b6d4']
 
+    const makeIcon = (color: string): string => {
+      return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="14" height="14" rx="3" fill="${color}" stroke="rgba(0,0,0,0.2)" stroke-width="1"/>
+        <rect x="4" y="4" width="8" height="2" rx="1" fill="rgba(255,255,255,0.6)"/>
+        <rect x="4" y="8" width="5" height="2" rx="1" fill="rgba(255,255,255,0.4)"/>
+        <rect x="4" y="12" width="3" height="1" rx="0.5" fill="rgba(255,255,255,0.3)"/>
+      </svg>`
+    }
+
     const addWindow = (opts?: Partial<{
-      title: string, showTitle: boolean, titleAlign: 'left' | 'center' | 'right',
+      title: string, showTitle: boolean, titleAlign: TitleAlign,
       resizable: boolean, movable: boolean, leftElements: HTMLElement[], rightElements: HTMLElement[],
       scroll: 'none' | 'vertical' | 'horizontal' | 'both', bigContent: boolean,
+      icon: string,
     }>) => {
       if (!wm) return
       winCount++
@@ -82,6 +94,7 @@ export const windowsDemo: DemoRoute = {
         leftElements: opts?.leftElements,
         rightElements: opts?.rightElements,
         scroll: opts?.scroll,
+        icon: opts?.icon ?? makeIcon(color),
       })
 
       if (opts?.bigContent && win.scrollBox) {
@@ -108,26 +121,38 @@ export const windowsDemo: DemoRoute = {
         }
       } else {
         const content = document.createElement('div')
-        content.style.cssText = 'padding:12px;font-size:13px;'
+        content.style.cssText = 'padding:12px;font-size:13px;white-space:nowrap;'
         content.innerHTML = `
           <div style="width:20px;height:20px;background:${color};border-radius:4px;margin-bottom:8px;"></div>
           <p style="margin:0 0 8px;">This is <strong>${win.title || 'Untitled'}</strong></p>
           <p style="margin:0 0 10px;color:var(--button-disabled-fg-color);font-size:11px;">
-            Tab cycles inside this window. F6 switches windows.
+            Tab cycles inside this window. Alt+F6 switches windows.
           </p>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          <div style="display:flex;gap:6px;"></div>
         `
         const btnRow = content.querySelector('div:last-child')!
         const makeBtn = (label: string, variant: string) => {
           const b = document.createElement('ui-button') as any
           b.setAttribute('size', 'small')
           b.setAttribute('variant', variant)
+          b.setAttribute('data-focusable', '')
           b.textContent = label
           return b
         }
         btnRow.appendChild(makeBtn('Action', 'solid'))
         btnRow.appendChild(makeBtn('Details', 'outline'))
         btnRow.appendChild(makeBtn('Cancel', 'ghost'))
+
+        const topRow = document.createElement('label')
+        topRow.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:6px;font-size:11px;color:var(--button-disabled-fg-color);'
+        const topCb = document.createElement('input')
+        topCb.type = 'checkbox'
+        topCb.setAttribute('data-focusable', '')
+        topCb.addEventListener('change', () => { wm!.setTopmost(win, topCb.checked) })
+        topRow.appendChild(topCb)
+        topRow.appendChild(document.createTextNode('Topmost'))
+        content.appendChild(topRow)
+
         win.contentElement.appendChild(content)
       }
 
@@ -181,14 +206,33 @@ export const windowsDemo: DemoRoute = {
 
     document.getElementById('wm-add-config')!.addEventListener('click', () => {
       if (!wm) return
+
+      // If Config Demo already exists, activate it or flash it
+      const existing = wm.getByTitle('Config Demo') as UIWindow | null
+      if (existing) {
+        wm.activateWindow(existing)
+        if (existing.windowState !== 'minimized') {
+          if (existing.folded) existing.unfold()
+          existing.flash()
+        }
+        return
+      }
+
       winCount++
 
+      const cogIcon = `<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM6.5 8a1.5 1.5 0 113 0 1.5 1.5 0 01-3 0z"/>
+        <path d="M7 1h2l.35 1.76.96.4L12 2.3l1.42 1.42-.86 1.69.4.96L14.72 7v2l-1.76.35-.4.96.86 1.69L12 13.42l-1.69-.86-.96.4L9 14.72H7l-.35-1.76-.96-.4L4 13.42 2.58 12l.86-1.69-.4-.96L1.28 9V7l1.76-.35.4-.96L2.58 4 4 2.58l1.69.86.96-.4L7 1.28zM8 4a4 4 0 100 8 4 4 0 000-8z"/>
+      </svg>`
+
       const win = new UIWindow({
+        id: 'config-demo',
         title: 'Config Demo',
         left: 60 + ((winCount - 1) % 5) * 35,
         top: 60 + ((winCount - 1) % 5) * 30,
-        width: 260,
-        height: 280,
+        width: 280,
+        height: 420,
+        icon: cogIcon,
       })
 
       const form = document.createElement('div')
@@ -200,6 +244,7 @@ export const windowsDemo: DemoRoute = {
         const cb = document.createElement('input')
         cb.type = 'checkbox'
         cb.checked = checked
+        cb.setAttribute('data-focusable', '')
         cb.addEventListener('change', () => onChange(cb.checked))
         row.appendChild(cb)
         row.appendChild(document.createTextNode(label))
@@ -225,15 +270,20 @@ export const windowsDemo: DemoRoute = {
         const btn = win.element.querySelector('.ui-window__close-btn') as HTMLElement
         if (btn) btn.style.display = v ? '' : 'none'
       }))
+      form.appendChild(makeToggle('Foldable', false, (v) => { win.foldable = v }))
+      form.appendChild(makeToggle('Auto Unfold', false, (v) => { win.autoUnfold = v }))
+      form.appendChild(makeToggle('Topmost', false, (v) => { wm!.setTopmost(win, v) }))
 
       // Title align
       const alignRow = document.createElement('div')
       alignRow.style.cssText = 'display:flex;align-items:center;gap:6px;'
       alignRow.appendChild(document.createTextNode('Title align:'))
       for (const align of ['left', 'center', 'right'] as const) {
-        const btn = document.createElement('button')
+        const btn = document.createElement('ui-button') as any
+        btn.setAttribute('size', 'small')
+        btn.setAttribute('variant', 'outline')
+        btn.setAttribute('data-focusable', '')
         btn.textContent = align
-        btn.style.cssText = 'font-size:11px;padding:2px 6px;cursor:pointer;'
         btn.addEventListener('click', () => { win.titleAlign = align })
         alignRow.appendChild(btn)
       }
@@ -247,15 +297,140 @@ export const windowsDemo: DemoRoute = {
       titleInput.type = 'text'
       titleInput.value = win.title
       titleInput.style.cssText = 'flex:1;font-size:11px;padding:2px 4px;'
+      titleInput.setAttribute('data-focusable', '')
       titleInput.addEventListener('input', () => { win.title = titleInput.value })
       titleRow.appendChild(titleInput)
       form.appendChild(titleRow)
 
+      // Separator
+      const sep1 = document.createElement('div')
+      sep1.style.cssText = 'border-top:1px solid var(--border-color);margin:4px 0;'
+      form.appendChild(sep1)
+
+      // Min/Max constraints
+      const makeNumberRow = (label: string, initial: number, isInfinity: boolean, onChange: (v: number) => void, currentLabel?: HTMLSpanElement) => {
+        const row = document.createElement('div')
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;'
+        const cb = document.createElement('input')
+        cb.type = 'checkbox'
+        cb.checked = !isInfinity
+        cb.setAttribute('data-focusable', '')
+        const inp = document.createElement('input')
+        inp.type = 'number'
+        inp.value = String(initial)
+        inp.style.cssText = 'width:60px;font-size:11px;padding:2px 4px;'
+        inp.disabled = isInfinity
+        inp.setAttribute('data-focusable', '')
+        cb.addEventListener('change', () => {
+          inp.disabled = !cb.checked
+          onChange(cb.checked ? (parseInt(inp.value) || initial) : (label.includes('Max') ? Infinity : 0))
+        })
+        inp.addEventListener('input', () => {
+          if (cb.checked) onChange(parseInt(inp.value) || 0)
+        })
+        row.appendChild(cb)
+        row.appendChild(document.createTextNode(label))
+        row.appendChild(inp)
+        if (currentLabel) row.appendChild(currentLabel)
+        return row
+      }
+
+      const widthLabel = document.createElement('span')
+      widthLabel.style.cssText = 'font-size:11px;color:var(--button-disabled-fg-color);margin-left:auto;'
+      widthLabel.textContent = `W: ${win.width}`
+
+      const heightLabel = document.createElement('span')
+      heightLabel.style.cssText = 'font-size:11px;color:var(--button-disabled-fg-color);margin-left:auto;'
+      heightLabel.textContent = `H: ${win.height}`
+
+      const updateSizeLabels = () => {
+        widthLabel.textContent = `W: ${win.width}`
+        heightLabel.textContent = `H: ${win.height}`
+      }
+
+      form.appendChild(makeNumberRow('Min Width', 150, false, (v) => { win.minWidth = v }, widthLabel))
+      form.appendChild(makeNumberRow('Min Height', 80, false, (v) => { win.minHeight = v }, heightLabel))
+      form.appendChild(makeNumberRow('Max Width', 500, true, (v) => { win.maxWidth = v }))
+      form.appendChild(makeNumberRow('Max Height', 400, true, (v) => { win.maxHeight = v }))
+
+      // Separator
+      const sep2 = document.createElement('div')
+      sep2.style.cssText = 'border-top:1px solid var(--border-color);margin:4px 0;'
+      form.appendChild(sep2)
+
+      // Scroll mode
+      const scrollRow = document.createElement('div')
+      scrollRow.style.cssText = 'display:flex;align-items:center;gap:6px;'
+      scrollRow.appendChild(document.createTextNode('Scroll:'))
+      for (const mode of ['none', 'vertical', 'horizontal', 'both'] as const) {
+        const btn = document.createElement('ui-button') as any
+        btn.setAttribute('size', 'small')
+        btn.setAttribute('variant', 'outline')
+        btn.setAttribute('data-focusable', '')
+        btn.textContent = mode
+        btn.addEventListener('click', () => { win.setScroll(mode) })
+        scrollRow.appendChild(btn)
+      }
+      form.appendChild(scrollRow)
+
       win.contentElement.appendChild(form)
       wm.addWindow(win)
       wm.bringToFront(win)
+
+      // Listen for resize/maximize/restore to update size labels
+      wm.on('window-resize', (e: any) => { if (e.child === win) updateSizeLabels() })
+      wm.on('window-maximize', (e: any) => { if (e.child === win) updateSizeLabels() })
+      wm.on('window-restore', (e: any) => { if (e.child === win) updateSizeLabels() })
+
       updateStatus()
     })
+
+    let modalCount = 0
+    const createModal = () => {
+      if (!wm) return
+      modalCount++
+      const win = new UIWindow({
+        title: `Modal ${modalCount}`,
+        modal: true,
+        left: 150 + (modalCount - 1) * 20,
+        top: 100 + (modalCount - 1) * 20,
+        width: 280,
+        height: 160,
+        resizable: false,
+        icon: makeIcon('#e01b24'),
+      })
+
+      const content = document.createElement('div')
+      content.style.cssText = 'padding:12px;font-size:13px;white-space:nowrap;'
+      content.innerHTML = `<p style="margin:0 0 10px;">This is a modal dialog. You cannot interact with other windows.</p>`
+
+      const btnRow = document.createElement('div')
+      btnRow.style.cssText = 'display:flex;gap:6px;'
+
+      const nestedBtn = document.createElement('ui-button') as any
+      nestedBtn.setAttribute('size', 'small')
+      nestedBtn.setAttribute('variant', 'danger')
+      nestedBtn.setAttribute('data-focusable', '')
+      nestedBtn.textContent = 'Nested Modal'
+      nestedBtn.addEventListener('click', () => createModal())
+      btnRow.appendChild(nestedBtn)
+
+      const closeBtn = document.createElement('ui-button') as any
+      closeBtn.setAttribute('size', 'small')
+      closeBtn.setAttribute('variant', 'outline')
+      closeBtn.setAttribute('data-focusable', '')
+      closeBtn.textContent = 'Close'
+      closeBtn.addEventListener('click', () => wm?.closeChild(win))
+      btnRow.appendChild(closeBtn)
+
+      content.appendChild(btnRow)
+      win.contentElement.appendChild(content)
+      wm.addWindow(win)
+      wm.bringToFront(win)
+      updateStatus()
+    }
+
+    document.getElementById('wm-add-modal')!.addEventListener('click', () => createModal())
 
     document.getElementById('wm-minimize-all')!.addEventListener('click', () => { wm?.minimizeAll(); updateStatus() })
     document.getElementById('wm-restore-all')!.addEventListener('click', () => { wm?.restoreAll(); updateStatus() })

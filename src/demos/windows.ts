@@ -393,24 +393,11 @@ export const windowsDemo: DemoRoute = {
       }
 
       form.appendChild(makeToggle('Movable', true, (v) => { win.movable = v }))
-      form.appendChild(makeToggle('Resizable', true, (v) => {
-        win.element.querySelectorAll('[class^="ui-window__resize"]').forEach(h => {
-          ;(h as HTMLElement).style.display = v ? '' : 'none'
-        })
-      }))
+      form.appendChild(makeToggle('Resizable', true, (v) => { win.resizable = v }))
       form.appendChild(makeToggle('Show Title', true, (v) => { win.showTitle = v }))
-      form.appendChild(makeToggle('Minimize Button', true, (v) => {
-        const btn = win.element.querySelector('.ui-window__min-btn') as HTMLElement
-        if (btn) btn.style.display = v ? '' : 'none'
-      }))
-      form.appendChild(makeToggle('Maximize Button', true, (v) => {
-        const btn = win.element.querySelector('.ui-window__max-btn') as HTMLElement
-        if (btn) btn.style.display = v ? '' : 'none'
-      }))
-      form.appendChild(makeToggle('Close Button', true, (v) => {
-        const btn = win.element.querySelector('.ui-window__close-btn') as HTMLElement
-        if (btn) btn.style.display = v ? '' : 'none'
-      }))
+      form.appendChild(makeToggle('Minimize Button', true, (v) => { win.minimizable = v }))
+      form.appendChild(makeToggle('Maximize Button', true, (v) => { win.maximizable = v }))
+      form.appendChild(makeToggle('Close Button', true, (v) => { win.closable = v }))
       form.appendChild(makeToggle('Foldable', false, (v) => { win.foldable = v }))
       form.appendChild(makeToggle('Auto Unfold', false, (v) => { win.autoUnfold = v }))
       form.appendChild(makeToggle('Topmost', false, (v) => { wm!.setTopmost(win, v) }))

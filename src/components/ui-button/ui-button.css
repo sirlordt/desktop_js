@@ -252,6 +252,11 @@
   outline-offset: var(--focus-ring-offset);
 }
 
+:host([data-simulate-focus]) .ui-btn {
+  outline: var(--focus-ring-width) solid var(--_btn-focus-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
 :host([focusable="false"]) .ui-btn:focus {
   outline: none;
 }

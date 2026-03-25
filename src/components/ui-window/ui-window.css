@@ -237,6 +237,28 @@
   transform: translate(1px, 1px);
 }
 
+/* =====================
+   Mini-Drag Kind
+   ===================== */
+.ui-window--mini-drag .ui-window__titlebar {
+  height: 14px !important;
+  min-height: 14px;
+  padding: 0 4px;
+  gap: 0;
+}
+
+.ui-window--mini-drag .ui-window__title {
+  font-size: 9px;
+  line-height: 14px;
+  opacity: 0.9;
+}
+
+.ui-window--mini-drag .ui-window__left-slot,
+.ui-window--mini-drag .ui-window__right-slot,
+.ui-window--mini-drag .ui-window__buttons {
+  display: none;
+}
+
 /* WIN95: close button separated from min/max */
 [data-theme^="win95"] .ui-window__close-btn {
   margin-left: 4px;

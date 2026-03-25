@@ -8,6 +8,8 @@ import { scrollbarDemo } from './demos/scrollbar'
 import { panelsDemo } from './demos/panels'
 import { scrollboxDemo } from './demos/scrollbox'
 import { windowsDemo } from './demos/windows'
+import { menuItemsDemo } from './demos/menu-items'
+import { popupsDemo } from './demos/popups'
 
 // Register all demos here
 registerDemos([
@@ -19,6 +21,8 @@ registerDemos([
   scrollboxDemo,
   panelsDemo,
   windowsDemo,
+  menuItemsDemo,
+  popupsDemo,
 ])
 
 initApp()

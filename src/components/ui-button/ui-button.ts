@@ -1,5 +1,6 @@
 import { UIView } from '../common/ui-view'
 import { UIHint } from '../ui-hint/ui-hint'
+import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus'
 import type { HintAlignment, UIHintOptions } from '../common/types'
 import styles from './ui-button.css?raw'
 
@@ -91,11 +92,19 @@ export class UIButton extends HTMLElement {
     if (labelSlot) this.core.addListener(labelSlot as any, 'slotchange' as any, () => this._updateLabel())
 
     this._updateHint()
+
+    // Listen for simulate-focus bubbling events
+    this._sfCleanup = listenSimulateFocus(this, (active) => {
+      this.simulateFocus = active
+    })
   }
+
+  private _sfCleanup: (() => void) | null = null
 
   disconnectedCallback() {
     this.core.disconnect()
     this._destroyInternalHint()
+    if (this._sfCleanup) { this._sfCleanup(); this._sfCleanup = null }
   }
 
   attributeChangedCallback(name: string, _old: string | null, val: string | null) {
@@ -181,6 +190,13 @@ export class UIButton extends HTMLElement {
   }
 
   get isDestroyed(): boolean { return this.core.isDestroyed }
+
+  private _simulateFocus = false
+  get simulateFocus(): boolean { return this._simulateFocus }
+  set simulateFocus(v: boolean) {
+    this._simulateFocus = v
+    applySimulateFocus(this, v)
+  }
 
   // ── Private ──
 
@@ -279,7 +295,10 @@ export class UIButton extends HTMLElement {
     }
   }
 
+  private _updatingTabIndex = false
   private _updateTabIndex() {
+    if (this._updatingTabIndex) return
+    this._updatingTabIndex = true
     if (this.getAttribute('focusable') === 'false') {
       this._btn.setAttribute('tabindex', '-1')
       this.tabIndex = -1
@@ -291,6 +310,7 @@ export class UIButton extends HTMLElement {
       this._btn.setAttribute('tabindex', '0')
       this.tabIndex = 0
     }
+    this._updatingTabIndex = false
   }
 
   // ── Hint integration ──

@@ -1,4 +1,5 @@
 import { UIView } from '../common/ui-view'
+import { applySimulateFocus } from '../common/simulate-focus'
 import type { Align, Anchors, UISize, UIPosition } from '../common/types'
 
 export interface UIPanelOptions {
@@ -190,5 +191,12 @@ export class UIPanel {
   off(event: string, handler: Function): this {
     this.core.off(event, handler)
     return this
+  }
+
+  private _simulateFocus = false
+  get simulateFocus(): boolean { return this._simulateFocus }
+  set simulateFocus(v: boolean) {
+    this._simulateFocus = v
+    applySimulateFocus(this.core.el, v)
   }
 }

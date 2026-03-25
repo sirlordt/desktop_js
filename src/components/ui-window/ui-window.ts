@@ -1,4 +1,5 @@
 import { UIToolButton } from '../common/ui-tool-button'
+import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus'
 import { UIHint } from '../ui-hint/ui-hint'
 import { UIScrollBox } from '../ui-scrollbox/ui-scrollbox'
 import type { IWindowChild, WindowState, WindowKind, UIWindowOptions, ScrollMode, TitleAlign } from '../common/types'
@@ -71,6 +72,8 @@ export class UIWindow implements IWindowChild {
     const o = options ?? {}
     this._kind = o.kind ?? 'normal'
     const isTool = this._kind === 'tool'
+    const tbStyle = o.titleBarStyle ?? (isTool ? 'tool' : 'normal')
+    const isMiniDrag = tbStyle === 'mini-drag'
     this.windowId = o.id ?? `window-${++windowCounter}`
     this._title = o.title ?? 'Window'
     this._resizable = o.resizable ?? true
@@ -84,7 +87,7 @@ export class UIWindow implements IWindowChild {
     this._minHeight = o.minHeight ?? 80
     this._maxWidth = o.maxWidth ?? Infinity
     this._maxHeight = o.maxHeight ?? Infinity
-    this._titleBarHeight = o.titleBarHeight ?? (isTool ? 21 : 28)
+    this._titleBarHeight = o.titleBarHeight ?? (isMiniDrag ? 14 : tbStyle === 'tool' ? 21 : 28)
     this._btnSize = Math.max(16, this._titleBarHeight - 8)
 
     // Root element
@@ -98,6 +101,8 @@ export class UIWindow implements IWindowChild {
     this.element.style.width = `${o.width ?? 300}px`
     this.element.style.height = `${o.height ?? 200}px`
     if (isTool) this.element.classList.add('ui-window--tool')
+    if (isMiniDrag) this.element.classList.add('ui-window--mini-drag')
+    if (tbStyle === 'tool') this.element.classList.add('ui-window--tb-tool')
 
     // Titlebar
     this.titleBarElement = document.createElement('div')
@@ -233,6 +238,10 @@ export class UIWindow implements IWindowChild {
     // Focus trap — Tab cycles only within this window
     this._bindFocusTrap()
 
+    // Listen for simulate-focus bubbling events
+    this._cleanups.push(listenSimulateFocus(this.element, (active) => {
+      this.simulateFocus = active
+    }))
   }
 
   // ── Properties ──
@@ -247,6 +256,43 @@ export class UIWindow implements IWindowChild {
 
   get movable(): boolean { return this._movable }
   set movable(v: boolean) { this._movable = v }
+
+  private _simulateFocus = false
+  get simulateFocus(): boolean { return this._simulateFocus }
+  set simulateFocus(v: boolean) {
+    this._simulateFocus = v
+    applySimulateFocus(this.element, v)
+    if (v) {
+      this.titleBarElement.classList.add('focused')
+    } else {
+      // Only remove focused if this window doesn't actually have real focus
+      const isFocusedByManager = this.manager && (this.manager as any)._focused === this
+      if (!isFocusedByManager) {
+        this.titleBarElement.classList.remove('focused')
+      }
+    }
+  }
+
+  get resizable(): boolean { return this._resizable }
+  set resizable(v: boolean) {
+    this._resizable = v
+    for (const h of this._resizeHandles) h.style.display = v ? '' : 'none'
+  }
+
+  get closable(): boolean { return !!this._closeBtn }
+  set closable(v: boolean) {
+    if (this._closeBtn) this._closeBtn.element.style.display = v ? '' : 'none'
+  }
+
+  get minimizable(): boolean { return !!this._minBtn }
+  set minimizable(v: boolean) {
+    if (this._minBtn) this._minBtn.element.style.display = v ? '' : 'none'
+  }
+
+  get maximizable(): boolean { return !!this._maxBtn }
+  set maximizable(v: boolean) {
+    if (this._maxBtn) this._maxBtn.element.style.display = v ? '' : 'none'
+  }
 
   get showTitle(): boolean { return this._showTitle }
   set showTitle(v: boolean) {
@@ -520,7 +566,9 @@ export class UIWindow implements IWindowChild {
     if (parent) {
       parent.querySelectorAll('.ui-window__titlebar.focused').forEach(el => {
         const isOurTool = this._tools.some(t => t.titleBarElement === el)
-        if (el !== this.titleBarElement && !isOurTool) el.classList.remove('focused')
+        const winEl = el.closest('.ui-window')
+        const hasSimFocus = winEl ? winEl.hasAttribute('data-simulate-focus') : false
+        if (el !== this.titleBarElement && !isOurTool && !hasSimFocus) el.classList.remove('focused')
       })
     }
     // Restore last focused element, or fall back to first focusable
@@ -539,7 +587,8 @@ export class UIWindow implements IWindowChild {
   }
 
   onBlurred(): void {
-    this.titleBarElement.classList.remove('focused')
+    // Don't remove focused if simulateFocus is active
+    if (!this._simulateFocus) this.titleBarElement.classList.remove('focused')
     // Blur all tools' titlebars too
     for (const tool of this._tools) {
       tool.titleBarElement.classList.remove('focused')

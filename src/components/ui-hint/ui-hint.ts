@@ -1,89 +1,10 @@
 import type { HintAlignment, HintTrigger, HintAnimation, UIHintOptions } from '../common/types'
+import { applySimulateFocus } from '../common/simulate-focus'
+import { parseSide, buildAlignment, calcPosition, fitsInViewport, OPPOSITE_SIDE, FLIP_CASCADE, SECONDARY_MAP, type Pos } from '../common/positioning'
 import styles from './ui-hint.css?raw'
 
 type HintEventName = 'show' | 'hide' | 'positionchange'
 type HintEventHandler = () => void
-
-// Opposite side mapping for auto-flip
-const OPPOSITE_SIDE: Record<string, string> = {
-  Bottom: 'Top', Top: 'Bottom', Right: 'Left', Left: 'Right',
-}
-
-// Cascade order: opposite → perpendicular1 → perpendicular2
-const FLIP_CASCADE: Record<string, string[]> = {
-  Bottom: ['Top', 'Right', 'Left'],
-  Top: ['Bottom', 'Right', 'Left'],
-  Right: ['Left', 'Bottom', 'Top'],
-  Left: ['Right', 'Bottom', 'Top'],
-}
-
-// Map secondary alignment to a valid one for the target side
-const SECONDARY_MAP: Record<string, Record<string, string>> = {
-  Bottom: { Left: 'Left', Center: 'Center', Right: 'Right', Top: 'Left', Bottom: 'Left' },
-  Top: { Left: 'Left', Center: 'Center', Right: 'Right', Top: 'Left', Bottom: 'Left' },
-  Right: { Top: 'Top', Center: 'Center', Bottom: 'Bottom', Left: 'Top', Right: 'Top' },
-  Left: { Top: 'Top', Center: 'Center', Bottom: 'Bottom', Left: 'Top', Right: 'Top' },
-}
-
-function parseSide(alignment: HintAlignment): { side: string; secondary: string } {
-  if (alignment === 'MouseCursor') return { side: 'MouseCursor', secondary: '' }
-  for (const side of ['Bottom', 'Top', 'Right', 'Left']) {
-    if (alignment.startsWith(side)) {
-      return { side, secondary: alignment.slice(side.length) }
-    }
-  }
-  return { side: 'Bottom', secondary: 'Center' }
-}
-
-function buildAlignment(side: string, secondary: string): HintAlignment {
-  return `${side}${secondary}` as HintAlignment
-}
-
-interface Pos { left: number; top: number }
-
-function calcPosition(
-  anchorRect: DOMRect, hW: number, hH: number,
-  side: string, secondary: string, margin: number,
-): Pos {
-  const a = anchorRect
-  let left = 0
-  let top = 0
-
-  switch (side) {
-    case 'Bottom':
-      top = a.bottom + margin
-      if (secondary === 'Left') left = a.left
-      else if (secondary === 'Center') left = a.left + a.width / 2 - hW / 2
-      else left = a.right - hW
-      break
-    case 'Top':
-      top = a.top - hH - margin
-      if (secondary === 'Left') left = a.left
-      else if (secondary === 'Center') left = a.left + a.width / 2 - hW / 2
-      else left = a.right - hW
-      break
-    case 'Right':
-      left = a.right + margin
-      if (secondary === 'Top') top = a.top
-      else if (secondary === 'Center') top = a.top + a.height / 2 - hH / 2
-      else top = a.bottom - hH
-      break
-    case 'Left':
-      left = a.left - hW - margin
-      if (secondary === 'Top') top = a.top
-      else if (secondary === 'Center') top = a.top + a.height / 2 - hH / 2
-      else top = a.bottom - hH
-      break
-  }
-
-  return { left, top }
-}
-
-function fitsInViewport(left: number, top: number, w: number, h: number): boolean {
-  return left >= 0 && top >= 0
-    && left + w <= window.innerWidth
-    && top + h <= window.innerHeight
-}
 
 // Inject styles once
 let stylesInjected = false
@@ -479,6 +400,13 @@ export class UIHint {
   }
 
   get isDestroyed(): boolean { return this._destroyed }
+
+  private _simulateFocus = false
+  get simulateFocus(): boolean { return this._simulateFocus }
+  set simulateFocus(v: boolean) {
+    this._simulateFocus = v
+    applySimulateFocus(this._el, v)
+  }
 
   // =====================
   // Internal

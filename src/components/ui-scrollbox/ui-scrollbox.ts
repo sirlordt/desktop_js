@@ -1,4 +1,5 @@
 import { UIScrollBar } from '../ui-scrollbar/ui-scrollbar'
+import { applySimulateFocus } from '../common/simulate-focus'
 import type {
   ScrollMode,
   VerticalScrollPosition,
@@ -229,6 +230,13 @@ export class UIScrollBox {
   }
 
   get isDestroyed(): boolean { return this._destroyed }
+
+  private _simulateFocus = false
+  get simulateFocus(): boolean { return this._simulateFocus }
+  set simulateFocus(v: boolean) {
+    this._simulateFocus = v
+    applySimulateFocus(this._el, v)
+  }
 
   // =====================
   // Internal DOM helpers

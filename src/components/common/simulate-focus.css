@@ -1,0 +1,41 @@
+/* =====================
+   Simulate Focus — Global styles
+   Elements with [data-simulate-focus] get the same visual treatment as :focus
+   ===================== */
+
+/* UIButton: handled inside Shadow DOM via :host([data-simulate-focus]) */
+
+/* UIToolButton */
+.ui-toolbtn[data-simulate-focus] {
+  outline: 2px solid var(--focus-ring-color, rgba(53, 132, 228, 0.5));
+  outline-offset: -1px;
+}
+
+/* UIMenuItem */
+.ui-menuitem[data-simulate-focus] {
+  background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
+  border-radius: 4px;
+}
+
+[data-theme^="win95"] .ui-menuitem[data-simulate-focus] {
+  background-color: #000080;
+  color: #ffffff;
+  border-radius: 0;
+}
+
+[data-theme^="win95"] .ui-menuitem[data-simulate-focus] .ui-menuitem__left,
+[data-theme^="win95"] .ui-menuitem[data-simulate-focus] .ui-menuitem__right {
+  color: #ffffff;
+}
+
+/* UIWindow */
+.ui-window[data-simulate-focus] {
+  outline: 2px solid var(--focus-ring-color, rgba(53, 132, 228, 0.5));
+  outline-offset: -1px;
+}
+
+/* UIScrollBar */
+.ui-scrollbar[data-simulate-focus] {
+  outline: 2px solid var(--focus-ring-color, rgba(53, 132, 228, 0.5));
+  outline-offset: -1px;
+}

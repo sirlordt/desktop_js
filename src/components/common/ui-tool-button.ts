@@ -1,3 +1,4 @@
+import { applySimulateFocus } from './simulate-focus'
 import './ui-tool-button.css'
 
 export type ToolButtonIcon =
@@ -112,6 +113,13 @@ export class UIToolButton {
   }
 
   get isDestroyed(): boolean { return this._destroyed }
+
+  private _simulateFocus = false
+  get simulateFocus(): boolean { return this._simulateFocus }
+  set simulateFocus(v: boolean) {
+    this._simulateFocus = v
+    applySimulateFocus(this._el, v)
+  }
 
   // ── Internal ──
 

@@ -51,6 +51,76 @@ export const UIPosition = {
 } as const
 export type UIPosition = typeof UIPosition[keyof typeof UIPosition]
 
+// ── MenuItem types ──
+
+export const MenuItemSize = {
+  Small: 'small',
+  Medium: 'medium',
+  Large: 'large',
+} as const
+export type MenuItemSize = typeof MenuItemSize[keyof typeof MenuItemSize]
+
+export const MenuItemTextAlign = {
+  Left: 'left',
+  Center: 'center',
+  Right: 'right',
+} as const
+export type MenuItemTextAlign = typeof MenuItemTextAlign[keyof typeof MenuItemTextAlign]
+
+export interface UIMenuItemOptions {
+  text: string
+  size?: MenuItemSize
+  textAlign?: MenuItemTextAlign
+  shortcut?: string
+  margin?: number
+  iconGap?: number
+  leftElement?: HTMLElement | null
+  rightElement?: HTMLElement | null
+  centerElement?: HTMLElement | null
+  pushable?: boolean
+  pushedElement?: HTMLElement | null
+  pushed?: boolean
+  disabled?: boolean
+  requestParentClose?: boolean
+  className?: string
+}
+
+// ── Popup types ──
+
+export const PopupArrange = {
+  Vertical: 'vertical',
+  Horizontal: 'horizontal',
+  None: 'none',
+} as const
+export type PopupArrange = typeof PopupArrange[keyof typeof PopupArrange]
+
+export const PopupState = {
+  Closed: 'closed',
+  Attached: 'attached',
+  Detached: 'detached',
+} as const
+export type PopupState = typeof PopupState[keyof typeof PopupState]
+
+export interface UIPopupOptions {
+  anchor: HTMLElement
+  alignment?: HintAlignment
+  margin?: number
+  scroll?: ScrollMode
+  arrange?: PopupArrange
+  width?: number | 'auto'
+  height?: number | 'auto'
+  minWidth?: number
+  minHeight?: number
+  maxWidth?: number
+  maxHeight?: number
+  resizable?: boolean
+  detachable?: boolean
+  title?: string
+  closeOnClickOutside?: boolean
+  closeOnEscape?: boolean
+  className?: string
+}
+
 // ── Hint types ──
 
 export const HintAlignment = {
@@ -254,6 +324,13 @@ export const WindowKind = {
 } as const
 export type WindowKind = typeof WindowKind[keyof typeof WindowKind]
 
+export const TitleBarStyle = {
+  Normal: 'normal',
+  Tool: 'tool',
+  MiniDrag: 'mini-drag',
+} as const
+export type TitleBarStyle = typeof TitleBarStyle[keyof typeof TitleBarStyle]
+
 export const TitleAlign = {
   Left: 'left',
   Center: 'center',
@@ -300,6 +377,7 @@ export interface UIWindowOptions {
   topmost?: boolean
   minimizable?: boolean
   maximizable?: boolean
+  titleBarStyle?: TitleBarStyle
   titleBarHeight?: number
   icon?: HTMLElement | string
   showTitle?: boolean

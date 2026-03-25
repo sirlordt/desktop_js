@@ -1,4 +1,5 @@
 import type { ScrollBarKind, ScrollBarSize, UIScrollBarOptions, TooltipColorRange, TooltipColorFn } from '../common/types'
+import { applySimulateFocus } from '../common/simulate-focus'
 import { UIToolButton } from '../common/ui-tool-button'
 import type { ToolButtonIcon } from '../common/ui-tool-button'
 import './ui-scrollbar.css'
@@ -266,6 +267,13 @@ export class UIScrollBar {
 
   increase(amount?: number): void { if (!this._disabled) this.value = this._value + (amount ?? this.step) }
   decrease(amount?: number): void { if (!this._disabled) this.value = this._value - (amount ?? this.step) }
+
+  private _simulateFocus = false
+  get simulateFocus(): boolean { return this._simulateFocus }
+  set simulateFocus(v: boolean) {
+    this._simulateFocus = v
+    applySimulateFocus(this._el, v)
+  }
 
   refresh(): void { this._updateThumb() }
 

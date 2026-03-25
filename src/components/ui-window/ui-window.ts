@@ -194,6 +194,9 @@ export class UIWindow implements IWindowChild {
 
     // Drag
     this._bindDrag()
+
+    // Focus trap — Tab cycles only within this window
+    this._bindFocusTrap()
   }
 
   // ── Properties ──
@@ -453,6 +456,38 @@ export class UIWindow implements IWindowChild {
       this.top = st + (sh - newH)
       this.height = newH
     })
+  }
+
+  // ── Focus trap ──
+
+  private _getFocusableElements(): HTMLElement[] {
+    const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), .ui-toolbtn:not(.disabled)'
+    return Array.from(this.element.querySelectorAll(selectors)) as HTMLElement[]
+  }
+
+  private _bindFocusTrap(): void {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+
+      const focusable = this._getFocusableElements()
+      if (focusable.length === 0) return
+
+      e.preventDefault()
+
+      const current = document.activeElement as HTMLElement
+      let idx = focusable.indexOf(current)
+
+      if (e.shiftKey) {
+        idx = idx <= 0 ? focusable.length - 1 : idx - 1
+      } else {
+        idx = idx >= focusable.length - 1 ? 0 : idx + 1
+      }
+
+      focusable[idx].focus()
+    }
+
+    this.element.addEventListener('keydown', handler)
+    this._cleanups.push(() => this.element.removeEventListener('keydown', handler))
   }
 
   // ── Destroy ──

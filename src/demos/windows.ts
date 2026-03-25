@@ -112,12 +112,22 @@ export const windowsDemo: DemoRoute = {
         content.innerHTML = `
           <div style="width:20px;height:20px;background:${color};border-radius:4px;margin-bottom:8px;"></div>
           <p style="margin:0 0 8px;">This is <strong>${win.title || 'Untitled'}</strong></p>
-          <p style="margin:0;color:var(--button-disabled-fg-color);font-size:11px;">
-            Drag titlebar to move. Resize from any edge or corner.
-            ${opts?.resizable === false ? '<br><em>Resize disabled.</em>' : ''}
-            ${opts?.movable === false ? '<br><em>Move disabled.</em>' : ''}
+          <p style="margin:0 0 10px;color:var(--button-disabled-fg-color);font-size:11px;">
+            Tab cycles inside this window. F6 switches windows.
           </p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;"></div>
         `
+        const btnRow = content.querySelector('div:last-child')!
+        const makeBtn = (label: string, variant: string) => {
+          const b = document.createElement('ui-button') as any
+          b.setAttribute('size', 'small')
+          b.setAttribute('variant', variant)
+          b.textContent = label
+          return b
+        }
+        btnRow.appendChild(makeBtn('Action', 'solid'))
+        btnRow.appendChild(makeBtn('Details', 'outline'))
+        btnRow.appendChild(makeBtn('Cancel', 'ghost'))
         win.contentElement.appendChild(content)
       }
 

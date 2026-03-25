@@ -72,6 +72,8 @@ export class UIWindow implements IWindowChild {
     // Root element
     this.element = document.createElement('div')
     this.element.className = 'ui-window'
+    this.element.tabIndex = -1
+    this.element.style.outline = 'none'
     this.element.style.position = 'absolute'
     this.element.style.left = `${o.left ?? 50}px`
     this.element.style.top = `${o.top ?? 50}px`
@@ -259,6 +261,13 @@ export class UIWindow implements IWindowChild {
       parent.querySelectorAll('.ui-window__titlebar.focused').forEach(el => {
         if (el !== this.titleBarElement) el.classList.remove('focused')
       })
+    }
+    // Focus first focusable element in body content, or fallback to window
+    const bodyFocusable = this._getBodyFocusableElements()
+    if (bodyFocusable.length > 0) {
+      bodyFocusable[0].focus()
+    } else {
+      this.element.focus()
     }
   }
 
@@ -461,8 +470,13 @@ export class UIWindow implements IWindowChild {
   // ── Focus trap ──
 
   private _getFocusableElements(): HTMLElement[] {
-    const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), .ui-toolbtn:not(.disabled)'
+    const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), .ui-toolbtn:not(.disabled), ui-button'
     return Array.from(this.element.querySelectorAll(selectors)) as HTMLElement[]
+  }
+
+  private _getBodyFocusableElements(): HTMLElement[] {
+    const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), .ui-toolbtn:not(.disabled), ui-button'
+    return Array.from(this._bodyEl.querySelectorAll(selectors)) as HTMLElement[]
   }
 
   private _bindFocusTrap(): void {

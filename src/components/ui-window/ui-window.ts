@@ -479,6 +479,23 @@ export class UIWindow implements IWindowChild {
     return Array.from(this._bodyEl.querySelectorAll(selectors)) as HTMLElement[]
   }
 
+  private _findActiveIndex(focusable: HTMLElement[]): number {
+    let active = document.activeElement as HTMLElement | null
+    // Walk up from shadow DOM active element to find the host in our list
+    while (active) {
+      const idx = focusable.indexOf(active)
+      if (idx !== -1) return idx
+      // Check if active is inside a shadow host that's in our list
+      const host = (active.getRootNode() as ShadowRoot)?.host as HTMLElement | undefined
+      if (host) {
+        const hostIdx = focusable.indexOf(host)
+        if (hostIdx !== -1) return hostIdx
+      }
+      active = active.parentElement
+    }
+    return -1
+  }
+
   private _bindFocusTrap(): void {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
@@ -488,8 +505,7 @@ export class UIWindow implements IWindowChild {
 
       e.preventDefault()
 
-      const current = document.activeElement as HTMLElement
-      let idx = focusable.indexOf(current)
+      let idx = this._findActiveIndex(focusable)
 
       if (e.shiftKey) {
         idx = idx <= 0 ? focusable.length - 1 : idx - 1

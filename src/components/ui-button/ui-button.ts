@@ -155,6 +155,12 @@ export class UIButton extends HTMLElement {
     this._updateIcons()
   }
 
+  // ── Focus delegation ──
+
+  override focus(options?: FocusOptions): void {
+    this._btn.focus(options)
+  }
+
   // ── Event emitter (framework-friendly) ──
 
   on(event: string, handler: Function): this {

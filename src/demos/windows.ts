@@ -21,6 +21,7 @@ export const windowsDemo: DemoRoute = {
         <ui-button id="wm-add-no-resize" size="small" variant="outline" hint="Window that cannot be resized">No Resize</ui-button>
         <ui-button id="wm-add-no-move" size="small" variant="outline" hint="Window that cannot be moved">No Move</ui-button>
         <ui-button id="wm-add-scrollable" size="small" variant="outline" hint="Window with UIScrollBox content">Scrollable</ui-button>
+        <ui-button id="wm-add-tool" size="small" variant="outline" hint="Create a window with a tool window attached">With Tool</ui-button>
         <ui-button id="wm-add-config" size="small" variant="info" hint="Interactive property toggles">Config Demo</ui-button>
         <ui-button id="wm-add-modal" size="small" variant="danger" hint="Open a modal dialog">Modal</ui-button>
         <ui-button id="wm-minimize-all" size="small" variant="warning" hint="Minimize all windows to grid">Minimize All</ui-button>
@@ -198,6 +199,105 @@ export const windowsDemo: DemoRoute = {
 
     document.getElementById('wm-add-no-move')!.addEventListener('click', () => {
       addWindow({ title: `No Move ${winCount + 1}`, movable: false })
+    })
+
+    document.getElementById('wm-add-tool')!.addEventListener('click', () => {
+      if (!wm) return
+      // Create the main window
+      const mainWin = new UIWindow({
+        title: `Main ${winCount + 1}`,
+        left: 30 + (winCount % 5) * 35,
+        top: 30 + (winCount % 5) * 30,
+        width: 300,
+        height: 220,
+        icon: makeIcon('#3584e4'),
+      })
+      winCount++
+
+      const content = document.createElement('div')
+      content.style.cssText = 'padding:12px;font-size:13px;white-space:nowrap;'
+      content.innerHTML = `<p style="margin:0 0 8px;">This window has a tool window attached.</p>
+        <p style="margin:0 0 10px;color:var(--button-disabled-fg-color);font-size:11px;">
+          Minimize or close this window to see the tool follow.
+        </p>`
+
+      const addToolBtn = document.createElement('ui-button') as any
+      addToolBtn.setAttribute('size', 'small')
+      addToolBtn.setAttribute('variant', 'outline')
+      addToolBtn.setAttribute('data-focusable', '')
+      addToolBtn.textContent = 'Add Another Tool'
+      addToolBtn.addEventListener('click', () => {
+        const tool = new UIWindow({
+          title: `Tool ${mainWin.tools.length + 1}`,
+          left: mainWin.left + mainWin.width + 5,
+          top: mainWin.top + mainWin.tools.length * 30,
+          width: 180,
+          height: 120,
+          icon: makeIcon('#f97316'),
+        })
+        const tc = document.createElement('div')
+        tc.style.cssText = 'padding:8px;font-size:11px;display:flex;flex-direction:column;gap:4px;white-space:nowrap;'
+        tc.innerHTML = `<span>Tool of ${mainWin.title}</span>`
+        const tBtnRow = document.createElement('div')
+        tBtnRow.style.cssText = 'display:flex;gap:4px;'
+        for (const label of ['Apply', 'Reset']) {
+          const b = document.createElement('ui-button') as any
+          b.setAttribute('size', 'tiny')
+          b.setAttribute('variant', label === 'Apply' ? 'solid' : 'outline')
+          b.setAttribute('data-focusable', '')
+          b.textContent = label
+          tBtnRow.appendChild(b)
+        }
+        tc.appendChild(tBtnRow)
+        tool.contentElement.appendChild(tc)
+        wm!.addWindow(tool)
+        mainWin.addTool(tool)
+      })
+      content.appendChild(addToolBtn)
+
+      const topRow = document.createElement('label')
+      topRow.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;margin-top:6px;font-size:11px;color:var(--button-disabled-fg-color);'
+      const topCb = document.createElement('input')
+      topCb.type = 'checkbox'
+      topCb.setAttribute('data-focusable', '')
+      topCb.addEventListener('change', () => { wm!.setTopmost(mainWin, topCb.checked) })
+      topRow.appendChild(topCb)
+      topRow.appendChild(document.createTextNode('Topmost'))
+      content.appendChild(topRow)
+
+      mainWin.contentElement.appendChild(content)
+
+      wm.addWindow(mainWin)
+
+      // Create initial tool window
+      const toolWin = new UIWindow({
+        title: 'Tool 1',
+        left: mainWin.left + mainWin.width + 5,
+        top: mainWin.top,
+        width: 180,
+        height: 120,
+        icon: makeIcon('#f97316'),
+      })
+      const toolContent = document.createElement('div')
+      toolContent.style.cssText = 'padding:8px;font-size:11px;display:flex;flex-direction:column;gap:4px;white-space:nowrap;'
+      toolContent.innerHTML = `<span>Tool of ${mainWin.title}</span>`
+      const toolBtnRow = document.createElement('div')
+      toolBtnRow.style.cssText = 'display:flex;gap:4px;'
+      for (const label of ['Apply', 'Reset']) {
+        const b = document.createElement('ui-button') as any
+        b.setAttribute('size', 'tiny')
+        b.setAttribute('variant', label === 'Apply' ? 'solid' : 'outline')
+        b.setAttribute('data-focusable', '')
+        b.textContent = label
+        toolBtnRow.appendChild(b)
+      }
+      toolContent.appendChild(toolBtnRow)
+      toolWin.contentElement.appendChild(toolContent)
+
+      wm.addWindow(toolWin)
+      mainWin.addTool(toolWin)
+      wm.bringToFront(mainWin)
+      updateStatus()
     })
 
     document.getElementById('wm-add-scrollable')!.addEventListener('click', () => {

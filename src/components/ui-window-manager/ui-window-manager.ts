@@ -1,4 +1,5 @@
 import { UIPanel } from '../ui-panel/ui-panel'
+import type { UIWindow } from '../ui-window/ui-window'
 import type { IWindowChild, WindowChildInfo, UIWindowManagerOptions, WindowCycleShortcut, WindowState } from '../common/types'
 
 const Z_BASE = 10
@@ -97,10 +98,11 @@ export class UIWindowManager extends UIPanel {
     this.core.cleanups.push(() => document.removeEventListener('keydown', handler, true))
   }
 
-  /** Stable cycle order: normal windows first, then topmost */
+  /** Stable cycle order: normal windows first, then topmost. Excludes tools. */
   private get _cycleOrder(): IWindowChild[] {
-    const normal = this._windows.filter(c => !c.topmost)
-    const topmost = this._windows.filter(c => c.topmost)
+    const isNotTool = (c: IWindowChild) => !('isTool' in c && (c as UIWindow).isTool)
+    const normal = this._windows.filter(c => !c.topmost && isNotTool(c))
+    const topmost = this._windows.filter(c => c.topmost && isNotTool(c))
     return [...normal, ...topmost]
   }
 
@@ -230,11 +232,26 @@ export class UIWindowManager extends UIPanel {
 
   bringToFront(child: IWindowChild): void {
     if (!child.isFloating) return
+    // If a modal is active, only the top modal can be interacted with
+    if (this._modalChild && child !== this._modalChild) return
+
+    // If this is a tool, bring its overlord to front and reorder this tool to top
+    const asWin = child as UIWindow
+    if ('overlord' in asWin && asWin.overlord) {
+      const overlord = asWin.overlord
+      // Move clicked tool to end of overlord's tools array (highest z)
+      const toolIdx = overlord.tools.indexOf(asWin)
+      if (toolIdx !== -1) {
+        ;(overlord as any)._tools.splice(toolIdx, 1)
+        ;(overlord as any)._tools.push(asWin)
+      }
+      this.bringToFront(overlord)
+      return
+    }
+
     const zList = this._zOrderFor(child)
     const idx = zList.indexOf(child)
     if (idx === -1) return
-    // If a modal is active, only the top modal can be interacted with
-    if (this._modalChild && child !== this._modalChild) return
 
     zList.splice(idx, 1)
     zList.push(child)
@@ -534,19 +551,24 @@ export class UIWindowManager extends UIPanel {
     }
   }
 
-  /** Change a window's topmost state dynamically */
+  /** Change a window's topmost state dynamically, including its tools */
   setTopmost(child: IWindowChild, topmost: boolean): void {
-    const current = child.topmost ?? false
-    if (current === topmost) return
-    // Remove from current z-order list
-    const oldList = current ? this._zOrderTopmost : this._zOrder
-    const idx = oldList.indexOf(child)
-    if (idx !== -1) oldList.splice(idx, 1)
-    // Update the property
-    ;(child as any).topmost = topmost
-    // Add to new z-order list
-    const newList = topmost ? this._zOrderTopmost : this._zOrder
-    newList.push(child)
+    const move = (c: IWindowChild) => {
+      const cur = c.topmost ?? false
+      if (cur === topmost) return
+      const oldList = cur ? this._zOrderTopmost : this._zOrder
+      const idx = oldList.indexOf(c)
+      if (idx !== -1) oldList.splice(idx, 1)
+      ;(c as any).topmost = topmost
+      const newList = topmost ? this._zOrderTopmost : this._zOrder
+      newList.push(c)
+    }
+    move(child)
+    // Move tools along with overlord
+    const asWin = child as UIWindow
+    if ('tools' in asWin) {
+      for (const tool of asWin.tools) move(tool)
+    }
     this._reassignZIndexes()
   }
 
@@ -653,25 +675,43 @@ export class UIWindowManager extends UIPanel {
 
   // ── Internal ──
 
+  /** Remove a child from both z-order lists */
+  _removeFromZOrder(child: IWindowChild): void {
+    let idx = this._zOrder.indexOf(child)
+    if (idx !== -1) this._zOrder.splice(idx, 1)
+    idx = this._zOrderTopmost.indexOf(child)
+    if (idx !== -1) this._zOrderTopmost.splice(idx, 1)
+  }
+
   /** Get the z-order list a child belongs to */
   private _zOrderFor(child: IWindowChild): IWindowChild[] {
     return child.topmost ? this._zOrderTopmost : this._zOrder
   }
 
   private _reassignZIndexes(): void {
-    // Normal windows: Z_BASE + i * Z_STEP
-    for (let i = 0; i < this._zOrder.length; i++) {
-      if (!this._zOrder[i].modal) {
-        this._zOrder[i].setZIndex(Z_BASE + i * Z_STEP)
+    const assignList = (list: IWindowChild[], base: number) => {
+      let z = base
+      for (const child of list) {
+        if (child.modal) continue
+        // Skip tools — they are positioned after their overlord
+        const asWin = child as UIWindow
+        if ('isTool' in asWin && asWin.isTool) continue
+        child.setZIndex(z)
+        z += Z_STEP
+        // Position tools just above overlord
+        if ('tools' in asWin) {
+          for (const tool of asWin.tools) {
+            tool.setZIndex(z)
+            z += Z_STEP
+          }
+        }
       }
+      return z
     }
-    // Topmost windows: start above all normal windows
-    const topmostBase = Z_BASE + this._zOrder.length * Z_STEP + 100
-    for (let i = 0; i < this._zOrderTopmost.length; i++) {
-      if (!this._zOrderTopmost[i].modal) {
-        this._zOrderTopmost[i].setZIndex(topmostBase + i * Z_STEP)
-      }
-    }
+    // Normal windows
+    const nextZ = assignList(this._zOrder, Z_BASE)
+    // Topmost windows: start above all normal
+    assignList(this._zOrderTopmost, nextZ + 100)
   }
 
   override destroy(): void {

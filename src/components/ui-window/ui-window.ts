@@ -22,6 +22,11 @@ export class UIWindow implements IWindowChild {
 
   manager: UIWindowManager | null = null
 
+  /** Tool windows attached to this window */
+  private _tools: UIWindow[] = []
+  /** The overlord window if this is a tool */
+  private _overlord: UIWindow | null = null
+
   private _title: string
   private _titleEl: HTMLSpanElement
   private _buttonsEl: HTMLDivElement
@@ -350,6 +355,71 @@ export class UIWindow implements IWindowChild {
     }
   }
 
+  // ── Tool windows ──
+
+  get tools(): readonly UIWindow[] { return this._tools }
+  get overlord(): UIWindow | null { return this._overlord }
+  get isTool(): boolean { return this._overlord !== null }
+
+  /** Attach a window as a tool of this window */
+  addTool(win: UIWindow): boolean {
+    // Reject if: already a tool, already has tools, is self, already in our list
+    if (win._overlord) return false
+    if (win._tools.length > 0) return false
+    if (win === this) return false
+    if (this._overlord) return false // we are a tool ourselves
+    if (this._tools.includes(win)) return false
+
+    this._tools.push(win)
+    win._overlord = this
+    // Force kind to tool
+    ;(win as any)._kind = 'tool'
+    win.element.classList.add('ui-window--tool')
+    // Remove min/max buttons if they exist
+    if (win._minBtn) { win._minBtn.element.style.display = 'none' }
+    if (win._maxBtn) { win._maxBtn.element.style.display = 'none' }
+    // Adjust titlebar height for tool
+    win.titleBarElement.style.height = '21px'
+    // Remove tool from z-order lists (it's positioned via overlord now)
+    if (this.manager) {
+      (this.manager as any)._removeFromZOrder(win)
+    }
+    // If overlord has focus, give tool the focused titlebar too
+    if (this.titleBarElement.classList.contains('focused')) {
+      win.titleBarElement.classList.add('focused')
+    }
+    // Reassign z-indexes
+    if (this.manager) {
+      (this.manager as any)._reassignZIndexes()
+    }
+
+    return true
+  }
+
+  /** Detach a tool window */
+  removeTool(win: UIWindow): boolean {
+    const idx = this._tools.indexOf(win)
+    if (idx === -1) return false
+
+    this._tools.splice(idx, 1)
+    win._overlord = null
+    // Restore kind to normal
+    ;(win as any)._kind = 'normal'
+    win.element.classList.remove('ui-window--tool')
+    // Restore min/max buttons
+    if (win._minBtn) { win._minBtn.element.style.display = '' }
+    if (win._maxBtn) { win._maxBtn.element.style.display = '' }
+    // Restore titlebar height
+    win.titleBarElement.style.height = ''
+    // Re-add to z-order list
+    if (this.manager) {
+      (this.manager as any)._zOrderFor(win).push(win)
+      ;(this.manager as any)._reassignZIndexes()
+    }
+
+    return true
+  }
+
   // ── Custom elements ──
 
   addLeftElement(el: HTMLElement): void {
@@ -449,22 +519,31 @@ export class UIWindow implements IWindowChild {
     const parent = this.element.parentElement
     if (parent) {
       parent.querySelectorAll('.ui-window__titlebar.focused').forEach(el => {
-        if (el !== this.titleBarElement) el.classList.remove('focused')
+        const isOurTool = this._tools.some(t => t.titleBarElement === el)
+        if (el !== this.titleBarElement && !isOurTool) el.classList.remove('focused')
       })
     }
     // Restore last focused element, or fall back to first focusable
-    if (this._lastFocusedEl && this._bodyEl.contains(this._lastFocusedEl)) {
+    if (this._lastFocusedEl && this._containsFocusable(this._lastFocusedEl)) {
       this._lastFocusedEl.focus({ preventScroll: true })
     } else {
-      const els = this._getBodyFocusable()
+      const els = this._getAllGroupFocusable()
       if (els.length > 0) els[0].focus({ preventScroll: true })
     }
     if (!this._hasActiveHScroll()) this._bodyEl.scrollLeft = 0
     if (!this._hasActiveVScroll()) this._bodyEl.scrollTop = 0
+    // Focus all tools' titlebars too
+    for (const tool of this._tools) {
+      tool.titleBarElement.classList.add('focused')
+    }
   }
 
   onBlurred(): void {
     this.titleBarElement.classList.remove('focused')
+    // Blur all tools' titlebars too
+    for (const tool of this._tools) {
+      tool.titleBarElement.classList.remove('focused')
+    }
   }
 
   onMinimized(): void {
@@ -475,6 +554,8 @@ export class UIWindow implements IWindowChild {
     if (this._minBtn) this._minBtn.icon = 'window-restore'
     if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
     this._updateHintTexts('minimized')
+    // Hide all tool windows
+    for (const tool of this._tools) tool.setVisible(false)
   }
 
   onRestored(): void {
@@ -492,6 +573,8 @@ export class UIWindow implements IWindowChild {
     if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
     if (this._minBtn) this._minBtn.icon = 'window-minimize'
     this._updateHintTexts('normal')
+    // Show all tool windows
+    for (const tool of this._tools) tool.setVisible(true)
   }
 
   onMaximized(): void {
@@ -503,7 +586,14 @@ export class UIWindow implements IWindowChild {
     this._updateHintTexts('maximized')
   }
 
-  onClosed(): void {}
+  onClosed(): void {
+    // Close all tool windows
+    for (const tool of [...this._tools]) {
+      if (this.manager) this.manager.closeChild(tool)
+    }
+    // Detach from overlord if we are a tool
+    if (this._overlord) this._overlord.removeTool(this)
+  }
 
   private _updateHintTexts(state: WindowState): void {
     if (this._minHint) this._minHint.content = state === 'minimized' ? 'Restore (F7)' : 'Minimize (F7)'
@@ -701,12 +791,37 @@ export class UIWindow implements IWindowChild {
     }) as HTMLElement[]
   }
 
+  /** Get all focusable elements from this window + its tools (for overlord) */
+  private _getAllGroupFocusable(): HTMLElement[] {
+    const els = [...this._getBodyFocusable()]
+    for (const tool of this._tools) {
+      els.push(...tool._getBodyFocusable())
+    }
+    return els
+  }
+
+  /** Check if an element is inside this window or any of its tools */
+  private _containsFocusable(el: HTMLElement): boolean {
+    if (this._bodyEl.contains(el)) return true
+    for (const tool of this._tools) {
+      if (tool._bodyEl.contains(el)) return true
+    }
+    return false
+  }
+
+  /** Get the overlord window (self if not a tool) for group operations */
+  private get _groupOwner(): UIWindow {
+    return this._overlord ?? this
+  }
+
   private _bindFocusTrap(): void {
-    // Track which element last had focus inside the body
+    // Track which element last had focus inside the body (or tools)
     this._bodyEl.addEventListener('focusin', (e: Event) => {
       const target = e.target as HTMLElement
       if (target && target !== this._bodyEl) {
         this._lastFocusedEl = target
+        // Also track in overlord if we are a tool
+        if (this._overlord) this._overlord._lastFocusedEl = target
       }
     })
 
@@ -721,12 +836,16 @@ export class UIWindow implements IWindowChild {
       }
     })
 
-    // Tab/Shift+Tab cycle within body focusable elements
+    // Tab/Shift+Tab cycle within body focusable elements (including tools)
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
       if (!this.titleBarElement.classList.contains('focused')) return
+      // Only the group owner (overlord) handles Tab for the entire group
+      if (this._overlord) return
 
-      const els = this._getBodyFocusable()
+      // Use group owner's full focusable list (overlord + tools)
+      const owner = this._groupOwner
+      const els = owner._getAllGroupFocusable()
       if (els.length === 0) return
 
       e.preventDefault()
@@ -747,12 +866,6 @@ export class UIWindow implements IWindowChild {
         target = els[next]
       }
       target.focus({ preventScroll: true })
-      // Scroll into view via scrollbox, or reset native scroll
-      if (this._scrollBox) {
-        this._scrollBox.scrollIntoView(target)
-      }
-      if (!this._hasActiveHScroll()) this._bodyEl.scrollLeft = 0
-      if (!this._hasActiveVScroll()) this._bodyEl.scrollTop = 0
     }
 
     document.addEventListener('keydown', handler, true)

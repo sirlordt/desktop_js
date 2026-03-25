@@ -198,6 +198,15 @@
   gap: 1px;
 }
 
+[data-theme^="win95"] .ui-window--tool .ui-window__buttons .ui-window__close-btn {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+[data-theme^="win95"] .ui-window--tool .ui-window__close-btn svg {
+  transform: scale(0.7) translateX(-1px);
+}
+
 [data-theme^="win95"] .ui-window__buttons .ui-toolbtn {
   --_wm-restore-bg: var(--btn-3d-face, #c0c0c0);
   border-radius: 0;
@@ -222,6 +231,10 @@
 
 [data-theme^="win95"] .ui-window__buttons .ui-toolbtn:hover:active {
   border-color: var(--btn-3d-dark, #404040) var(--btn-3d-light, #dfdfdf) var(--btn-3d-light, #dfdfdf) var(--btn-3d-dark, #404040);
+}
+
+[data-theme^="win95"] .ui-window__buttons .ui-toolbtn:hover:active .ui-toolbtn__icon {
+  transform: translate(1px, 1px);
 }
 
 /* WIN95: close button separated from min/max */

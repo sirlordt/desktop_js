@@ -1,9 +1,9 @@
 # Feature: WindowManager component
 
 ## Status
-- [ ] Requirement complete
-- [ ] Design complete
-- [ ] Implementation complete
+- [x] Requirement complete
+- [x] Design complete
+- [x] Implementation complete
 - [ ] Tests passing
 
 ## Description

@@ -1,9 +1,9 @@
 # Feature: Window component
 
 ## Status
-- [ ] Requirement complete
-- [ ] Design complete
-- [ ] Implementation complete
+- [x] Requirement complete
+- [x] Design complete
+- [x] Implementation complete
 - [ ] Tests passing
 
 ## Description
@@ -27,7 +27,7 @@ El componente window tiene varios detalles.
 13. El titulo de la ventana debe ser un string que se le pase como propiedad. Y debe ser actualizado cada vez que se le pase un nuevo titulo. Y debe ser mostrado en el titulo de la ventana.
 14. El componente debe permitir ser movido. Para esto, el componente debe tener un metodo que sea llamado cuando se le haga click a la ventana. Y este metodo debe encargarse de mover la ventana a la posicion del mouse. Y el componente debe tener un metodo que sea llamado cuando se le haga click a la ventana y se arrastre. Y este metodo debe encargarse de mover la ventana a la posicion del mouse.
 15. El componente debe permitir ser redimencionado. Para esto, el componente debe tener un metodo que sea llamado cuando se le haga click a un borde de la ventana. Y este metodo debe encargarse de redimencionar la ventana a la posicion del mouse. Y el componente debe tener un metodo que sea llamado cuando se le haga click a un borde de la ventana y se arrastre. Y este metodo debe encargarse de redimencionar la ventana a la posicion del mouse
-16. En el tema win95 el boton de cerrar esta un poco separado del resto. 
+16. En el tema win95 el boton de cerrar esta un poco separado del resto.
 
 ## Constraints
 <!-- Technical, UX, or business limitations that apply to this feature. -->

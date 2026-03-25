@@ -53,6 +53,7 @@ export class UIWindow implements IWindowChild {
   private _minHint: UIHint | null = null
   private _maxHint: UIHint | null = null
   private _closeHint: UIHint | null = null
+  private _lastFocusedElement: HTMLElement | null = null
 
   constructor(options?: UIWindowOptions) {
     const o = options ?? {}
@@ -262,12 +263,16 @@ export class UIWindow implements IWindowChild {
         if (el !== this.titleBarElement) el.classList.remove('focused')
       })
     }
-    // Focus first focusable element in body content, or fallback to window
-    const bodyFocusable = this._getBodyFocusableElements()
-    if (bodyFocusable.length > 0) {
-      bodyFocusable[0].focus()
+    // Restore last focused element, or focus first body element
+    if (this._lastFocusedElement && this.element.contains(this._lastFocusedElement)) {
+      this._lastFocusedElement.focus()
     } else {
-      this.element.focus()
+      const bodyFocusable = this._getBodyFocusableElements()
+      if (bodyFocusable.length > 0) {
+        bodyFocusable[0].focus()
+      } else {
+        this.element.focus()
+      }
     }
   }
 
@@ -497,6 +502,16 @@ export class UIWindow implements IWindowChild {
   }
 
   private _bindFocusTrap(): void {
+    // Track focus changes inside the window to remember last position
+    const focusInHandler = (e: FocusEvent) => {
+      const target = e.target as HTMLElement
+      if (target && target !== this.element) {
+        this._lastFocusedElement = target
+      }
+    }
+    this.element.addEventListener('focusin', focusInHandler)
+    this._cleanups.push(() => this.element.removeEventListener('focusin', focusInHandler))
+
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
 

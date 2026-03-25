@@ -472,67 +472,65 @@ export class UIWindow implements IWindowChild {
     })
   }
 
-  // ── Focus trap ──
+  // ── Focus management ──
 
-  private _getFocusableElements(): HTMLElement[] {
-    const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), .ui-toolbtn:not(.disabled), ui-button'
-    return Array.from(this.element.querySelectorAll(selectors)) as HTMLElement[]
-  }
+  private _focusableSelector = '.ui-toolbtn:not(.disabled), ui-button, button, [href], input, select, textarea'
 
   private _getBodyFocusableElements(): HTMLElement[] {
-    const selectors = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"]), .ui-toolbtn:not(.disabled), ui-button'
-    return Array.from(this._bodyEl.querySelectorAll(selectors)) as HTMLElement[]
+    return Array.from(this._bodyEl.querySelectorAll(this._focusableSelector)) as HTMLElement[]
   }
 
-  private _findActiveIndex(focusable: HTMLElement[]): number {
-    let active = document.activeElement as HTMLElement | null
-    // Walk up from shadow DOM active element to find the host in our list
-    while (active) {
-      const idx = focusable.indexOf(active)
-      if (idx !== -1) return idx
-      // Check if active is inside a shadow host that's in our list
-      const host = (active.getRootNode() as ShadowRoot)?.host as HTMLElement | undefined
-      if (host) {
-        const hostIdx = focusable.indexOf(host)
-        if (hostIdx !== -1) return hostIdx
-      }
-      active = active.parentElement
-    }
-    return -1
+  private _getAllFocusable(): HTMLElement[] {
+    return Array.from(this.element.querySelectorAll(this._focusableSelector)) as HTMLElement[]
   }
 
   private _bindFocusTrap(): void {
-    // Track focus changes inside the window to remember last position
-    const focusInHandler = (e: FocusEvent) => {
+    // Track focus to remember last position
+    this.element.addEventListener('focusin', (e: Event) => {
       const target = e.target as HTMLElement
       if (target && target !== this.element) {
         this._lastFocusedElement = target
       }
-    }
-    this.element.addEventListener('focusin', focusInHandler)
-    this._cleanups.push(() => this.element.removeEventListener('focusin', focusInHandler))
+    })
 
+    // Intercept Tab at the document level when this window is focused
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
+      // Only trap if focus is inside this window
+      if (!this.element.contains(document.activeElement)) return
 
-      const focusable = this._getFocusableElements()
+      const focusable = this._getAllFocusable()
       if (focusable.length === 0) return
 
-      e.preventDefault()
-
-      let idx = this._findActiveIndex(focusable)
-
-      if (e.shiftKey) {
-        idx = idx <= 0 ? focusable.length - 1 : idx - 1
-      } else {
-        idx = idx >= focusable.length - 1 ? 0 : idx + 1
+      // Find current index
+      let idx = -1
+      const active = document.activeElement as HTMLElement
+      for (let i = 0; i < focusable.length; i++) {
+        if (focusable[i] === active || focusable[i].contains(active)) {
+          idx = i
+          break
+        }
       }
 
-      focusable[idx].focus()
+      if (e.shiftKey) {
+        // Shift+Tab: if at first or not found, wrap to last
+        if (idx <= 0) {
+          e.preventDefault()
+          focusable[focusable.length - 1].focus()
+        }
+        // else: let browser handle normally (moves to previous in DOM)
+      } else {
+        // Tab: if at last or not found, wrap to first
+        if (idx >= focusable.length - 1 || idx === -1) {
+          e.preventDefault()
+          focusable[0].focus()
+        }
+        // else: let browser handle normally (moves to next in DOM)
+      }
     }
 
-    this.element.addEventListener('keydown', handler)
-    this._cleanups.push(() => this.element.removeEventListener('keydown', handler))
+    document.addEventListener('keydown', handler, true)
+    this._cleanups.push(() => document.removeEventListener('keydown', handler, true))
   }
 
   // ── Destroy ──

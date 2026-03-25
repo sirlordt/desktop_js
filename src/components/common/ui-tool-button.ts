@@ -56,6 +56,7 @@ export class UIToolButton {
     this._iconEl.className = 'ui-toolbtn__icon'
     this._el.appendChild(this._iconEl)
 
+    this._el.tabIndex = 0
     this._applySize()
     this._renderIcon()
 

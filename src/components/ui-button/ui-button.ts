@@ -282,10 +282,14 @@ export class UIButton extends HTMLElement {
   private _updateTabIndex() {
     if (this.getAttribute('focusable') === 'false') {
       this._btn.setAttribute('tabindex', '-1')
+      this.tabIndex = -1
     } else if (this.hasAttribute('tabindex')) {
-      this._btn.setAttribute('tabindex', this.getAttribute('tabindex')!)
+      const val = this.getAttribute('tabindex')!
+      this._btn.setAttribute('tabindex', val)
+      this.tabIndex = parseInt(val) || 0
     } else {
       this._btn.setAttribute('tabindex', '0')
+      this.tabIndex = 0
     }
   }
 

@@ -25,6 +25,7 @@ export class UIWindowManager extends UIPanel {
 
   /** Enable/disable animations (default: true) */
   animated: boolean = true
+  private _batchOp: boolean = false
 
   constructor(options?: UIWindowManagerOptions) {
     super({
@@ -288,6 +289,9 @@ export class UIWindowManager extends UIPanel {
 
   minimizeChild(child: IWindowChild): void {
     if (child.windowState === 'minimized') return
+    // Tools cannot be minimized directly — they follow their overlord
+    const asWin = child as UIWindow
+    if ('isTool' in asWin && asWin.isTool) return
     if (this._emitBefore('before-minimize', child)) return
 
     // Save restore rect only from normal state — maximized already saved it
@@ -315,7 +319,7 @@ export class UIWindowManager extends UIPanel {
 
     this.core.emit('window-minimize', { child })
 
-    if (this._focused === child) {
+    if (this._focused === child && !this._batchOp) {
       this._focused = null
       const all = this._cycleOrder
       // Try to focus a non-minimized window first
@@ -339,6 +343,8 @@ export class UIWindowManager extends UIPanel {
 
   restoreChild(child: IWindowChild): void {
     if (child.windowState === 'normal') return
+    const asWin2 = child as UIWindow
+    if ('isTool' in asWin2 && asWin2.isTool) return
 
     // Free minimize slot
     const slotIdx = this._minimizeSlots.indexOf(child)
@@ -386,6 +392,8 @@ export class UIWindowManager extends UIPanel {
 
   maximizeChild(child: IWindowChild): void {
     if (child.windowState === 'maximized') return
+    const asWin3 = child as UIWindow
+    if ('isTool' in asWin3 && asWin3.isTool) return
     if (this._emitBefore('before-maximize', child)) return
 
     // If minimized, free the slot first
@@ -447,14 +455,28 @@ export class UIWindowManager extends UIPanel {
   // ── Batch operations ──
 
   minimizeAll(): void {
-    for (const child of [...this._zOrder]) {
+    const focused = this._focused
+    this._batchOp = true
+    for (const child of [...this._zOrder, ...this._zOrderTopmost]) {
       if (child.windowState !== 'minimized') this.minimizeChild(child)
+    }
+    this._batchOp = false
+    if (focused) {
+      this._focused = focused
+      focused.onFocused?.()
     }
   }
 
   restoreAll(): void {
-    for (const child of [...this._zOrder]) {
+    const focused = this._focused
+    this._batchOp = true
+    for (const child of [...this._zOrder, ...this._zOrderTopmost]) {
       if (child.windowState === 'minimized') this.restoreChild(child)
+    }
+    this._batchOp = false
+    if (focused) {
+      this._focused = focused
+      focused.onFocused?.()
     }
   }
 

@@ -573,8 +573,11 @@ export class UIWindow implements IWindowChild {
     if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
     if (this._minBtn) this._minBtn.icon = 'window-minimize'
     this._updateHintTexts('normal')
-    // Show all tool windows
+    // Show all tool windows and reassign z-indexes
     for (const tool of this._tools) tool.setVisible(true)
+    if (this.manager) {
+      ;(this.manager as any)._reassignZIndexes()
+    }
   }
 
   onMaximized(): void {

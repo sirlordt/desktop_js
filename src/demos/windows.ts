@@ -226,11 +226,52 @@ export const windowsDemo: DemoRoute = {
       addToolBtn.setAttribute('variant', 'outline')
       addToolBtn.setAttribute('data-focusable', '')
       addToolBtn.textContent = 'Add Another Tool'
+      const calcToolPosition = () => {
+        const mgrW = wm!.element.clientWidth || 800
+        const mgrH = wm!.element.clientHeight || 600
+        const toolW = 180
+        const toolH = 120
+        const gap = 4
+        const isMax = mainWin.windowState === 'maximized'
+
+        if (isMax) {
+          // Build grid of occupied slots from existing tools
+          const rows = Math.max(1, Math.floor(mgrH / (toolH + gap)))
+          const occupied = new Set<string>()
+          for (const t of mainWin.tools) {
+            const tLeft = parseInt(t.element.style.left) || 0
+            const tTop = parseInt(t.element.style.top) || 0
+            const col = Math.round((mgrW - tLeft - toolW) / (toolW + gap))
+            const row = Math.round((tTop - gap) / (toolH + gap))
+            occupied.add(`${col},${row}`)
+          }
+          // Find first free slot
+          for (let col = 0; col < 20; col++) {
+            for (let row = 0; row < rows; row++) {
+              if (!occupied.has(`${col},${row}`)) {
+                return {
+                  left: mgrW - (col + 1) * (toolW + gap),
+                  top: row * (toolH + gap) + gap,
+                }
+              }
+            }
+          }
+          return { left: mgrW - toolW - gap, top: gap }
+        }
+        // Normal: stack to the right of overlord
+        const toolIdx = mainWin.tools.length
+        return {
+          left: mainWin.left + mainWin.width + 5,
+          top: mainWin.top + toolIdx * 30,
+        }
+      }
+
       addToolBtn.addEventListener('click', () => {
+        const pos = calcToolPosition()
         const tool = new UIWindow({
           title: `Tool ${mainWin.tools.length + 1}`,
-          left: mainWin.left + mainWin.width + 5,
-          top: mainWin.top + mainWin.tools.length * 30,
+          left: pos.left,
+          top: pos.top,
           width: 180,
           height: 120,
           icon: makeIcon('#f97316'),

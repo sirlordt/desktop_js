@@ -88,9 +88,33 @@ export class UIWindowManager extends UIPanel {
 
   private _focusWindow(child: IWindowChild): void {
     if (child.windowState === 'minimized') {
-      this.restoreChild(child)
+      // Check if we can restore or maximize
+      const canRestore = !('_minBtn' in child) || (child as any)._minBtn !== null
+      const canMaximize = !('_maxBtn' in child) || (child as any)._maxBtn !== null
+
+      if (canRestore) {
+        this.restoreChild(child)
+      } else if (canMaximize) {
+        this.maximizeChild(child)
+      }
+      // If neither, skip — try next window
+      else {
+        this._focusNextSkipping(child)
+      }
     } else {
       this.bringToFront(child)
+    }
+  }
+
+  private _focusNextSkipping(skip: IWindowChild): void {
+    const idx = this._zOrder.indexOf(skip)
+    if (idx === -1) return
+    for (let i = 1; i < this._zOrder.length; i++) {
+      const next = this._zOrder[(idx + i) % this._zOrder.length]
+      if (next.windowState !== 'minimized') {
+        this.bringToFront(next)
+        return
+      }
     }
   }
 

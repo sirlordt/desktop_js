@@ -131,6 +131,10 @@
   background-color: var(--view-bg-color);
 }
 
+.ui-window__body--hidden {
+  display: none !important;
+}
+
 /* =====================
    Resize handles (all 8)
    ===================== */

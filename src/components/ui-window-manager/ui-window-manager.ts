@@ -37,13 +37,31 @@ export class UIWindowManager extends UIPanel {
       position: 'relative',
     })
 
+    // Apply critical styles directly so the manager works without calling render()
+    this.element.style.position = 'relative'
     this.element.style.overflow = 'hidden'
+    if (options?.width) this.element.style.width = `${options.width}px`
+    if (options?.height) this.element.style.height = `${options.height}px`
     this.element.tabIndex = -1
     this.element.style.outline = 'none'
 
     this._cycleNext = options?.cycleNextShortcut ?? { key: 'F6', altKey: true }
     this._cyclePrev = options?.cyclePrevShortcut ?? { key: 'F6', altKey: true, shiftKey: true }
     this._bindKeyboard()
+  }
+
+  // ── Size (override to sync DOM immediately) ──
+
+  override get width(): number { return super.width }
+  override set width(v: number) {
+    super.width = v
+    this.element.style.width = `${v}px`
+  }
+
+  override get height(): number { return super.height }
+  override set height(v: number) {
+    super.height = v
+    this.element.style.height = `${v}px`
   }
 
   // ── Keyboard shortcuts ──
@@ -152,6 +170,20 @@ export class UIWindowManager extends UIPanel {
     if (this._windows.includes(child)) return
     this._windows.push(child)
     this.element.appendChild(child.element)
+
+    // Clamp initial position within bounds
+    if (child.isFloating) {
+      const mgrW = this.element.clientWidth
+      const mgrH = this.element.clientHeight
+      const cl = parseInt(child.element.style.left) || 0
+      const ct = parseInt(child.element.style.top) || 0
+      const cw = parseInt(child.element.style.width) || 0
+      const ch = parseInt(child.element.style.height) || 0
+      if (mgrW > 0 && mgrH > 0) {
+        child.element.style.left = `${Math.max(0, Math.min(cl, mgrW - cw))}px`
+        child.element.style.top = `${Math.max(0, Math.min(ct, mgrH - ch))}px`
+      }
+    }
 
     if (child.isFloating) {
       child.element.style.position = 'absolute'
@@ -287,12 +319,12 @@ export class UIWindowManager extends UIPanel {
     return detail.cancelled
   }
 
-  minimizeChild(child: IWindowChild): void {
-    if (child.windowState === 'minimized') return
+  minimizeChild(child: IWindowChild): boolean {
+    if (child.windowState === 'minimized') return false
     // Tools cannot be minimized directly — they follow their overlord
     const asWin = child as UIWindow
-    if ('isTool' in asWin && asWin.isTool) return
-    if (this._emitBefore('before-minimize', child)) return
+    if ('isTool' in asWin && asWin.isTool) return false
+    if (this._emitBefore('before-minimize', child)) return false
 
     // Save restore rect only from normal state — maximized already saved it
     if (child.windowState === 'normal') {
@@ -327,7 +359,7 @@ export class UIWindowManager extends UIPanel {
         const c = all[i]
         if (c !== child && c.windowState !== 'minimized') {
           this.bringToFront(c)
-          return
+          return true
         }
       }
       // All minimized — focus the first one in the minimize grid
@@ -335,16 +367,18 @@ export class UIWindowManager extends UIPanel {
         const c = this._minimizeSlots[i]
         if (c && c !== child) {
           this.bringToFront(c)
-          return
+          return true
         }
       }
     }
+    return true
   }
 
-  restoreChild(child: IWindowChild): void {
-    if (child.windowState === 'normal') return
+  restoreChild(child: IWindowChild): boolean {
+    if (child.windowState === 'normal') return false
     const asWin2 = child as UIWindow
-    if ('isTool' in asWin2 && asWin2.isTool) return
+    if ('isTool' in asWin2 && asWin2.isTool) return false
+    if (this._emitBefore('before-restore', child)) return false
 
     // Free minimize slot
     const slotIdx = this._minimizeSlots.indexOf(child)
@@ -366,10 +400,11 @@ export class UIWindowManager extends UIPanel {
 
     this.bringToFront(child)
     this.core.emit('window-restore', { child })
+    return true
   }
 
-  closeChild(child: IWindowChild): void {
-    if (this._emitBefore('before-close', child)) return
+  closeChild(child: IWindowChild): boolean {
+    if (this._emitBefore('before-close', child)) return false
     child.onClosed?.()
     this.core.emit('window-close', { child })
 
@@ -388,13 +423,14 @@ export class UIWindowManager extends UIPanel {
     } else {
       this.removeWindow(child)
     }
+    return true
   }
 
-  maximizeChild(child: IWindowChild): void {
-    if (child.windowState === 'maximized') return
+  maximizeChild(child: IWindowChild): boolean {
+    if (child.windowState === 'maximized') return false
     const asWin3 = child as UIWindow
-    if ('isTool' in asWin3 && asWin3.isTool) return
-    if (this._emitBefore('before-maximize', child)) return
+    if ('isTool' in asWin3 && asWin3.isTool) return false
+    if (this._emitBefore('before-maximize', child)) return false
 
     // If minimized, free the slot first
     const slotIdx = this._minimizeSlots.indexOf(child)
@@ -433,10 +469,13 @@ export class UIWindowManager extends UIPanel {
 
     this.bringToFront(child)
     this.core.emit('window-maximize', { child })
+    return true
   }
 
-  restoreMaximized(child: IWindowChild): void {
-    if (child.windowState !== 'maximized') return
+  restoreMaximized(child: IWindowChild): boolean {
+    if (child.windowState !== 'maximized') return false
+    if (this._emitBefore('before-restore', child)) return false
+
     child.windowState = 'normal'
     child.onRestored?.()
 
@@ -450,6 +489,7 @@ export class UIWindowManager extends UIPanel {
       })
     }
     this.core.emit('window-restore', { child })
+    return true
   }
 
   // ── Batch operations ──
@@ -684,7 +724,7 @@ export class UIWindowManager extends UIPanel {
       zIndex: String(zBase),
     })
     this.element.appendChild(backdrop)
-    child.setZIndex(zBase + 1)
+    child.zIndex = zBase + 1
     this._modalStack.push({ child, backdrop })
   }
 
@@ -718,12 +758,12 @@ export class UIWindowManager extends UIPanel {
         // Skip tools — they are positioned after their overlord
         const asWin = child as UIWindow
         if ('isTool' in asWin && asWin.isTool) continue
-        child.setZIndex(z)
+        child.zIndex = z
         z += Z_STEP
         // Position tools just above overlord
         if ('tools' in asWin) {
           for (const tool of asWin.tools) {
-            tool.setZIndex(z)
+            tool.zIndex = z
             z += Z_STEP
           }
         }

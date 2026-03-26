@@ -3,12 +3,14 @@ import { UIPopup } from '../components/ui-popup/ui-popup'
 import { UIMenuItem } from '../components/ui-menu-item/ui-menu-item'
 import { UIWindowManager } from '../components/ui-window-manager/ui-window-manager'
 import { UIWindow } from '../components/ui-window/ui-window'
+
 import type { DemoRoute } from '../header'
 
 function makeBtn(text: string, variant = 'outline'): HTMLElement {
   const btn = document.createElement('ui-button') as HTMLElement
   btn.setAttribute('variant', variant)
   btn.setAttribute('size', 'small')
+  btn.setAttribute('data-focusable', '')
   btn.textContent = text
   return btn
 }
@@ -16,9 +18,20 @@ function makeBtn(text: string, variant = 'outline'): HTMLElement {
 export const popupsDemo: DemoRoute = {
   id: 'popups',
   label: 'Popups',
-  render: () => `<div id="popup-demo" class="demo-app" style="padding: 20px;"></div>`,
+  render: () => `<div id="popup-demo" class="demo-app" style="padding: 0;"></div>`,
   setup: () => {
-    const root = document.getElementById('popup-demo')!
+    const container = document.getElementById('popup-demo')!
+    container.style.padding = '20px'
+    container.style.overflow = 'auto'
+
+    // ── WindowManager (empty, sibling of buttons) ──
+    const wm = new UIWindowManager({
+      width: 900,
+      height: 600,
+    })
+    wm.element.style.border = '1px solid #888'
+
+    const root = container
 
     // ── 1. Basic Popup ──
     const sec1 = document.createElement('div')
@@ -195,28 +208,37 @@ export const popupsDemo: DemoRoute = {
     sec7.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Detachable Popup (drag titlebar to detach)</h2>'
     root.appendChild(sec7)
 
-    const wmContainer = document.createElement('div')
-    wmContainer.style.cssText = 'width: 100%; height: 400px; border: 1px solid var(--border-color); border-radius: 6px; position: relative;'
-    sec7.appendChild(wmContainer)
-
-    const wm = new UIWindowManager({ width: 900, height: 400 })
-    wmContainer.appendChild(wm.element)
-
-    const parentWin = new UIWindow({
+    // ── WindowManager con ventanas ──
+    const emptyWin = new UIWindow({
       title: 'Parent Window',
-      left: 20, top: 20,
-      width: 350, height: 300,
+      left: 20,
+      top: 20,
+      width: 400,
+      height: 300,
+      resizable: true,
+      movable: true,
+      closable: true,
+      minimizable: true,
+      maximizable: true,
     })
-    wm.addWindow(parentWin)
+    const secondWin = new UIWindow({
+      title: 'Second Window',
+      left: 200,
+      top: 100,
+      width: 350,
+      height: 250,
+      resizable: true,
+      movable: true,
+      closable: true,
+      minimizable: true,
+      maximizable: true,
+    })
 
     const detachBtn = makeBtn('Open Detachable')
-    parentWin.contentElement.appendChild(detachBtn)
-    parentWin.contentElement.style.padding = '10px'
 
     const statusLabel = document.createElement('div')
     statusLabel.style.cssText = 'margin-top: 8px; font-size: 12px; opacity: 0.6;'
     statusLabel.textContent = 'Click button to open popup. Drag its titlebar to detach.'
-    parentWin.contentElement.appendChild(statusLabel)
 
     const popupDetach = new UIPopup({
       anchor: detachBtn,
@@ -227,10 +249,15 @@ export const popupsDemo: DemoRoute = {
       detachable: true,
       resizable: true,
     })
-    popupDetach.setDetachContext(wm, parentWin)
+    popupDetach.overlord = emptyWin
 
-    ;['Select', 'Move', 'Rotate', 'Scale', 'Brush', 'Eraser', 'Fill', 'Text'].forEach(text => {
-      const item = new UIMenuItem({ text })
+
+    const tools: [string, string][] = [
+      ['Select', 'Ctrl+A'], ['Move', 'Ctrl+M'], ['Rotate', 'Ctrl+R'], ['Scale', 'Alt+S'],
+      ['Brush', 'Ctrl+B'], ['Eraser', 'Alt+E'], ['Fill', 'Ctrl+G'], ['Text', 'Ctrl+T'],
+    ]
+    tools.forEach(([text, key]) => {
+      const item = new UIMenuItem({ text, shortcut: key })
       popupDetach.addChild(item.element)
       item.onClick(() => {
         statusLabel.textContent = `Tool: ${text}`
@@ -245,5 +272,66 @@ export const popupsDemo: DemoRoute = {
     popupDetach.on('attach', () => {
       statusLabel.textContent = 'Popup returned. Click button to open again.'
     })
+
+    // Container popup (kind = 'container')
+    const containerBtn = makeBtn('Open Container')
+    const popupContainer = new UIPopup({
+      anchor: containerBtn,
+      kind: 'container',
+      alignment: 'BottomLeft',
+      width: 220,
+      height: 160,
+      title: 'Settings',
+      detachable: true,
+      resizable: true,
+    })
+    popupContainer.overlord = emptyWin
+
+    // Settings popup content wrapper
+    const settingsContent = document.createElement('div')
+    settingsContent.style.cssText = 'display: flex; flex-direction: column; gap: 10px; padding: 12px 14px;'
+
+    const cb1 = document.createElement('label')
+    cb1.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;'
+    cb1.setAttribute('data-focusable', '')
+    cb1.innerHTML = '<input type="checkbox" checked> Auto-save'
+
+    const cb2 = document.createElement('label')
+    cb2.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;'
+    cb2.setAttribute('data-focusable', '')
+    cb2.innerHTML = '<input type="checkbox"> Dark mode'
+
+    const inp = document.createElement('input')
+    inp.type = 'text'
+    inp.placeholder = 'Search...'
+    inp.setAttribute('data-focusable', '')
+    inp.style.cssText = 'width: 100%; padding: 6px 8px; box-sizing: border-box; border: 1px solid #555; border-radius: 4px; background: var(--view-bg-color); color: var(--fg-color);'
+
+    const applyBtn = makeBtn('Apply', 'solid')
+    applyBtn.style.alignSelf = 'flex-end'
+    applyBtn.addEventListener('click', () => {
+      statusLabel.textContent = 'Settings applied!'
+    })
+
+    settingsContent.appendChild(cb1)
+    settingsContent.appendChild(cb2)
+    settingsContent.appendChild(inp)
+    settingsContent.appendChild(applyBtn)
+    popupContainer.addChild(settingsContent)
+
+    containerBtn.addEventListener('click', () => popupContainer.toggle())
+
+    emptyWin.contentElement.style.padding = '10px'
+    emptyWin.contentElement.style.display = 'flex'
+    emptyWin.contentElement.style.flexWrap = 'wrap'
+    emptyWin.contentElement.style.gap = '8px'
+    emptyWin.contentElement.style.alignContent = 'flex-start'
+    emptyWin.contentElement.appendChild(detachBtn)
+    emptyWin.contentElement.appendChild(containerBtn)
+    statusLabel.style.width = '100%'
+    emptyWin.contentElement.appendChild(statusLabel)
+    container.appendChild(wm.element)
+    wm.addWindow(emptyWin)
+    wm.addWindow(secondWin)
   },
 }

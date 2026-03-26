@@ -1,8 +1,7 @@
-import type { PopupState, UIPopupOptions } from '../common/types'
+import type { PopupState, PopupKind, UIPopupOptions } from '../common/types'
 import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-focus'
 import { findBestPosition } from '../common/positioning'
 import { UIWindow } from '../ui-window/ui-window'
-import type { UIWindowManager } from '../ui-window-manager/ui-window-manager'
 import './ui-popup.css'
 
 type PopupEventName = 'show' | 'close' | 'detach' | 'attach'
@@ -10,6 +9,7 @@ type PopupHandler = (...args: any[]) => void
 
 export class UIPopup {
   private _anchor: HTMLElement
+  private _kind: PopupKind
   private _alignment: string
   private _margin: number
   private _detachable: boolean
@@ -31,13 +31,12 @@ export class UIPopup {
   private _focusedBeforeOpen: HTMLElement | null = null
 
   // Detach
-  private _windowManager: UIWindowManager | null = null
   private _overlord: UIWindow | null = null
-  private _isToolAttached = false
 
   constructor(options: UIPopupOptions) {
     const o = options
     this._anchor = o.anchor
+    this._kind = o.kind ?? 'menu'
     this._alignment = o.alignment ?? 'BottomLeft'
     this._margin = o.margin ?? 4
     this._detachable = o.detachable ?? false
@@ -54,7 +53,9 @@ export class UIPopup {
       titleAlign: 'center',
       title: this._title,
       showTitle: showBar,
-      movable: false,
+      movable: this._detachable,
+      positioning: 'fixed',
+      zIndex: 99999,
       left: 0,
       top: 0,
       width: this._width,
@@ -64,13 +65,14 @@ export class UIPopup {
       minimizable: false,
       maximizable: false,
       foldable: false,
+      showShortcuts: false,
       minWidth: o.minWidth ?? 50,
-      minHeight: o.minHeight ?? 30,
-      scroll: o.scroll,
+      minHeight: o.minHeight ?? 100,
+      scroll: o.scroll ?? ((o.resizable && (o.kind ?? 'menu') === 'menu') ? 'both' : undefined),
       scrollBarSize: 'small',
     })
 
-    // Hide close button initially when detachable (show on detach)
+    // Hide close button initially when detachable
     if (this._detachable) {
       this._window.closable = false
     }
@@ -82,16 +84,24 @@ export class UIPopup {
       }
     })
 
-    // Detach: drag on titlebar
+    // Detach: when drag ends in attached mode, convert to tool of overlord
     if (this._detachable) {
-      this._bindDetachDrag()
+      this._window.element.addEventListener('end-drag', () => {
+        if (this._state === 'attached') {
+          this._detach()
+          this._window.closable = true
+        }
+      })
     }
   }
+
+  // ── Public API ──
 
   get element(): HTMLElement { return this._window.element }
   get window(): UIWindow { return this._window }
   get state(): PopupState { return this._state }
   get visible(): boolean { return this._state !== 'closed' }
+  get kind(): PopupKind { return this._kind }
 
   get anchor(): HTMLElement { return this._anchor }
   set anchor(el: HTMLElement) { this._anchor = el; if (this._state === 'attached') this._reposition() }
@@ -109,32 +119,49 @@ export class UIPopup {
     applySimulateFocus(this._window.element, v)
   }
 
-  /** Set WindowManager and overlord for detach support */
-  setDetachContext(wm: UIWindowManager, overlord: UIWindow): void {
-    this._windowManager = wm
-    this._overlord = overlord
-  }
+  /** Set overlord window for detach (popup becomes tool of this window) */
+  set overlord(win: UIWindow | null) { this._overlord = win }
 
   show(): void {
     if (this._state !== 'closed' || this._destroyed) return
     const el = this._window.element
-    // Clean any leftover animation classes
     el.classList.remove('wm-anim', 'wm-anim-close', 'wm-anim-open-start')
-    el.style.zIndex = '99999'
     el.style.opacity = ''
     el.style.pointerEvents = ''
     if (!el.parentNode) document.body.appendChild(el)
     this._state = 'attached'
 
+    // Reset state
+    this._window.resetLastFocused()
+    this._clearHighlight()
+    this._activeIndex = -1
+
+    // Menu mode: remove tabIndex from items so they never get real focus
+    if (this._kind === 'menu') {
+      this._setChildrenFocusable(false)
+    }
+
+    // Ensure popup is at least as wide as its anchor
+    const anchorRect = this._anchor.getBoundingClientRect()
+    const anchorW = Math.ceil(anchorRect.width)
+    if (anchorW > 0) {
+      if (anchorW > this._window.minWidth) this._window.minWidth = anchorW
+      if (anchorW > this._window.width) this._window.width = anchorW
+    }
+
+    // Position above anchor's stacking context
+    const anchorZ = this._getAnchorZIndex()
+    el.style.zIndex = `${anchorZ + 1}`
+
     this._reposition()
 
-    // Bubble simulate-focus from whoever has focus right now
+    // Simulate focus on whoever had focus before
     this._focusedBeforeOpen = document.activeElement as HTMLElement | null
     if (this._focusedBeforeOpen) {
       dispatchSimulateFocus(this._focusedBeforeOpen, true)
     }
 
-    // Take focus and show as focused
+    // Take focus on the popup window (not on children)
     el.focus({ preventScroll: true })
     if (this._window.onFocused) this._window.onFocused()
 
@@ -165,53 +192,39 @@ export class UIPopup {
       document.addEventListener('keydown', this._escapeHandler, true)
     }
 
-    // Keyboard navigation (without stealing focus)
-    this._activeIndex = -1
-    this._keyNavHandler = (e: KeyboardEvent) => {
-      if (this._state !== 'attached') return
-      const items = this._getNavigableItems()
-      if (items.length === 0) return
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        e.stopPropagation()
-        this._activeIndex = (this._activeIndex + 1) % items.length
-        this._highlightItem(items)
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        e.stopPropagation()
-        this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1
-        this._highlightItem(items)
-      } else if (e.key === 'Enter' && this._activeIndex >= 0) {
-        e.preventDefault()
-        e.stopPropagation()
-        items[this._activeIndex].click()
-      }
+    // Kind-specific keyboard navigation
+    if (this._kind === 'menu') {
+      this._bindMenuNav()
+    } else {
+      this._bindContainerNav()
     }
-    document.addEventListener('keydown', this._keyNavHandler, true)
+
+    // Recalculate scrollbox after layout
+    requestAnimationFrame(() => {
+      if (this._window.scrollBox) {
+        const content = this._window.scrollBox.contentElement
+        this._window.scrollBox.contentWidth = content.scrollWidth
+        this._window.scrollBox.contentHeight = content.scrollHeight
+        this._window.scrollBox.refresh()
+      }
+    })
 
     this._emit('show')
   }
 
   close(): void {
     if (this._state === 'detached') {
-      this._closeDetached()
+      this._returnFromDetached()
       return
     }
     if (this._state === 'closed') return
     this._removeListeners()
 
-    // Restore focus, then deactivate simulate-focus
+    // Restore focus
     if (this._focusedBeforeOpen) {
-      // Restore real focus first
       if (this._focusedBeforeOpen.isConnected) {
         this._focusedBeforeOpen.focus({ preventScroll: true })
       }
-      // Tell WindowManager to re-focus the parent window
-      if (this._overlord && this._windowManager) {
-        this._windowManager.bringToFront(this._overlord)
-      }
-      // Deactivate simulate-focus (won't remove focused if window has real focus now)
       dispatchSimulateFocus(this._focusedBeforeOpen, false)
       this._focusedBeforeOpen = null
     }
@@ -219,6 +232,13 @@ export class UIPopup {
     const el = this._window.element
     if (el.parentNode) el.parentNode.removeChild(el)
     this._state = 'closed'
+    this._window.resetLastFocused()
+    this._clearHighlight()
+    this._activeIndex = -1
+    // Reset scroll position
+    if (this._window.scrollBox) {
+      this._window.scrollBox.scrollTo(0, 0)
+    }
     this._emit('close')
   }
 
@@ -263,7 +283,86 @@ export class UIPopup {
     this._children.length = 0
   }
 
+  // ── Private: Menu kind navigation ──
+
+  /** Arrow up/down to navigate, Enter to select. No real focus on items. */
+  private _bindMenuNav(): void {
+    this._keyNavHandler = (e: KeyboardEvent) => {
+      if (this._state !== 'attached') return
+      const items = this._getMenuItems()
+      if (items.length === 0) return
+      if (e.key === 'ArrowDown') {
+        e.preventDefault(); e.stopPropagation()
+        this._activeIndex = (this._activeIndex + 1) % items.length
+        this._highlightMenuItem(items)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault(); e.stopPropagation()
+        this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1
+        this._highlightMenuItem(items)
+      } else if (e.key === 'Enter' && this._activeIndex >= 0) {
+        e.preventDefault(); e.stopPropagation()
+        items[this._activeIndex].click()
+      }
+    }
+    document.addEventListener('keydown', this._keyNavHandler, true)
+  }
+
+  /** Bind arrow navigation for detached menu mode */
+  private _bindDetachedMenuNav(): void {
+    this._keyNavHandler = (e: KeyboardEvent) => {
+      if (this._state !== 'detached') return
+      const items = this._getMenuItems()
+      if (items.length === 0) return
+      if (e.key === 'ArrowDown') {
+        e.preventDefault(); e.stopPropagation()
+        this._activeIndex = (this._activeIndex + 1) % items.length
+        this._highlightMenuItem(items)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault(); e.stopPropagation()
+        this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1
+        this._highlightMenuItem(items)
+      } else if (e.key === 'Enter' && this._activeIndex >= 0) {
+        e.preventDefault(); e.stopPropagation()
+        items[this._activeIndex].click()
+      }
+    }
+    document.addEventListener('keydown', this._keyNavHandler, true)
+  }
+
+  // ── Private: Container kind navigation ──
+
+  /** Let UIWindow's built-in Tab handler cycle through [data-focusable] children. */
+  private _bindContainerNav(): void {
+    // Enable tab focus on children
+    this._setChildrenFocusable(true)
+
+    // Focus first child
+    const first = this._window.contentElement.querySelector<HTMLElement>('[data-focusable]')
+    if (first) first.focus({ preventScroll: true })
+  }
+
   // ── Private: Positioning ──
+
+  private _getAnchorZIndex(): number {
+    let el: HTMLElement | null = this._anchor
+    while (el) {
+      const z = parseInt(el.style.zIndex) || parseInt(getComputedStyle(el).zIndex)
+      if (!isNaN(z) && z > 0) return z
+      el = el.parentElement
+    }
+    return 99999
+  }
+
+  private _setChildrenFocusable(enabled: boolean): void {
+    const items = this._window.contentElement.querySelectorAll('[data-focusable]')
+    items.forEach(el => {
+      if (enabled) {
+        ;(el as HTMLElement).tabIndex = -1
+      } else {
+        ;(el as HTMLElement).removeAttribute('tabindex')
+      }
+    })
+  }
 
   private _reposition(): void {
     const anchorRect = this._anchor.getBoundingClientRect()
@@ -271,122 +370,91 @@ export class UIPopup {
     const w = el.offsetWidth || this._width
     const h = el.offsetHeight || this._height
     const { pos } = findBestPosition(anchorRect, w, h, this._alignment as any, this._margin)
-    el.style.left = `${Math.round(pos.left + window.scrollX)}px`
-    el.style.top = `${Math.round(pos.top + window.scrollY)}px`
+    el.style.left = `${Math.round(pos.left)}px`
+    el.style.top = `${Math.round(pos.top)}px`
   }
 
   // ── Private: Detach ──
 
-  private _bindDetachDrag(): void {
-    const titlebar = this._window.titleBarElement
-    let startX = 0, startY = 0
-    let dragging = false
-    const THRESHOLD = 5
-
-    const onMouseDown = (e: MouseEvent) => {
-      if (this._state !== 'attached') return
-      e.preventDefault()
-      startX = e.clientX
-      startY = e.clientY
-      dragging = false
-      document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('mouseup', onMouseUp)
-    }
-
-    const onMouseMove = (e: MouseEvent) => {
-      const dx = e.clientX - startX
-      const dy = e.clientY - startY
-      if (!dragging && Math.sqrt(dx * dx + dy * dy) > THRESHOLD) {
-        dragging = true
-        document.removeEventListener('mousemove', onMouseMove)
-        document.removeEventListener('mouseup', onMouseUp)
-        this._detach()
-        // Show close button only after mouse is released
-        const onDetachUp = () => {
-          document.removeEventListener('mouseup', onDetachUp)
-          this._window.closable = true
-        }
-        document.addEventListener('mouseup', onDetachUp)
-      }
-    }
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
-    }
-
-    titlebar.addEventListener('mousedown', onMouseDown)
-  }
-
   private _detach(): void {
-    if (!this._windowManager || !this._overlord) return
+    if (!this._overlord) return
 
-    const el = this._window.element
-    const rect = el.getBoundingClientRect()
-    const mgrRect = this._windowManager.element.getBoundingClientRect()
-
-    // Remove from body (attached mode)
     this._removeListeners()
-    if (el.parentNode) el.parentNode.removeChild(el)
     this._state = 'detached'
 
-    // Reconfigure for detached mode
+    // Reconfigure: show close
     this._window.showTitle = true
-    this._window.movable = true
-    // closable = true set on mouseup to avoid breaking drag
+    this._window.closable = true
 
-    // Position relative to manager
-    el.style.left = `${Math.round(rect.left - mgrRect.left)}px`
-    el.style.top = `${Math.round(rect.top - mgrRect.top)}px`
-    el.style.width = `${Math.round(rect.width)}px`
-    el.style.height = `${Math.round(rect.height)}px`
-
-    // Add to manager as tool
-    this._windowManager.addWindow(this._window)
+    // Become tool of overlord
     this._overlord.addTool(this._window)
-    this._isToolAttached = true
 
     this._window.onClosed = () => this._returnFromDetached()
 
-    if (this._window.onFocused) this._window.onFocused()
+    // Deactivate simulate-focus — popup is now a real window
+    if (this._focusedBeforeOpen) {
+      dispatchSimulateFocus(this._focusedBeforeOpen, false)
+      this._focusedBeforeOpen = null
+    }
+
+    if (this._kind === 'menu') {
+      // Menu mode: keep arrow navigation, no item selected by default
+      this._activeIndex = -1
+      this._clearHighlight()
+      this._bindDetachedMenuNav()
+    } else {
+      // Container mode: enable tab focus, let UIWindow handle Tab cycle
+      this._setChildrenFocusable(true)
+      this._window.resetLastFocused()
+      const firstFocusable = this._window.contentElement.querySelector('[data-focusable]') as HTMLElement | null
+      if (firstFocusable) (firstFocusable as any).focus({ preventScroll: true, focusVisible: true })
+    }
 
     this._emit('detach')
-  }
-
-  private _closeDetached(): void {
-    if (this._state !== 'detached') return
-    this._returnFromDetached()
   }
 
   private _returnFromDetached(): void {
     const el = this._window.element
 
-    // Remove from manager immediately (skip animation)
-    if (this._isToolAttached && this._windowManager) {
-      // Remove animation classes
-      el.classList.remove('wm-anim', 'wm-anim-close', 'wm-anim-open-start')
-      el.style.opacity = ''
-      el.style.pointerEvents = ''
-      el.style.transform = ''
-      // Remove from overlord tools
-      if (this._overlord) this._overlord.removeTool(this._window)
-      // Remove from manager windows list
-      this._windowManager.removeWindow(this._window)
-    }
-    this._isToolAttached = false
+    // Remove listeners (detached nav)
+    this._removeListeners()
+
+    // Remove from overlord tools
+    if (this._overlord) this._overlord.removeTool(this._window)
+
+    // Remove from DOM
+    el.classList.remove('wm-anim', 'wm-anim-close', 'wm-anim-open-start')
+    el.style.opacity = ''
+    el.style.pointerEvents = ''
+    el.style.transform = ''
+    if (el.parentNode) el.parentNode.removeChild(el)
 
     // Reconfigure back to popup mode
     this._window.showTitle = this._detachable
-    this._window.movable = false
+    this._window.movable = this._detachable
     this._window.closable = false
+
+    if (this._kind === 'container') {
+      this._setChildrenFocusable(false)
+    }
 
     // Restore size
     el.style.width = `${this._width}px`
     el.style.height = `${this._height}px`
-    el.style.zIndex = ''
 
     this._state = 'closed'
     this._window.onClosed = () => {}
+    this._clearHighlight()
+    this._activeIndex = -1
+
+    // Restore focus and clean up simulate-focus
+    if (this._focusedBeforeOpen) {
+      if (this._focusedBeforeOpen.isConnected) {
+        this._focusedBeforeOpen.focus({ preventScroll: true })
+      }
+      dispatchSimulateFocus(this._focusedBeforeOpen, false)
+      this._focusedBeforeOpen = null
+    }
 
     this._emit('attach')
     this._emit('close')
@@ -407,25 +475,29 @@ export class UIPopup {
       document.removeEventListener('keydown', this._keyNavHandler, true)
       this._keyNavHandler = null
     }
-    // Clear highlight
-    this._clearHighlight()
-    this._activeIndex = -1
   }
 
-  private _getNavigableItems(): HTMLElement[] {
+  // ── Private: Menu helpers ──
+
+  private _getMenuItems(): HTMLElement[] {
     return Array.from(this._window.contentElement.querySelectorAll<HTMLElement>('.ui-menuitem:not(.ui-menuitem--disabled)'))
   }
 
-  private _highlightItem(items: HTMLElement[]): void {
+  private _highlightMenuItem(items: HTMLElement[]): void {
     this._clearHighlight()
     if (this._activeIndex >= 0 && this._activeIndex < items.length) {
-      items[this._activeIndex].classList.add('ui-menuitem--highlight')
+      const item = items[this._activeIndex]
+      item.classList.add('ui-menuitem--highlight')
+      if (this._window.scrollBox) {
+        this._window.scrollBox.scrollIntoView(item)
+      }
     }
   }
 
   private _clearHighlight(): void {
-    const prev = this._window.contentElement.querySelector('.ui-menuitem--highlight')
-    if (prev) prev.classList.remove('ui-menuitem--highlight')
+    this._window.contentElement.querySelectorAll('.ui-menuitem--highlight').forEach(el => {
+      el.classList.remove('ui-menuitem--highlight')
+    })
   }
 
   private _emit(event: PopupEventName, ...args: any[]): void {

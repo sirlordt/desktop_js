@@ -50,6 +50,8 @@ export class UIMenuItem {
     if (this._disabled) this._el.classList.add('ui-menuitem--disabled')
     if (this._pushed) this._el.classList.add('ui-menuitem--pushed')
     if (this._pushable) this._el.setAttribute('data-pushable', '')
+    this._el.setAttribute('data-focusable', '')
+    this._el.tabIndex = -1
     if (o.margin != null) this._el.style.setProperty('--ui-menuitem-margin', `${o.margin}px`)
     if (o.iconGap != null) this._el.style.setProperty('--ui-menuitem-icon-gap', `${o.iconGap}px`)
 

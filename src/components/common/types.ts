@@ -48,6 +48,7 @@ export const UIPosition = {
   Fluid: 'fluid',
   Relative: 'relative',
   Absolute: 'absolute',
+  Fixed: 'fixed',
 } as const
 export type UIPosition = typeof UIPosition[keyof typeof UIPosition]
 
@@ -101,8 +102,11 @@ export const PopupState = {
 } as const
 export type PopupState = typeof PopupState[keyof typeof PopupState]
 
+export type PopupKind = 'menu' | 'container'
+
 export interface UIPopupOptions {
   anchor: HTMLElement
+  kind?: PopupKind
   alignment?: HintAlignment
   margin?: number
   scroll?: ScrollMode
@@ -314,8 +318,8 @@ export interface IWindowChild {
   onMinimized?(): void
   onRestored?(): void
   onClosed?(): void
-  setZIndex(z: number): void
-  setVisible(v: boolean): void
+  zIndex: number
+  visible: boolean
 }
 
 export const WindowKind = {
@@ -358,6 +362,8 @@ export interface UIWindowManagerOptions {
 
 export interface UIWindowOptions {
   kind?: WindowKind
+  positioning?: UIPosition
+  zIndex?: number
   id?: string
   title?: string
   left?: number
@@ -387,4 +393,5 @@ export interface UIWindowOptions {
   scroll?: ScrollMode
   scrollBarSize?: ScrollBarSize
   showHints?: boolean
+  showShortcuts?: boolean
 }

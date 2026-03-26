@@ -2,7 +2,7 @@ import { UIToolButton } from '../common/ui-tool-button'
 import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus'
 import { UIHint } from '../ui-hint/ui-hint'
 import { UIScrollBox } from '../ui-scrollbox/ui-scrollbox'
-import type { IWindowChild, WindowState, WindowKind, UIWindowOptions, ScrollMode, TitleAlign } from '../common/types'
+import type { IWindowChild, WindowState, WindowKind, UIPosition, UIWindowOptions, ScrollMode, TitleAlign } from '../common/types'
 import type { UIWindowManager } from '../ui-window-manager/ui-window-manager'
 import './ui-window.css'
 
@@ -34,6 +34,7 @@ export class UIWindow implements IWindowChild {
   private _leftSlot: HTMLDivElement
   private _rightSlot: HTMLDivElement
   private _kind: WindowKind
+  private _positioning: UIPosition
   private _resizable: boolean
   private _movable: boolean
   private _showTitle: boolean
@@ -60,10 +61,13 @@ export class UIWindow implements IWindowChild {
   private _minBtn: UIToolButton | null = null
   private _maxBtn: UIToolButton | null = null
   private _btnSize: number
+  private _titleHint: UIHint | null = null
   private _foldHint: UIHint | null = null
   private _minHint: UIHint | null = null
   private _maxHint: UIHint | null = null
   private _closeHint: UIHint | null = null
+  private _showHints: boolean = true
+  private _showShortcuts: boolean = true
   private _folded: boolean = false
   private _foldVisible: boolean = false
   private _foldRestoreHeight: number = 0
@@ -90,16 +94,19 @@ export class UIWindow implements IWindowChild {
     this._titleBarHeight = o.titleBarHeight ?? (isMiniDrag ? 14 : tbStyle === 'tool' ? 21 : 28)
     this._btnSize = Math.max(16, this._titleBarHeight - 8)
 
+    this._positioning = o.positioning ?? 'absolute'
+
     // Root element
     this.element = document.createElement('div')
     this.element.className = 'ui-window'
     this.element.tabIndex = -1
     this.element.style.outline = 'none'
-    this.element.style.position = 'absolute'
+    this.element.style.position = this._positioning
     this.element.style.left = `${o.left ?? 50}px`
     this.element.style.top = `${o.top ?? 50}px`
     this.element.style.width = `${o.width ?? 300}px`
     this.element.style.height = `${o.height ?? 200}px`
+    if (o.zIndex != null) this.element.style.zIndex = `${o.zIndex}`
     if (isTool) this.element.classList.add('ui-window--tool')
     if (isMiniDrag) this.element.classList.add('ui-window--mini-drag')
     if (tbStyle === 'tool') this.element.classList.add('ui-window--tb-tool')
@@ -138,6 +145,22 @@ export class UIWindow implements IWindowChild {
     if (!this._showTitle) this.titleBarElement.style.display = 'none'
     if (this._titleAlign !== 'left') this._titleEl.style.textAlign = this._titleAlign
     this.titleBarElement.appendChild(this._titleEl)
+
+    // Title hint — shows full title when truncated (ellipsis)
+    this._titleHint = new UIHint({
+      anchor: this._titleEl,
+      content: this._title,
+      trigger: 'programmatic',
+      arrow: true,
+    })
+    this._titleEl.addEventListener('mouseenter', () => {
+      if (!this._titleHint || !this._showHints) return
+      const truncated = this._titleEl.scrollWidth > this._titleEl.clientWidth
+      if (truncated) this._titleHint.show()
+    })
+    this._titleEl.addEventListener('mouseleave', () => {
+      if (this._titleHint) this._titleHint.hideImmediate()
+    })
 
     // Right slot (custom elements before standard buttons)
     this._rightSlot = document.createElement('div')
@@ -184,19 +207,21 @@ export class UIWindow implements IWindowChild {
     this.titleBarElement.appendChild(this._buttonsEl)
 
     // Hints for standard buttons
-    if (o.showHints !== false) {
+    this._showHints = o.showHints !== false
+    this._showShortcuts = o.showShortcuts !== false
+    if (this._showHints) {
       const hintOpts = { trigger: 'hover' as const, showDelay: 400, hideDelay: 100, arrow: true }
       if (this._foldBtn) {
         this._foldHint = new UIHint({ anchor: this._foldBtn.element, content: 'Fold', ...hintOpts })
       }
       if (this._minBtn) {
-        this._minHint = new UIHint({ anchor: this._minBtn.element, content: 'Minimize (F7)', ...hintOpts })
+        this._minHint = new UIHint({ anchor: this._minBtn.element, content: this._hintText('Minimize', 'F7'), ...hintOpts })
       }
       if (this._maxBtn) {
-        this._maxHint = new UIHint({ anchor: this._maxBtn.element, content: 'Maximize (F8)', ...hintOpts })
+        this._maxHint = new UIHint({ anchor: this._maxBtn.element, content: this._hintText('Maximize', 'F8'), ...hintOpts })
       }
       if (this._closeBtn) {
-        this._closeHint = new UIHint({ anchor: this._closeBtn.element, content: 'Close (F9)', ...hintOpts })
+        this._closeHint = new UIHint({ anchor: this._closeBtn.element, content: this._hintText('Close', 'F9'), ...hintOpts })
       }
     }
 
@@ -250,9 +275,19 @@ export class UIWindow implements IWindowChild {
   set title(v: string) {
     this._title = v
     this._titleEl.textContent = v
+    if (this._titleHint) this._titleHint.content = v
   }
 
   get kind(): WindowKind { return this._kind }
+
+  get zIndex(): number { return parseInt(this.element.style.zIndex) || 0 }
+  set zIndex(v: number) { this.element.style.zIndex = `${v}` }
+
+  get positioning(): UIPosition { return this._positioning }
+  set positioning(v: UIPosition) {
+    this._positioning = v
+    this.element.style.position = v
+  }
 
   get movable(): boolean { return this._movable }
   set movable(v: boolean) { this._movable = v }
@@ -282,6 +317,7 @@ export class UIWindow implements IWindowChild {
   get closable(): boolean { return !!this._closeBtn }
   set closable(v: boolean) {
     if (this._closeBtn) this._closeBtn.element.style.display = v ? '' : 'none'
+    if (this._closeHint) this._closeHint.hideImmediate()
   }
 
   get minimizable(): boolean { return !!this._minBtn }
@@ -300,6 +336,21 @@ export class UIWindow implements IWindowChild {
     this.titleBarElement.style.display = v ? '' : 'none'
   }
 
+  get showHints(): boolean { return this._showHints }
+  set showHints(v: boolean) {
+    this._showHints = v
+    if (this._foldHint) this._foldHint.disabled = !v
+    if (this._minHint) this._minHint.disabled = !v
+    if (this._maxHint) this._maxHint.disabled = !v
+    if (this._closeHint) this._closeHint.disabled = !v
+  }
+
+  get showShortcuts(): boolean { return this._showShortcuts }
+  set showShortcuts(v: boolean) {
+    this._showShortcuts = v
+    this._updateHintTexts()
+  }
+
   get titleAlign(): TitleAlign { return this._titleAlign }
   set titleAlign(v: TitleAlign) {
     this._titleAlign = v
@@ -315,13 +366,21 @@ export class UIWindow implements IWindowChild {
   get width(): number { return parseInt(this.element.style.width) || 0 }
   set width(v: number) {
     this.element.style.width = `${Math.min(this._maxWidth, Math.max(this._minWidth, v))}px`
-    this._scrollBox?.refresh()
+    this._refreshScrollBox()
   }
 
   get height(): number { return parseInt(this.element.style.height) || 0 }
   set height(v: number) {
     this.element.style.height = `${Math.min(this._maxHeight, Math.max(this._minHeight, v))}px`
-    this._scrollBox?.refresh()
+    this._refreshScrollBox()
+  }
+
+  private _refreshScrollBox(): void {
+    if (!this._scrollBox) return
+    const content = this._scrollBox.contentElement
+    this._scrollBox.contentWidth = content.scrollWidth
+    this._scrollBox.contentHeight = content.scrollHeight
+    this._scrollBox.refresh()
   }
 
   get minWidth(): number { return this._minWidth }
@@ -502,22 +561,22 @@ export class UIWindow implements IWindowChild {
     }
   }
 
-  private _emitFoldEvent(folding: boolean): boolean {
-    if (!this.manager) return false
-    const detail = { child: this, folding, cancelled: false }
-    this.manager.core.emit('before-fold', detail)
-    return detail.cancelled
-  }
-
   private _fold(): void {
     if (this._folded || this.windowState !== 'normal') return
-    if (this._emitFoldEvent(true)) return
+    // 1. UIWindow before-fold (cancelable)
+    if (!this._emitWindowEvent('before-fold', { folding: true })) return
+    // 2. Manager before-fold (cancelable)
+    if (this.manager) {
+      const detail = { child: this as IWindowChild, folding: true, cancelled: false }
+      this.manager.core.emit('before-fold', detail)
+      if (detail.cancelled) return
+    }
+    // 3. Action
     this._folded = true
     this._foldRestoreHeight = this.height
-    // Animate: transition height, then hide body
     this.element.classList.add('wm-anim')
     void this.element.offsetHeight
-    this._bodyEl.style.display = 'none'
+    this._bodyEl.classList.add('ui-window__body--hidden')
     this._setResizeHandlesVisible(false)
     this.element.style.height = `${this._titleBarHeight}px`
     const cleanup = () => { this.element.classList.remove('wm-anim') }
@@ -525,16 +584,26 @@ export class UIWindow implements IWindowChild {
     this.element.addEventListener('transitionend', onEnd)
     setTimeout(cleanup, 250)
     if (this._foldBtn) this._foldBtn.icon = 'chevron-down'
-    if (this._foldHint) this._foldHint.content = 'Unfold'
+    this._updateHintTexts()
+    // 4. UIWindow notification
+    this._emitWindowEvent('fold', { folded: true })
+    // 5. Manager notification
     if (this.manager) this.manager.core.emit('window-fold', { child: this, folded: true })
   }
 
   private _unfold(): void {
     if (!this._folded) return
-    if (this._emitFoldEvent(false)) return
+    // 1. UIWindow before-fold (cancelable)
+    if (!this._emitWindowEvent('before-fold', { folding: false })) return
+    // 2. Manager before-fold (cancelable)
+    if (this.manager) {
+      const detail = { child: this as IWindowChild, folding: false, cancelled: false }
+      this.manager.core.emit('before-fold', detail)
+      if (detail.cancelled) return
+    }
+    // 3. Action
     this._folded = false
-    // Animate: show body, transition height back
-    this._bodyEl.style.display = ''
+    this._bodyEl.classList.remove('ui-window__body--hidden')
     this._setResizeHandlesVisible(this._resizable)
     this.element.classList.add('wm-anim')
     void this.element.offsetHeight
@@ -544,7 +613,10 @@ export class UIWindow implements IWindowChild {
     this.element.addEventListener('transitionend', onEnd)
     setTimeout(cleanup, 250)
     if (this._foldBtn) this._foldBtn.icon = 'chevron-up'
-    if (this._foldHint) this._foldHint.content = 'Fold'
+    this._updateHintTexts()
+    // 4. UIWindow notification
+    this._emitWindowEvent('fold', { folded: false })
+    // 5. Manager notification
     if (this.manager) this.manager.core.emit('window-fold', { child: this, folded: false })
   }
 
@@ -595,27 +667,31 @@ export class UIWindow implements IWindowChild {
     }
   }
 
+  private _minimizedFocusEl: HTMLElement | null = null
+
   onMinimized(): void {
+    // Save focused element before hiding body
+    this._minimizedFocusEl = this._lastFocusedEl
     this.titleBarElement.classList.remove('focused')
-    this._bodyEl.style.display = 'none'
+    this._bodyEl.classList.add('ui-window__body--hidden')
     this._setResizeHandlesVisible(false)
     if (this._foldBtn) this._foldBtn.element.style.display = 'none'
     if (this._minBtn) this._minBtn.icon = 'window-restore'
     if (this._maxBtn) this._maxBtn.icon = 'window-maximize'
     this._updateHintTexts('minimized')
     // Hide all tool windows
-    for (const tool of this._tools) tool.setVisible(false)
+    for (const tool of this._tools) tool.visible = false
   }
 
   onRestored(): void {
     // If folded, restore to folded state (body hidden, titlebar height)
     if (this._folded && !this.autoUnfold) {
-      this._bodyEl.style.display = 'none'
+      this._bodyEl.classList.add('ui-window__body--hidden')
       this._setResizeHandlesVisible(false)
       this.element.style.height = `${this._titleBarHeight}px`
     } else {
       if (this._folded) this._unfold()
-      this._bodyEl.style.display = ''
+      this._bodyEl.classList.remove('ui-window__body--hidden')
       this._setResizeHandlesVisible(this._resizable)
     }
     if (this._foldBtn && this.foldable) this._foldBtn.element.style.display = ''
@@ -623,14 +699,20 @@ export class UIWindow implements IWindowChild {
     if (this._minBtn) this._minBtn.icon = 'window-minimize'
     this._updateHintTexts('normal')
     // Show all tool windows and reassign z-indexes
-    for (const tool of this._tools) tool.setVisible(true)
+    for (const tool of this._tools) tool.visible = true
     if (this.manager) {
       ;(this.manager as any)._reassignZIndexes()
+    }
+    // Restore focus to element that had focus before minimize
+    const restoreEl = this._minimizedFocusEl
+    this._minimizedFocusEl = null
+    if (restoreEl && this._containsFocusable(restoreEl)) {
+      restoreEl.focus({ preventScroll: true })
     }
   }
 
   onMaximized(): void {
-    this._bodyEl.style.display = ''
+    this._bodyEl.classList.remove('ui-window__body--hidden')
     this._setResizeHandlesVisible(false)
     if (this._foldBtn) this._foldBtn.element.style.display = 'none'
     if (this._maxBtn) this._maxBtn.icon = 'window-restore'
@@ -647,44 +729,94 @@ export class UIWindow implements IWindowChild {
     if (this._overlord) this._overlord.removeTool(this)
   }
 
-  private _updateHintTexts(state: WindowState): void {
-    if (this._minHint) this._minHint.content = state === 'minimized' ? 'Restore (F7)' : 'Minimize (F7)'
-    if (this._maxHint) this._maxHint.content = state === 'maximized' ? 'Restore (F8)' : 'Maximize (F8)'
+  private _hintText(label: string, shortcut: string): string {
+    return this._showShortcuts ? `${label} (${shortcut})` : label
   }
 
-  setZIndex(z: number): void {
-    this.element.style.zIndex = String(z)
+  private _updateHintTexts(state?: WindowState): void {
+    const s = state ?? this.windowState
+    if (this._foldHint) this._foldHint.content = this._folded ? 'Unfold' : 'Fold'
+    if (this._minHint) this._minHint.content = this._hintText(s === 'minimized' ? 'Restore' : 'Minimize', 'F7')
+    if (this._maxHint) this._maxHint.content = this._hintText(s === 'maximized' ? 'Restore' : 'Maximize', 'F8')
+    if (this._closeHint) this._closeHint.content = this._hintText('Close', 'F9')
   }
 
-  setVisible(v: boolean): void {
-    this.element.style.display = v ? '' : 'none'
-  }
+  get visible(): boolean { return this.element.style.display !== 'none' }
+  set visible(v: boolean) { this.element.style.display = v ? '' : 'none' }
 
   // ── Manager requests ──
 
   private _requestClose(): void {
-    if (this.manager) this.manager.closeChild(this)
+    // 1. UIWindow before-close (cancelable)
+    if (!this._emitWindowEvent('before-close')) return
+    // 2. Manager before-close (cancelable) + action
+    if (this.manager) {
+      if (!this.manager.closeChild(this)) return
+    } else {
+      this.onClosed()
+    }
+    // 3. UIWindow notification
+    this._emitWindowEvent('close')
   }
 
   private _requestMinimize(): void {
-    if (!this.manager || this._kind === 'tool' || this.modal) return
+    if (this._kind === 'tool' || this.modal) return
     if (this.windowState === 'minimized') {
-      this.manager.restoreChild(this)
+      // Restore
+      if (!this._emitWindowEvent('before-restore')) return
+      if (this.manager) {
+        if (!this.manager.restoreChild(this)) return
+      } else {
+        this.windowState = 'normal'
+        this.onRestored?.()
+      }
+      this._emitWindowEvent('restore')
     } else {
-      this.manager.minimizeChild(this)
+      // Minimize
+      if (!this._emitWindowEvent('before-minimize')) return
+      if (this.manager) {
+        if (!this.manager.minimizeChild(this)) return
+      } else {
+        this.windowState = 'minimized'
+        this.onMinimized?.()
+      }
+      this._emitWindowEvent('minimize')
     }
   }
 
   private _requestMaximize(): void {
-    if (!this.manager || this._kind === 'tool' || this.modal) return
+    if (this._kind === 'tool' || this.modal) return
     if (this.windowState === 'maximized') {
-      this.manager.restoreMaximized(this)
+      // Restore
+      if (!this._emitWindowEvent('before-restore')) return
+      if (this.manager) {
+        if (!this.manager.restoreMaximized(this)) return
+      } else {
+        this.windowState = 'normal'
+        this.onRestored?.()
+      }
+      this._emitWindowEvent('restore')
     } else {
-      this.manager.maximizeChild(this)
+      // Maximize
+      if (!this._emitWindowEvent('before-maximize')) return
+      if (this.manager) {
+        if (!this.manager.maximizeChild(this)) return
+      } else {
+        this.windowState = 'maximized'
+        if ('onMaximized' in this && typeof (this as any).onMaximized === 'function') {
+          ;(this as any).onMaximized()
+        }
+      }
+      this._emitWindowEvent('maximize')
     }
   }
 
   // ── Drag ──
+
+  private _emitWindowEvent(name: string, detail?: Record<string, any>): boolean {
+    const event = new CustomEvent(name, { bubbles: true, cancelable: true, detail: detail ?? {} })
+    return this.element.dispatchEvent(event) // returns false if cancelled
+  }
 
   private _bindDrag(): void {
     const onMouseDown = (e: MouseEvent) => {
@@ -694,11 +826,18 @@ export class UIWindow implements IWindowChild {
       if (this.windowState === 'maximized' || this.windowState === 'minimized') return
 
       e.preventDefault()
+
+      const startLeft = this.left
+      const startTop = this.top
+
+      // Emit start-drag (cancelable)
+      if (!this._emitWindowEvent('start-drag', { left: startLeft, top: startTop, width: this.width, height: this.height })) return
+
       this._dragging = true
       this._dragStartX = e.clientX
       this._dragStartY = e.clientY
-      this._dragStartLeft = this.left
-      this._dragStartTop = this.top
+      this._dragStartLeft = startLeft
+      this._dragStartTop = startTop
 
       if (this.manager) this.manager.bringToFront(this)
     }
@@ -707,12 +846,38 @@ export class UIWindow implements IWindowChild {
       if (!this._dragging) return
       const dx = e.clientX - this._dragStartX
       const dy = e.clientY - this._dragStartY
-      this.left = this._dragStartLeft + dx
-      this.top = this._dragStartTop + dy
+      const newLeft = this._dragStartLeft + dx
+      const newTop = this._dragStartTop + dy
+
+      // Emit dragging (cancelable — cancel stops further movement)
+      if (!this._emitWindowEvent('dragging', { left: newLeft, top: newTop, width: this.width, height: this.height })) {
+        this._dragging = false
+        return
+      }
+
+      // Clamp to manager bounds
+      if (this.manager) {
+        const mgrW = this.manager.element.clientWidth
+        const mgrH = this.manager.element.clientHeight
+        this.left = Math.max(0, Math.min(newLeft, mgrW - this.width))
+        this.top = Math.max(0, Math.min(newTop, mgrH - this.height))
+      } else {
+        this.left = newLeft
+        this.top = newTop
+      }
       if (this.manager) this.manager.notifyDrag(this, this.left, this.top)
     }
 
-    const onMouseUp = () => { this._dragging = false }
+    const onMouseUp = () => {
+      if (!this._dragging) return
+      this._dragging = false
+
+      // Emit end-drag (cancelable — cancel reverts to start position)
+      if (!this._emitWindowEvent('end-drag', { left: this.left, top: this.top, width: this.width, height: this.height })) {
+        this.left = this._dragStartLeft
+        this.top = this._dragStartTop
+      }
+    }
 
     this.titleBarElement.addEventListener('mousedown', onMouseDown)
     document.addEventListener('mousemove', onMouseMove)
@@ -745,6 +910,10 @@ export class UIWindow implements IWindowChild {
         if (this.windowState !== 'normal') return
         e.preventDefault()
         e.stopPropagation()
+
+        // Emit start-resize (cancelable)
+        if (!this._emitWindowEvent('start-resize', { left: this.left, top: this.top, width: this.width, height: this.height })) return
+
         resizing = true
         startX = e.clientX; startY = e.clientY
         startW = this.width; startH = this.height
@@ -754,10 +923,38 @@ export class UIWindow implements IWindowChild {
       const onMouseMove = (e: MouseEvent) => {
         if (!resizing) return
         onDrag(e.clientX - startX, e.clientY - startY, startW, startH, startL, startT)
+
+        // Clamp to manager bounds during resize
+        if (this.manager) {
+          const mgrW = this.manager.element.clientWidth
+          const mgrH = this.manager.element.clientHeight
+          if (this.left < 0) { this.width += this.left; this.left = 0 }
+          if (this.top < 0) { this.height += this.top; this.top = 0 }
+          if (this.left + this.width > mgrW) this.width = mgrW - this.left
+          if (this.top + this.height > mgrH) this.height = mgrH - this.top
+        }
+
+        // Emit resizing (cancelable — cancel stops further resizing)
+        if (!this._emitWindowEvent('resizing', { left: this.left, top: this.top, width: this.width, height: this.height })) {
+          resizing = false
+          return
+        }
+
         if (this.manager) this.manager.notifyResize(this, this.width, this.height)
       }
 
-      const onMouseUp = () => { resizing = false }
+      const onMouseUp = () => {
+        if (!resizing) return
+        resizing = false
+
+        // Emit end-resize (cancelable — cancel reverts to start size)
+        if (!this._emitWindowEvent('end-resize', { left: this.left, top: this.top, width: this.width, height: this.height })) {
+          this.left = startL
+          this.top = startT
+          this.width = startW
+          this.height = startH
+        }
+      }
 
       handle.addEventListener('mousedown', onMouseDown)
       document.addEventListener('mousemove', onMouseMove)
@@ -837,6 +1034,11 @@ export class UIWindow implements IWindowChild {
 
   private _lastFocusedEl: HTMLElement | null = null
 
+  /** Reset last focused element so next focus cycle starts from the first child */
+  resetLastFocused(): void {
+    this._lastFocusedEl = null
+  }
+
   private _getBodyFocusable(): HTMLElement[] {
     return Array.from(this._bodyEl.querySelectorAll('[data-focusable]')).filter(el => {
       return !(el as HTMLInputElement).disabled
@@ -874,6 +1076,8 @@ export class UIWindow implements IWindowChild {
         this._lastFocusedEl = target
         // Also track in overlord if we are a tool
         if (this._overlord) this._overlord._lastFocusedEl = target
+        // Scroll focused element into view
+        if (this._scrollBox) this._scrollBox.scrollIntoView(target)
       }
     })
 
@@ -892,6 +1096,8 @@ export class UIWindow implements IWindowChild {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
       if (!this.titleBarElement.classList.contains('focused')) return
+      // Only handle Tab if real DOM focus is within this window or its tools
+      if (!this._containsFocusable(document.activeElement as HTMLElement) && document.activeElement !== this.element) return
       // Only the group owner (overlord) handles Tab for the entire group
       if (this._overlord) return
 
@@ -933,6 +1139,7 @@ export class UIWindow implements IWindowChild {
     if (this._destroyed) return
     this._destroyed = true
     this._scrollBox?.destroy()
+    this._titleHint?.destroy()
     this._foldHint?.destroy()
     this._minHint?.destroy()
     this._maxHint?.destroy()

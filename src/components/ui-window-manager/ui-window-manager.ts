@@ -38,6 +38,7 @@ export class UIWindowManager extends UIPanel {
     })
 
     // Apply critical styles directly so the manager works without calling render()
+    this.element.dataset.uiWm = ''
     this.element.style.position = 'relative'
     this.element.style.overflow = 'hidden'
     if (options?.width) this.element.style.width = `${options.width}px`

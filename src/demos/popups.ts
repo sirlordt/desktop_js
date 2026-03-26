@@ -210,7 +210,7 @@ export const popupsDemo: DemoRoute = {
 
     // ── WindowManager con ventanas ──
     const emptyWin = new UIWindow({
-      title: 'Parent Window',
+      title: 'Window 1',
       left: 20,
       top: 20,
       width: 400,
@@ -222,9 +222,9 @@ export const popupsDemo: DemoRoute = {
       maximizable: true,
     })
     const secondWin = new UIWindow({
-      title: 'Second Window',
-      left: 200,
-      top: 100,
+      title: 'Window 2',
+      left: 500,
+      top: 20,
       width: 350,
       height: 250,
       resizable: true,
@@ -321,6 +321,79 @@ export const popupsDemo: DemoRoute = {
 
     containerBtn.addEventListener('click', () => popupContainer.toggle())
 
+    // ── Second Tool Palette (Layers) ──
+    const detachBtn2 = makeBtn('Open Layers')
+    const popupDetach2 = new UIPopup({
+      anchor: detachBtn2,
+      alignment: 'BottomLeft',
+      width: 180,
+      height: 180,
+      title: 'Layers',
+      detachable: true,
+      resizable: true,
+    })
+    popupDetach2.overlord = emptyWin
+
+    const layers: [string, string][] = [
+      ['Background', 'F1'], ['Foreground', 'F2'], ['Overlay', 'F3'],
+      ['Mask', 'F4'], ['Shadow', 'F5'], ['Glow', 'F6'],
+    ]
+    layers.forEach(([text, key]) => {
+      const item = new UIMenuItem({ text, shortcut: key })
+      popupDetach2.addChild(item.element)
+      item.onClick(() => { statusLabel.textContent = `Layer: ${text}` })
+    })
+    detachBtn2.addEventListener('click', () => popupDetach2.toggle())
+    popupDetach2.on('detach', () => { statusLabel.textContent = 'Layers detached!' })
+    popupDetach2.on('attach', () => { statusLabel.textContent = 'Layers returned.' })
+
+    // ── Second Container (Preferences) ──
+    const containerBtn2 = makeBtn('Open Preferences')
+    const popupContainer2 = new UIPopup({
+      anchor: containerBtn2,
+      kind: 'container',
+      alignment: 'BottomLeft',
+      width: 240,
+      height: 180,
+      title: 'Preferences',
+      detachable: true,
+      resizable: true,
+    })
+    popupContainer2.overlord = emptyWin
+
+    const prefsContent = document.createElement('div')
+    prefsContent.style.cssText = 'display: flex; flex-direction: column; gap: 10px; padding: 12px 14px;'
+
+    const cbSnap = document.createElement('label')
+    cbSnap.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;'
+    cbSnap.setAttribute('data-focusable', '')
+    cbSnap.innerHTML = '<input type="checkbox" checked> Snap to grid'
+
+    const cbGuides = document.createElement('label')
+    cbGuides.style.cssText = 'display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;'
+    cbGuides.setAttribute('data-focusable', '')
+    cbGuides.innerHTML = '<input type="checkbox"> Show guides'
+
+    const gridInput = document.createElement('input')
+    gridInput.type = 'number'
+    gridInput.value = '8'
+    gridInput.min = '1'
+    gridInput.max = '64'
+    gridInput.setAttribute('data-focusable', '')
+    gridInput.style.cssText = 'width: 100%; padding: 6px 8px; box-sizing: border-box; border: 1px solid #555; border-radius: 4px; background: var(--view-bg-color); color: var(--fg-color);'
+    gridInput.placeholder = 'Grid size'
+
+    const saveBtn = makeBtn('Save', 'solid')
+    saveBtn.style.alignSelf = 'flex-end'
+    saveBtn.addEventListener('click', () => { statusLabel.textContent = 'Preferences saved!' })
+
+    prefsContent.appendChild(cbSnap)
+    prefsContent.appendChild(cbGuides)
+    prefsContent.appendChild(gridInput)
+    prefsContent.appendChild(saveBtn)
+    popupContainer2.addChild(prefsContent)
+    containerBtn2.addEventListener('click', () => popupContainer2.toggle())
+
     emptyWin.contentElement.style.padding = '10px'
     emptyWin.contentElement.style.display = 'flex'
     emptyWin.contentElement.style.flexWrap = 'wrap'
@@ -328,6 +401,8 @@ export const popupsDemo: DemoRoute = {
     emptyWin.contentElement.style.alignContent = 'flex-start'
     emptyWin.contentElement.appendChild(detachBtn)
     emptyWin.contentElement.appendChild(containerBtn)
+    emptyWin.contentElement.appendChild(detachBtn2)
+    emptyWin.contentElement.appendChild(containerBtn2)
     statusLabel.style.width = '100%'
     emptyWin.contentElement.appendChild(statusLabel)
     container.appendChild(wm.element)

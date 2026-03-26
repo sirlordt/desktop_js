@@ -47,6 +47,7 @@ export class UIWindow implements IWindowChild {
   private _cleanups: Array<() => void> = []
   private _destroyed: boolean = false
   private _resizeHandles: HTMLDivElement[] = []
+  private _allowMoveOffParent: boolean
 
   // Drag state
   private _dragging: boolean = false
@@ -94,11 +95,13 @@ export class UIWindow implements IWindowChild {
     this._titleBarHeight = o.titleBarHeight ?? (isMiniDrag ? 14 : tbStyle === 'tool' ? 21 : 28)
     this._btnSize = Math.max(16, this._titleBarHeight - 8)
 
+    this._allowMoveOffParent = o.allowMoveOffParent ?? true
     this._positioning = o.positioning ?? 'absolute'
 
     // Root element
     this.element = document.createElement('div')
     this.element.className = 'ui-window'
+    this.element.dataset.uiWindow = ''
     this.element.tabIndex = -1
     this.element.style.outline = 'none'
     this.element.style.position = this._positioning
@@ -289,6 +292,9 @@ export class UIWindow implements IWindowChild {
     this.element.style.position = v
   }
 
+  get allowMoveOffParent(): boolean { return this._allowMoveOffParent }
+  set allowMoveOffParent(v: boolean) { this._allowMoveOffParent = v }
+
   get movable(): boolean { return this._movable }
   set movable(v: boolean) { this._movable = v }
 
@@ -304,6 +310,19 @@ export class UIWindow implements IWindowChild {
       const isFocusedByManager = this.manager && (this.manager as any)._focused === this
       if (!isFocusedByManager) {
         this.titleBarElement.classList.remove('focused')
+      }
+    }
+    // Propagate simulate-focus to all tool windows
+    // But if overlord has real focus, keep tools focused
+    const isFocused = this.manager && (this.manager as any)._focused === this
+    for (const tool of this._tools) {
+      if (!v && isFocused) {
+        tool._simulateFocus = false
+        applySimulateFocus(tool.element, false)
+        // Keep titlebar focused since overlord has real focus
+        tool.titleBarElement.classList.add('focused')
+      } else {
+        tool.simulateFocus = v
       }
     }
   }
@@ -493,6 +512,12 @@ export class UIWindow implements IWindowChild {
     if (this.titleBarElement.classList.contains('focused')) {
       win.titleBarElement.classList.add('focused')
     }
+    // Register mousedown to bring overlord to front when tool is clicked
+    if (this.manager) {
+      const handler = () => this.manager!.bringToFront(win)
+      win.element.addEventListener('mousedown', handler, true)
+      ;(win as any).__wm_tool_mousedown = handler
+    }
     // Reassign z-indexes
     if (this.manager) {
       (this.manager as any)._reassignZIndexes()
@@ -508,6 +533,12 @@ export class UIWindow implements IWindowChild {
 
     this._tools.splice(idx, 1)
     win._overlord = null
+    // Remove tool mousedown handler
+    const toolHandler = (win as any).__wm_tool_mousedown
+    if (toolHandler) {
+      win.element.removeEventListener('mousedown', toolHandler, true)
+      delete (win as any).__wm_tool_mousedown
+    }
     // Restore kind to normal
     ;(win as any)._kind = 'normal'
     win.element.classList.remove('ui-window--tool')
@@ -844,6 +875,15 @@ export class UIWindow implements IWindowChild {
 
     const onMouseMove = (e: MouseEvent) => {
       if (!this._dragging) return
+
+      // Stop dragging if cursor leaves manager bounds
+      const mgrEl = this._getManagerElement()
+      if (mgrEl) {
+        const mgrRect = mgrEl.getBoundingClientRect()
+        if (e.clientX < mgrRect.left || e.clientX > mgrRect.right ||
+            e.clientY < mgrRect.top || e.clientY > mgrRect.bottom) return
+      }
+
       const dx = e.clientX - this._dragStartX
       const dy = e.clientY - this._dragStartY
       const newLeft = this._dragStartLeft + dx
@@ -855,8 +895,8 @@ export class UIWindow implements IWindowChild {
         return
       }
 
-      // Clamp to manager bounds
-      if (this.manager) {
+      // Clamp to manager bounds (unless allowMoveOffParent)
+      if (this.manager && !this._allowMoveOffParent) {
         const mgrW = this.manager.element.clientWidth
         const mgrH = this.manager.element.clientHeight
         this.left = Math.max(0, Math.min(newLeft, mgrW - this.width))
@@ -892,6 +932,13 @@ export class UIWindow implements IWindowChild {
 
   // ── Resize (all 8 handles) ──
 
+  /** Resolve the manager element: own manager, or overlord's manager */
+  private _getManagerElement(): HTMLElement | null {
+    if (this.manager) return this.manager.element
+    if (this._overlord?.manager) return this._overlord.manager.element
+    return null
+  }
+
   private _setResizeHandlesVisible(v: boolean): void {
     for (const h of this._resizeHandles) h.style.display = v ? '' : 'none'
   }
@@ -922,10 +969,19 @@ export class UIWindow implements IWindowChild {
 
       const onMouseMove = (e: MouseEvent) => {
         if (!resizing) return
+
+        // Stop resizing if cursor leaves manager bounds
+        const mgrEl = this._getManagerElement()
+        if (mgrEl) {
+          const mgrRect = mgrEl.getBoundingClientRect()
+          if (e.clientX < mgrRect.left || e.clientX > mgrRect.right ||
+              e.clientY < mgrRect.top || e.clientY > mgrRect.bottom) return
+        }
+
         onDrag(e.clientX - startX, e.clientY - startY, startW, startH, startL, startT)
 
-        // Clamp to manager bounds during resize
-        if (this.manager) {
+        // Clamp to manager bounds during resize (unless allowMoveOffParent)
+        if (this.manager && !this._allowMoveOffParent) {
           const mgrW = this.manager.element.clientWidth
           const mgrH = this.manager.element.clientHeight
           if (this.left < 0) { this.width += this.left; this.left = 0 }
@@ -1039,9 +1095,17 @@ export class UIWindow implements IWindowChild {
     this._lastFocusedEl = null
   }
 
+  private static _nativeFocusable = /^(INPUT|SELECT|TEXTAREA|BUTTON|A)$/
+
   private _getBodyFocusable(): HTMLElement[] {
     return Array.from(this._bodyEl.querySelectorAll('[data-focusable]')).filter(el => {
-      return !(el as HTMLInputElement).disabled
+      if ((el as HTMLInputElement).disabled) return false
+      // Element must be programmatically focusable
+      if (el.hasAttribute('tabindex')) return true
+      if (UIWindow._nativeFocusable.test(el.tagName)) return true
+      // Custom elements with delegatesFocus shadow roots
+      if (el.shadowRoot?.delegatesFocus) return true
+      return false
     }) as HTMLElement[]
   }
 

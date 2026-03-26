@@ -123,6 +123,7 @@ export interface UIPopupOptions {
   closeOnClickOutside?: boolean
   closeOnEscape?: boolean
   className?: string
+  parentRef?: HTMLElement | null
 }
 
 // ── Hint types ──
@@ -394,4 +395,5 @@ export interface UIWindowOptions {
   scrollBarSize?: ScrollBarSize
   showHints?: boolean
   showShortcuts?: boolean
+  allowMoveOffParent?: boolean
 }

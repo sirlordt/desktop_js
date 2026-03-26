@@ -141,17 +141,22 @@
 /* =====================
    GTK4 Light/Dark Theme
    ===================== */
-.ui-menuitem:hover,
-.ui-menuitem:focus-visible {
-  background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
-  border-radius: 4px;
-  outline: none;
-}
 
-/* Keyboard navigation highlight (no focus steal) */
+/* Single highlight mechanism for both mouse and keyboard */
 .ui-menuitem--highlight {
   background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
   border-radius: 4px;
+}
+
+.ui-menuitem:focus-visible {
+  outline: none;
+}
+
+/* =====================
+   WIN95 Light/Dark Theme
+   ===================== */
+[data-theme^="win95"] .ui-menuitem {
+  border-radius: 0;
 }
 
 [data-theme^="win95"] .ui-menuitem--highlight {
@@ -162,33 +167,6 @@
 
 [data-theme^="win95"] .ui-menuitem--highlight .ui-menuitem__left,
 [data-theme^="win95"] .ui-menuitem--highlight .ui-menuitem__right {
-  color: #ffffff;
-}
-
-/* no active/down effect */
-.ui-menuitem:active {
-  background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
-}
-
-/* =====================
-   WIN95 Light/Dark Theme
-   ===================== */
-[data-theme^="win95"] .ui-menuitem {
-  border-radius: 0;
-}
-
-[data-theme^="win95"] .ui-menuitem:hover,
-[data-theme^="win95"] .ui-menuitem:focus-visible {
-  background-color: #000080;
-  color: #ffffff;
-  border-radius: 0;
-  outline: none;
-}
-
-[data-theme^="win95"] .ui-menuitem:hover .ui-menuitem__left,
-[data-theme^="win95"] .ui-menuitem:hover .ui-menuitem__right,
-[data-theme^="win95"] .ui-menuitem:focus-visible .ui-menuitem__left,
-[data-theme^="win95"] .ui-menuitem:focus-visible .ui-menuitem__right {
   color: #ffffff;
 }
 

@@ -1,6 +1,7 @@
 :host {
   display: inline-flex;
   max-width: var(--ui-btn-max-width, none);
+  outline: none;
 }
 
 :host([hidden]) {

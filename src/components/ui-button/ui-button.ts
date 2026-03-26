@@ -38,7 +38,7 @@ export class UIButton extends HTMLElement {
     super()
     this.core = new UIView(this)
 
-    const sr = this.attachShadow({ mode: 'open' })
+    const sr = this.attachShadow({ mode: 'open', delegatesFocus: true })
 
     const sheet = document.createElement('style')
     sheet.textContent = styles
@@ -301,14 +301,14 @@ export class UIButton extends HTMLElement {
     this._updatingTabIndex = true
     if (this.getAttribute('focusable') === 'false') {
       this._btn.setAttribute('tabindex', '-1')
-      this.tabIndex = -1
+      this.removeAttribute('tabindex')
     } else if (this.hasAttribute('tabindex')) {
       const val = this.getAttribute('tabindex')!
       this._btn.setAttribute('tabindex', val)
-      this.tabIndex = parseInt(val) || 0
+      this.removeAttribute('tabindex')
     } else {
       this._btn.setAttribute('tabindex', '0')
-      this.tabIndex = 0
+      this.removeAttribute('tabindex')
     }
     this._updatingTabIndex = false
   }

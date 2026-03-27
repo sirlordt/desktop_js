@@ -16,6 +16,7 @@ import { hintsWCDemo } from './demos/hints-wc'
 import { panelsWCDemo } from './demos/panels-wc'
 import { windowsWCDemo } from './demos/windows-wc'
 import { menuItemsWCDemo } from './demos/menu-items-wc'
+import { popupsWCDemo } from './demos/popups-wc'
 
 // Register all demos here
 registerDemos([
@@ -34,6 +35,7 @@ registerDemos([
   windowsDemo,
   menuItemsDemo,
   menuItemsWCDemo,
+  popupsWCDemo,
   popupsDemo,
 ])
 

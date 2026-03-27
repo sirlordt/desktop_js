@@ -1,0 +1,426 @@
+/* =====================
+   ScrollBarWC — Shadow DOM Stylesheet
+   ===================== */
+
+/* =====================
+   CSS Custom Properties (defaults — overridden by theme detection)
+   ===================== */
+:host {
+  --sb-track-bg: transparent;
+  --sb-track-hover-bg: transparent;
+  --sb-thumb-bg: #888;
+  --sb-thumb-hover-bg: #666;
+  --sb-thumb-drag-bg: #444;
+  --sb-thumb-border: 1px solid transparent;
+  --sb-thumb-radius: 9999px;
+  --sb-btn-bg: transparent;
+  --sb-btn-hover-bg: transparent;
+  --sb-btn-color: #888;
+  --sb-tooltip-bg: rgba(0, 0, 0, 0.75);
+  --sb-tooltip-color: #fff;
+}
+
+/* =====================
+   GTK4 Light
+   ===================== */
+:host(.gtk4-light) {
+  --sb-track-bg: #e8e8e8;
+  --sb-track-hover-bg: #d8d8d8;
+  --sb-thumb-bg: #a0a0a0;
+  --sb-thumb-hover-bg: #888;
+  --sb-thumb-drag-bg: #666;
+  --sb-thumb-border: 1px solid #909090;
+  --sb-btn-bg: #e0e0e0;
+  --sb-btn-hover-bg: #c8c8c8;
+  --sb-btn-color: #555;
+}
+
+/* =====================
+   GTK4 Dark
+   ===================== */
+:host(.gtk4-dark) {
+  --sb-track-bg: #2a2a2a;
+  --sb-track-hover-bg: #383838;
+  --sb-thumb-bg: #666;
+  --sb-thumb-hover-bg: #888;
+  --sb-thumb-drag-bg: #aaa;
+  --sb-thumb-border: 1px solid #555;
+  --sb-btn-bg: #333;
+  --sb-btn-hover-bg: #444;
+  --sb-btn-color: #ccc;
+}
+
+/* =====================
+   WIN95 Structure
+   ===================== */
+:host(.win95-light),
+:host(.win95-dark) { border-radius: 0 !important; }
+
+:host(.win95-light) .ui-scrollbar__thumb,
+:host(.win95-dark) .ui-scrollbar__thumb { border-radius: 0 !important; }
+
+:host(.win95-light) .ui-scrollbar__btn,
+:host(.win95-dark) .ui-scrollbar__btn,
+:host(.win95-light) .ui-scrollbar__thumb,
+:host(.win95-dark) .ui-scrollbar__thumb {
+  border-style: solid;
+  border-width: 1px;
+}
+
+:host(.win95-light) .ui-scrollbar__start,
+:host(.win95-dark) .ui-scrollbar__start,
+:host(.win95-light) .ui-scrollbar__end,
+:host(.win95-dark) .ui-scrollbar__end {
+  border: none;
+  gap: 0;
+}
+
+:host(.win95-light) .ui-scrollbar__track,
+:host(.win95-dark) .ui-scrollbar__track { border: none; }
+
+/* WIN95: no hover effects on thumb or buttons */
+:host(.win95-light) .ui-scrollbar__thumb,
+:host(.win95-dark) .ui-scrollbar__thumb,
+:host(.win95-light) .ui-scrollbar__btn,
+:host(.win95-dark) .ui-scrollbar__btn { cursor: default; }
+
+:host(.win95-light.horizontal) .ui-scrollbar__thumb,
+:host(.win95-dark.horizontal) .ui-scrollbar__thumb { top: 0; bottom: 0; }
+:host(.win95-light.vertical) .ui-scrollbar__thumb,
+:host(.win95-dark.vertical) .ui-scrollbar__thumb { left: 0; right: 0; }
+
+:host(.win95-light.hover-mode) .ui-scrollbar__track,
+:host(.win95-dark.hover-mode) .ui-scrollbar__track,
+:host(.win95-light.hover-mode.hover-active) .ui-scrollbar__track,
+:host(.win95-dark.hover-mode.hover-active) .ui-scrollbar__track {
+  border-radius: 0;
+}
+
+/* =====================
+   WIN95 Light
+   ===================== */
+:host(.win95-light) {
+  --sb-track-bg: #c0c0c0;
+  --sb-track-hover-bg: #c0c0c0;
+  --sb-thumb-bg: #c0c0c0;
+  --sb-thumb-hover-bg: #c0c0c0;
+  --sb-thumb-drag-bg: #c0c0c0;
+  --sb-thumb-border: none;
+  --sb-btn-bg: #c0c0c0;
+  --sb-btn-hover-bg: #c0c0c0;
+  --sb-btn-color: #000;
+}
+
+:host(.win95-light) .ui-scrollbar__start,
+:host(.win95-light) .ui-scrollbar__end { background-color: transparent; }
+
+:host(.win95-light) .ui-scrollbar__btn {
+  background-color: #c0c0c0;
+  border-color: #dfdfdf #404040 #404040 #dfdfdf;
+}
+:host(.win95-light) .ui-scrollbar__btn:active {
+  border-color: #404040 #dfdfdf #dfdfdf #404040;
+}
+
+:host(.win95-light) .ui-scrollbar__thumb {
+  background-color: #c0c0c0;
+  border-color: #dfdfdf #404040 #404040 #dfdfdf;
+}
+:host(.win95-light) .ui-scrollbar__thumb:hover { background-color: #c0c0c0; }
+:host(.win95-light) .ui-scrollbar__thumb.dragging {
+  background-color: #c0c0c0;
+  border-color: #404040 #dfdfdf #dfdfdf #404040;
+}
+
+:host(.win95-light) .ui-scrollbar__track {
+  background-color: #e0e0e0;
+  background-image:
+    linear-gradient(45deg, #c8c8c8 25%, transparent 25%, transparent 75%, #c8c8c8 75%),
+    linear-gradient(45deg, #c8c8c8 25%, transparent 25%, transparent 75%, #c8c8c8 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+  border-color: transparent;
+}
+
+/* =====================
+   WIN95 Dark
+   ===================== */
+:host(.win95-dark) {
+  --sb-track-bg: var(--btn-3d-face);
+  --sb-track-hover-bg: var(--btn-3d-face);
+  --sb-thumb-bg: var(--btn-3d-face);
+  --sb-thumb-hover-bg: var(--btn-3d-face);
+  --sb-thumb-drag-bg: var(--btn-3d-face);
+  --sb-thumb-border: none;
+  --sb-btn-bg: var(--btn-3d-face);
+  --sb-btn-hover-bg: var(--btn-3d-face);
+  --sb-btn-color: var(--button-fg-color);
+}
+
+:host(.win95-dark) .ui-scrollbar__start,
+:host(.win95-dark) .ui-scrollbar__end { background-color: transparent; }
+
+:host(.win95-dark) .ui-scrollbar__btn {
+  background-color: var(--btn-3d-face);
+  border-color: var(--btn-3d-light) var(--btn-3d-dark) var(--btn-3d-dark) var(--btn-3d-light);
+}
+:host(.win95-dark) .ui-scrollbar__btn:active {
+  border-color: var(--btn-3d-dark) var(--btn-3d-light) var(--btn-3d-light) var(--btn-3d-dark);
+}
+
+:host(.win95-dark) .ui-scrollbar__thumb {
+  background-color: var(--btn-3d-face);
+  border-color: var(--btn-3d-light) var(--btn-3d-dark) var(--btn-3d-dark) var(--btn-3d-light);
+}
+:host(.win95-dark) .ui-scrollbar__thumb:hover { background-color: var(--btn-3d-face); }
+:host(.win95-dark) .ui-scrollbar__thumb.dragging {
+  background-color: var(--btn-3d-face);
+  border-color: var(--btn-3d-dark) var(--btn-3d-light) var(--btn-3d-light) var(--btn-3d-dark);
+}
+
+:host(.win95-dark) .ui-scrollbar__track {
+  background-color: #a0a0a0;
+  background-image:
+    linear-gradient(45deg, #909090 25%, transparent 25%, transparent 75%, #909090 75%),
+    linear-gradient(45deg, #909090 25%, transparent 25%, transparent 75%, #909090 75%);
+  background-size: 2px 2px;
+  background-position: 0 0, 1px 1px;
+}
+
+/* =====================
+   Base
+   ===================== */
+:host {
+  display: flex;
+  box-sizing: border-box;
+  position: relative;
+  outline: none;
+  overflow: hidden;
+  background-color: var(--sb-track-bg);
+  border-radius: 9999px;
+}
+
+/* --- Sizes --- */
+:host(.horizontal.tiny)   { flex-direction: row; height: 10px; }
+:host(.vertical.tiny)     { flex-direction: column; width: 10px; }
+:host(.horizontal.small)  { flex-direction: row; height: 14px; }
+:host(.vertical.small)    { flex-direction: column; width: 14px; }
+:host(.horizontal.medium) { flex-direction: row; height: 20px; }
+:host(.vertical.medium)   { flex-direction: column; width: 20px; }
+:host(.horizontal.large)  { flex-direction: row; height: 28px; }
+:host(.vertical.large)    { flex-direction: column; width: 28px; }
+:host(.horizontal.xlarge) { flex-direction: row; height: 36px; }
+:host(.vertical.xlarge)   { flex-direction: column; width: 36px; }
+:host(.horizontal.custom) { flex-direction: row; }
+:host(.vertical.custom)   { flex-direction: column; }
+
+/* =====================
+   Start / End zones
+   ===================== */
+.ui-scrollbar__start,
+.ui-scrollbar__end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background-color: var(--sb-btn-bg);
+}
+
+:host(.horizontal) .ui-scrollbar__start,
+:host(.horizontal) .ui-scrollbar__end { flex-direction: row; height: 100%; }
+
+:host(.vertical) .ui-scrollbar__start,
+:host(.vertical) .ui-scrollbar__end { flex-direction: column; width: 100%; }
+
+/* =====================
+   Buttons (icons)
+   ===================== */
+.ui-scrollbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  color: var(--sb-btn-color);
+  background-color: var(--sb-btn-bg);
+  border: none;
+  padding: 0;
+  line-height: 0;
+}
+
+.ui-scrollbar__btn:hover {
+  background-color: var(--sb-btn-hover-bg);
+}
+
+.ui-scrollbar__btn:active {
+  opacity: 0.6;
+}
+
+.ui-scrollbar__btn.disabled {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+/* UIToolButton overrides inside shadow DOM */
+.ui-toolbtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  color: inherit;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  line-height: 0;
+  opacity: 1;
+  outline: none;
+}
+
+.ui-toolbtn:hover,
+.ui-toolbtn:active {
+  opacity: 1;
+}
+
+.ui-toolbtn:focus {
+  outline: none;
+}
+
+.ui-toolbtn.disabled {
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.ui-toolbtn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  line-height: 0;
+}
+
+.ui-toolbtn__icon svg {
+  display: block;
+}
+
+:host(.tiny.horizontal) .ui-scrollbar__btn   { width: 10px; height: 100%; }
+:host(.tiny.vertical) .ui-scrollbar__btn     { height: 10px; width: 100%; }
+:host(.small.horizontal) .ui-scrollbar__btn  { width: 14px; height: 100%; }
+:host(.small.vertical) .ui-scrollbar__btn    { height: 14px; width: 100%; }
+:host(.medium.horizontal) .ui-scrollbar__btn { width: 20px; height: 100%; }
+:host(.medium.vertical) .ui-scrollbar__btn   { height: 20px; width: 100%; }
+:host(.large.horizontal) .ui-scrollbar__btn  { width: 28px; height: 100%; }
+:host(.large.vertical) .ui-scrollbar__btn    { height: 28px; width: 100%; }
+:host(.xlarge.horizontal) .ui-scrollbar__btn { width: 36px; height: 100%; }
+:host(.xlarge.vertical) .ui-scrollbar__btn   { height: 36px; width: 100%; }
+
+/* =====================
+   Track
+   ===================== */
+.ui-scrollbar__track {
+  flex: 1;
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  background-color: var(--sb-track-bg);
+}
+
+.ui-scrollbar__track:hover {
+  background-color: var(--sb-track-hover-bg);
+}
+
+/* =====================
+   Thumb
+   ===================== */
+.ui-scrollbar__thumb {
+  position: absolute;
+  box-sizing: border-box;
+  cursor: pointer;
+  background-color: var(--sb-thumb-bg);
+  border: var(--sb-thumb-border);
+  border-radius: var(--sb-thumb-radius);
+}
+
+.ui-scrollbar__thumb:hover {
+  background-color: var(--sb-thumb-hover-bg);
+}
+
+.ui-scrollbar__thumb.dragging {
+  background-color: var(--sb-thumb-drag-bg);
+}
+
+:host(.horizontal) .ui-scrollbar__thumb { top: 1px; bottom: 1px; height: auto; }
+:host(.vertical) .ui-scrollbar__thumb   { left: 1px; right: 1px; width: auto; }
+
+/* =====================
+   Hover mode
+   ===================== */
+:host(.hover-mode) {
+  background-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+:host(.hover-mode) .ui-scrollbar__start,
+:host(.hover-mode) .ui-scrollbar__end {
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.15s ease, max-width 0.15s ease, max-height 0.15s ease;
+}
+
+:host(.horizontal.hover-mode) .ui-scrollbar__start,
+:host(.horizontal.hover-mode) .ui-scrollbar__end { max-width: 0; }
+
+:host(.vertical.hover-mode) .ui-scrollbar__start,
+:host(.vertical.hover-mode) .ui-scrollbar__end { max-height: 0; }
+
+:host(.hover-mode) .ui-scrollbar__thumb {
+  transition: opacity 0.15s ease;
+  opacity: 0.4;
+}
+
+:host(.hover-mode) .ui-scrollbar__track {
+  transition: height 0.15s ease, width 0.15s ease, border-radius 0.15s ease;
+}
+
+:host(.horizontal.hover-mode) .ui-scrollbar__track { margin-top: auto; margin-bottom: auto; border-radius: 2px; }
+:host(.vertical.hover-mode) .ui-scrollbar__track   { margin-left: auto; margin-right: auto; border-radius: 2px; }
+
+:host(.tiny.horizontal.hover-mode) .ui-scrollbar__track   { height: 3px; }
+:host(.tiny.vertical.hover-mode) .ui-scrollbar__track     { width: 3px; }
+:host(.small.horizontal.hover-mode) .ui-scrollbar__track  { height: 4px; }
+:host(.small.vertical.hover-mode) .ui-scrollbar__track    { width: 4px; }
+:host(.medium.horizontal.hover-mode) .ui-scrollbar__track { height: 6px; }
+:host(.medium.vertical.hover-mode) .ui-scrollbar__track   { width: 6px; }
+:host(.large.horizontal.hover-mode) .ui-scrollbar__track  { height: 8px; }
+:host(.large.vertical.hover-mode) .ui-scrollbar__track    { width: 8px; }
+:host(.xlarge.horizontal.hover-mode) .ui-scrollbar__track { height: 10px; }
+:host(.xlarge.vertical.hover-mode) .ui-scrollbar__track   { width: 10px; }
+:host(.custom.horizontal.hover-mode) .ui-scrollbar__track { height: 6px; }
+:host(.custom.vertical.hover-mode) .ui-scrollbar__track   { width: 6px; }
+
+/* Expanded */
+:host(.hover-mode.hover-active) .ui-scrollbar__start,
+:host(.hover-mode.hover-active) .ui-scrollbar__end { opacity: 1; }
+
+:host(.horizontal.hover-mode.hover-active) .ui-scrollbar__start,
+:host(.horizontal.hover-mode.hover-active) .ui-scrollbar__end { max-width: 100px; }
+
+:host(.vertical.hover-mode.hover-active) .ui-scrollbar__start,
+:host(.vertical.hover-mode.hover-active) .ui-scrollbar__end { max-height: 100px; }
+
+:host(.horizontal.hover-mode.hover-active) .ui-scrollbar__track { height: 100%; border-radius: 0; }
+:host(.vertical.hover-mode.hover-active) .ui-scrollbar__track   { width: 100%; border-radius: 0; }
+
+:host(.hover-mode.hover-active) .ui-scrollbar__thumb { opacity: 1; }
+
+/* =====================
+   Disabled
+   ===================== */
+:host(.disabled) {
+  pointer-events: none;
+  opacity: 0.4;
+}

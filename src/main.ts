@@ -10,6 +10,7 @@ import { scrollboxDemo } from './demos/scrollbox'
 import { windowsDemo } from './demos/windows'
 import { menuItemsDemo } from './demos/menu-items'
 import { popupsDemo } from './demos/popups'
+import { scrollbarWCDemo } from './demos/scrollbar-wc'
 
 // Register all demos here
 registerDemos([
@@ -18,6 +19,7 @@ registerDemos([
   layoutDemo,
   hintsDemo,
   scrollbarDemo,
+  scrollbarWCDemo,
   scrollboxDemo,
   panelsDemo,
   windowsDemo,

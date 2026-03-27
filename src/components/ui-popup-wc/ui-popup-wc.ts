@@ -35,6 +35,30 @@ export class PopupWC {
   private _overlord: WindowWC | null = null
   private _parentRef: HTMLElement | null
 
+  /** Traverse shadow roots to find the actually focused element */
+  private static _deepActiveElement(): HTMLElement | null {
+    let el = document.activeElement as HTMLElement | null
+    while (el?.shadowRoot?.activeElement) {
+      el = el.shadowRoot.activeElement as HTMLElement
+    }
+    return el
+  }
+
+  /** Check if target (or any of its shadow hosts) is inside container */
+  private static _containsDeep(container: HTMLElement, target: HTMLElement): boolean {
+    let current: HTMLElement | null = target
+    while (current) {
+      if (container.contains(current)) return true
+      const root = current.getRootNode() as ShadowRoot | Document
+      if (root instanceof ShadowRoot) {
+        current = root.host as HTMLElement
+      } else {
+        break
+      }
+    }
+    return false
+  }
+
   constructor(options: UIPopupOptions) {
     const o = options
     this._anchor = o.anchor
@@ -160,24 +184,21 @@ export class PopupWC {
 
     this._reposition()
 
-    this._focusedBeforeOpen = document.activeElement as HTMLElement | null
+    // Simulate focus on whoever had focus before (traverse shadow roots)
+    this._focusedBeforeOpen = PopupWC._deepActiveElement()
     if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
 
-    if (this._kind === 'menu') {
-      // Menu mode: keep focus on anchor, popup uses document-level keyboard nav
-      if (this._window.onFocused) this._window.onFocused()
-    } else {
-      // Container mode: move focus to popup for Tab cycling
-      el.focus({ preventScroll: true })
-      if (this._window.onFocused) this._window.onFocused()
-    }
+    // Move real focus to the popup window
+    el.focus({ preventScroll: true })
+    if (this._window.onFocused) this._window.onFocused()
 
     if (this._closeOnClickOutside) {
       requestAnimationFrame(() => {
         this._clickOutsideHandler = (e: MouseEvent) => {
           if (this._state !== 'attached') return
-          const target = e.target as Node
-          if (!el.contains(target) && !this._anchor.contains(target)) this.close()
+          const path = e.composedPath()
+          if (path.includes(el) || path.includes(this._anchor)) return
+          this.close()
         }
         document.addEventListener('mousedown', this._clickOutsideHandler, true)
       })
@@ -193,8 +214,8 @@ export class PopupWC {
 
     this._scrollHandler = ((e: Event) => {
       if (this._state !== 'attached') return
-      const target = e.target as Node | null
-      if (target && (this._window as HTMLElement).contains(target)) return
+      const path = e.composedPath()
+      if (path.includes(this._window as HTMLElement)) return
       this.close()
     }) as () => void
     document.addEventListener('scroll', this._scrollHandler, { capture: true, passive: true })
@@ -291,9 +312,9 @@ export class PopupWC {
   private _bindDetachedMenuNav(): void {
     this._keyNavHandler = (e: KeyboardEvent) => {
       if (this._state !== 'detached') return
-      const active = document.activeElement as Node | null
+      const active = PopupWC._deepActiveElement()
       if (!active) return
-      if (!(this._window as HTMLElement).contains(active) && !this._anchor.contains(active)) return
+      if (!PopupWC._containsDeep(this._window, active) && !PopupWC._containsDeep(this._anchor, active)) return
       const items = this._getMenuItems()
       if (items.length === 0) return
       if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items) }
@@ -327,11 +348,24 @@ export class PopupWC {
   private _resolveParent(): HTMLElement {
     if (this._parentRef) return this._parentRef
     let el: HTMLElement | null = this._anchor
+    let deepestWindow: HTMLElement | null = null
     while (el) {
       if (el.tagName === 'WINDOW-MANAGER-WC') return el
-      if (el.tagName === 'WINDOW-WC') return el
-      el = el.parentElement
+      if (el.tagName === 'WINDOW-WC') deepestWindow = el
+      const parent: HTMLElement | null = el.parentElement
+      if (parent) {
+        el = parent
+      } else {
+        // Cross shadow boundary
+        const root = el.getRootNode() as ShadowRoot | Document
+        if (root instanceof ShadowRoot) {
+          el = root.host as HTMLElement
+        } else {
+          break
+        }
+      }
     }
+    if (deepestWindow) return deepestWindow
     return this._anchor.parentElement ?? document.body
   }
 
@@ -342,7 +376,17 @@ export class PopupWC {
     while (el) {
       const z = parseInt(el.style.zIndex) || parseInt(getComputedStyle(el).zIndex)
       if (!isNaN(z) && z > 0) return z
-      el = el.parentElement
+      const parent: HTMLElement | null = el.parentElement
+      if (parent) {
+        el = parent
+      } else {
+        const root = el.getRootNode() as ShadowRoot | Document
+        if (root instanceof ShadowRoot) {
+          el = root.host as HTMLElement
+        } else {
+          break
+        }
+      }
     }
     return 99999
   }

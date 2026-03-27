@@ -1,5 +1,5 @@
 import { UIView } from '../common/ui-view'
-import { applySimulateFocus } from '../common/simulate-focus'
+import { applySimulateFocus } from '../common/simulate-focus-core'
 import type { Align, Anchors, UISize, UIPosition } from '../common/types'
 
 export interface PanelWCOptions {

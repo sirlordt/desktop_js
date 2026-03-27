@@ -1,5 +1,5 @@
 import { UIToolButton } from '../common/ui-tool-button-core'
-import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus'
+import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus-core'
 import { HintWC } from '../ui-hint-wc/ui-hint-wc'
 import { ScrollBoxWC } from '../ui-scrollbox-wc/ui-scrollbox-wc'
 import type { IWindowChild, WindowState, WindowKind, UIPosition, UIWindowOptions, ScrollMode, TitleAlign } from '../common/types'

@@ -1,4 +1,4 @@
-import { applySimulateFocus } from './simulate-focus'
+import { applySimulateFocus } from './simulate-focus-core'
 
 export type ToolButtonIcon =
   | 'arrow-up' | 'arrow-down' | 'arrow-left' | 'arrow-right'

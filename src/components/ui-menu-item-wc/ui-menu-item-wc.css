@@ -1,0 +1,183 @@
+/* =====================
+   MenuItemWC — Shadow DOM Stylesheet
+   ===================== */
+:host {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: default;
+  user-select: none;
+  white-space: nowrap;
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--fg-color);
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: background-color 0.1s ease;
+}
+
+/* ── Sizes ── */
+:host(.small) {
+  height: 24px;
+  font-size: var(--font-size-sm, 12px);
+}
+
+:host(.medium) {
+  height: 32px;
+  font-size: var(--font-size-md, 14px);
+}
+
+:host(.large) {
+  height: 40px;
+  font-size: var(--font-size-md, 14px);
+}
+
+/* ── Slots ── */
+.left {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: var(--ui-menuitem-margin, 15px);
+  margin-right: var(--ui-menuitem-icon-gap, 12px);
+}
+
+:host(.has-left) .left {
+  display: flex;
+  min-width: 16px;
+}
+
+:host(:not(.has-left)) .center {
+  padding-left: var(--ui-menuitem-margin, 15px);
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  gap: 6px;
+  padding-right: var(--ui-menuitem-margin, 15px);
+}
+
+:host(.has-right) .center {
+  padding-right: 4px;
+}
+
+.text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.text--left { text-align: left; }
+.text--center { text-align: center; }
+.text--right { text-align: right; }
+
+.shortcut {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 16px;
+  font-size: 0.9em;
+  opacity: 0.6;
+}
+
+.right {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: var(--ui-menuitem-margin, 15px);
+}
+
+.right.has-content {
+  display: flex;
+}
+
+/* ── Disabled ── */
+:host(.disabled) {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ── Pushed indicator ── */
+.left-icon {
+  position: absolute;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.left-icon--hidden {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.left-icon--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.left-anim {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+:host(.pushed) .left {
+  color: var(--accent-fg-color, #3584e4);
+}
+
+/* ── Highlight (hover/keyboard) ── */
+:host(.highlight) {
+  background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
+  border-radius: 4px;
+}
+
+:host(:focus-visible) {
+  outline: none;
+}
+
+/* ── Simulate focus ── */
+:host([data-simulate-focus]) {
+  background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
+  border-radius: 4px;
+}
+
+/* ── WIN95 Theme ── */
+:host(.win95) {
+  border-radius: 0;
+}
+
+:host(.win95.highlight) {
+  background-color: #000080;
+  color: #ffffff;
+  border-radius: 0;
+}
+
+:host(.win95.highlight) .left,
+:host(.win95.highlight) .right {
+  color: #ffffff;
+}
+
+:host(.win95.pushed) .left {
+  color: inherit;
+}
+
+:host(.win95[data-simulate-focus]) {
+  background-color: #000080;
+  color: #ffffff;
+  border-radius: 0;
+}
+
+:host(.win95[data-simulate-focus]) .left,
+:host(.win95[data-simulate-focus]) .right {
+  color: #ffffff;
+}

@@ -15,6 +15,7 @@ import { scrollboxWCDemo } from './demos/scrollbox-wc'
 import { hintsWCDemo } from './demos/hints-wc'
 import { panelsWCDemo } from './demos/panels-wc'
 import { windowsWCDemo } from './demos/windows-wc'
+import { menuItemsWCDemo } from './demos/menu-items-wc'
 
 // Register all demos here
 registerDemos([
@@ -32,6 +33,7 @@ registerDemos([
   windowsWCDemo,
   windowsDemo,
   menuItemsDemo,
+  menuItemsWCDemo,
   popupsDemo,
 ])
 

@@ -851,6 +851,15 @@ export class WindowWC extends HTMLElement implements IWindowChild {
 
   private static _nativeFocusable = /^(INPUT|SELECT|TEXTAREA|BUTTON|A)$/
 
+  /** Traverse shadow roots to find the actually focused element */
+  private static _deepActiveElement(): HTMLElement | null {
+    let el = document.activeElement as HTMLElement | null
+    while (el?.shadowRoot?.activeElement) {
+      el = el.shadowRoot.activeElement as HTMLElement
+    }
+    return el
+  }
+
   private _getBodyFocusable(): HTMLElement[] {
     return Array.from(this._bodyEl.querySelectorAll('[data-focusable]')).filter(el => {
       if ((el as HTMLInputElement).disabled) return false
@@ -867,10 +876,42 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     return els
   }
 
+  /** Check if an element (or its shadow host chain) is inside this window's body or its tools */
   private _containsFocusable(el: HTMLElement): boolean {
-    if (this._bodyEl.contains(el)) return true
-    for (const tool of this._tools) { if (tool._bodyEl.contains(el)) return true }
+    // Walk up the host chain to find a [data-focusable] element inside our body
+    let current: HTMLElement | null = el
+    while (current) {
+      if (this._bodyEl.contains(current)) return true
+      for (const tool of this._tools) { if (tool._bodyEl.contains(current)) return true }
+      // Traverse up through shadow host
+      const root = current.getRootNode() as ShadowRoot | Document
+      if (root instanceof ShadowRoot) {
+        current = root.host as HTMLElement
+      } else {
+        break
+      }
+    }
     return false
+  }
+
+  /** Find which [data-focusable] element contains the deep active element */
+  private _findActiveIndex(els: HTMLElement[]): number {
+    const deep = WindowWC._deepActiveElement()
+    if (!deep) return -1
+    // Walk up from deep active element to find a match in els
+    let current: HTMLElement | null = deep
+    while (current) {
+      for (let i = 0; i < els.length; i++) {
+        if (els[i] === current || els[i].contains(current)) return i
+      }
+      const root = current.getRootNode() as ShadowRoot | Document
+      if (root instanceof ShadowRoot) {
+        current = root.host as HTMLElement
+      } else {
+        break
+      }
+    }
+    return -1
   }
 
   private get _groupOwner(): WindowWC { return this._overlord ?? this }
@@ -894,16 +935,19 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
       if (!this.titleBarElement.classList.contains('focused')) return
-      if (!this._containsFocusable(document.activeElement as HTMLElement) && document.activeElement !== this) return
+
+      // Check if focus is within this window (traverse shadow roots)
+      const deepActive = WindowWC._deepActiveElement()
+      if (deepActive && !this._containsFocusable(deepActive) && deepActive !== this) return
+
       if (this._overlord) return
 
       const owner = this._groupOwner
       const els = owner._getAllGroupFocusable()
       if (els.length === 0) return
       e.preventDefault()
-      const active = document.activeElement as HTMLElement
-      let idx = -1
-      for (let i = 0; i < els.length; i++) { if (els[i] === active || els[i].contains(active)) { idx = i; break } }
+
+      const idx = owner._findActiveIndex(els)
       const target = e.shiftKey
         ? els[idx <= 0 ? els.length - 1 : idx - 1]
         : els[(idx + 1) % els.length]

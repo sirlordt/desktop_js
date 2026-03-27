@@ -1,6 +1,6 @@
 import type { ScrollBarKind, ScrollBarSize, UIScrollBarOptions, TooltipColorRange, TooltipColorFn } from '../common/types'
-import { UIToolButton } from '../common/ui-tool-button'
-import type { ToolButtonIcon } from '../common/ui-tool-button'
+import { UIToolButton } from '../common/ui-tool-button-core'
+import type { ToolButtonIcon } from '../common/ui-tool-button-core'
 import cssText from './ui-scrollbar-wc.css?inline'
 
 const THUMB_MIN_SIZE = 20
@@ -8,24 +8,16 @@ const THUMB_MIN_SIZE = 20
 type EventName = 'change' | 'dragstart' | 'dragend'
 type EventHandler = (value: number) => void
 
-// Inject tooltip CSS once globally (tooltip lives in document.body, outside shadow DOM)
-let _tooltipCssInjected = false
-function injectTooltipCss(): void {
-  if (_tooltipCssInjected) return
-  _tooltipCssInjected = true
-  const style = document.createElement('style')
-  style.textContent = `
-.ui-scrollbar-wc-tooltip {
-  position: fixed;
-  padding: 2px 6px;
-  font-size: 11px;
-  background-color: rgba(0, 0, 0, 0.75);
-  color: #fff;
-  border-radius: 3px;
-  pointer-events: none;
-  z-index: 9999;
-}`
-  document.head.appendChild(style)
+/** Apply tooltip styles inline — no global CSS leak */
+function applyTooltipStyles(el: HTMLDivElement): void {
+  el.style.position = 'fixed'
+  el.style.padding = '2px 6px'
+  el.style.fontSize = '11px'
+  el.style.backgroundColor = 'rgba(0, 0, 0, 0.75)'
+  el.style.color = '#fff'
+  el.style.borderRadius = '3px'
+  el.style.pointerEvents = 'none'
+  el.style.zIndex = '9999'
 }
 
 export class ScrollBarWC extends HTMLElement {
@@ -150,8 +142,6 @@ export class ScrollBarWC extends HTMLElement {
 
   connectedCallback(): void {
     this._connected = true
-
-    injectTooltipCss()
 
     // If no configure() was called, read from HTML attributes
     if (!this._configured) {
@@ -754,7 +744,7 @@ export class ScrollBarWC extends HTMLElement {
   private _showTooltipAt(x: number, y: number): void {
     if (!this._tooltipEl) {
       this._tooltipEl = document.createElement('div')
-      this._tooltipEl.className = 'ui-scrollbar-wc-tooltip'
+      applyTooltipStyles(this._tooltipEl)
       document.body.appendChild(this._tooltipEl)
     }
     this._tooltipEl.style.display = ''

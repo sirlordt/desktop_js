@@ -105,6 +105,7 @@ export class PanelWC extends HTMLElement {
     }
 
     this.core.connect()
+    if (this.core.viewVisible) this.style.display = 'block'
   }
 
   disconnectedCallback(): void {
@@ -230,6 +231,11 @@ export class PanelWC extends HTMLElement {
   /** Update layout (call after resizing or changing properties) */
   update(): void {
     this.core.applyLayout()
+    // Custom elements default to display:inline — UIView sets '' which falls back to inline.
+    // Force block so width/height work.
+    if (this.core.viewVisible && this.style.display !== 'none') {
+      this.style.display = 'block'
+    }
   }
 
   destroy(): void {

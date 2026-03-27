@@ -163,8 +163,14 @@ export class PopupWC {
     this._focusedBeforeOpen = document.activeElement as HTMLElement | null
     if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
 
-    el.focus({ preventScroll: true })
-    if (this._window.onFocused) this._window.onFocused()
+    if (this._kind === 'menu') {
+      // Menu mode: keep focus on anchor, popup uses document-level keyboard nav
+      if (this._window.onFocused) this._window.onFocused()
+    } else {
+      // Container mode: move focus to popup for Tab cycling
+      el.focus({ preventScroll: true })
+      if (this._window.onFocused) this._window.onFocused()
+    }
 
     if (this._closeOnClickOutside) {
       requestAnimationFrame(() => {

@@ -46,6 +46,7 @@ export class PanelWC extends HTMLElement {
   private _borderWidth: number = 0
   private _initialized: boolean = false
   private _configured: boolean = false
+  private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
 
   static get observedAttributes(): string[] {
     return [...PANEL_ATTRS]
@@ -89,6 +90,8 @@ export class PanelWC extends HTMLElement {
   }
 
   connectedCallback(): void {
+    if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
+
     // Register with parent PanelWC if nested (every time, not just first)
     this._registerWithParent()
 
@@ -110,6 +113,9 @@ export class PanelWC extends HTMLElement {
 
   disconnectedCallback(): void {
     this.core.disconnect()
+    if (!this.core.isDestroyed && this.hasAttribute('auto-destroy')) {
+      this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
+    }
   }
 
   attributeChangedCallback(name: string, _old: string | null, val: string | null): void {

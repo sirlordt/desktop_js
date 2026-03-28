@@ -23,6 +23,7 @@ export class PopupWC extends HTMLElement {
   private _title: string = ''
   private _state: PopupState = 'closed'
   private _destroyed = false
+  private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
   private _children: HTMLElement[] = []
   private _listeners = new Map<PopupEventName, Set<PopupHandler>>()
   private _window: WindowWC | null = null
@@ -114,6 +115,8 @@ export class PopupWC extends HTMLElement {
   }
 
   connectedCallback(): void {
+    if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
+
     if (!this._configured) {
       this._readAttributes()
     }
@@ -131,7 +134,9 @@ export class PopupWC extends HTMLElement {
       this._childObserver.disconnect()
       this._childObserver = null
     }
-    // Don't destroy — element may be re-attached
+    if (!this._destroyed && this.hasAttribute('auto-destroy')) {
+      this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
+    }
   }
 
   attributeChangedCallback(name: string, old: string | null, val: string | null): void {

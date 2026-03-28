@@ -63,6 +63,7 @@ export class HintWC extends HTMLElement {
   private _visible: boolean = false
   private _currentAlignment: HintAlignment = 'BottomCenter'
   private _destroyed: boolean = false
+  private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
   private _anchor: HTMLElement | null = null
 
   // --- DOM (popup in document.body) ---
@@ -140,12 +141,17 @@ export class HintWC extends HTMLElement {
   }
 
   connectedCallback(): void {
+    if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
     // Host element is invisible — it's a controller, not a visual element
     this.style.display = 'none'
   }
 
   disconnectedCallback(): void {
-    this.destroy()
+    // Hints always auto-destroy since they are lightweight and not re-parented.
+    // The deferred timeout still allows framework re-parenting (React).
+    if (!this._destroyed) {
+      this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
+    }
   }
 
   // =====================

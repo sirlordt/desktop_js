@@ -38,6 +38,7 @@ export class MenuItemWC extends HTMLElement {
   private _pushedChangeHandlers: Set<(pushed: boolean) => void> = new Set()
   private _cleanups: Array<() => void> = []
   private _destroyed = false
+  private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
   private _configured = false
 
   private _hint: HintWC | null = null
@@ -157,6 +158,8 @@ export class MenuItemWC extends HTMLElement {
   }
 
   connectedCallback(): void {
+    if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
+
     // If not configured programmatically, read from attributes
     if (!this._configured) {
       this._readAttributes()
@@ -164,10 +167,12 @@ export class MenuItemWC extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    // Cleanup observers but don't destroy — element may be re-attached
     if (this._resizeObserver) {
       this._resizeObserver.disconnect()
       this._resizeObserver = null
+    }
+    if (!this._destroyed && this.hasAttribute('auto-destroy')) {
+      this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
     }
   }
 

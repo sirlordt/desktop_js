@@ -43,6 +43,7 @@ export class ScrollBarWC extends HTMLElement {
   private _hover: boolean = false
   private _disabled: boolean = false
   private _destroyed: boolean = false
+  private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
 
   // --- DOM (inside shadow) ---
   private _shadow: ShadowRoot
@@ -141,6 +142,8 @@ export class ScrollBarWC extends HTMLElement {
   }
 
   connectedCallback(): void {
+    if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
+
     // If no configure() was called, read from HTML attributes
     if (!this._configured) {
       this._readAttributes()
@@ -181,8 +184,9 @@ export class ScrollBarWC extends HTMLElement {
   }
 
   disconnectedCallback(): void {
-    // Don't destroy on disconnect — element may be re-attached (e.g. moved in DOM).
-    // Users must call destroy() explicitly if permanent removal is intended.
+    if (!this._destroyed && this.hasAttribute('auto-destroy')) {
+      this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
+    }
   }
 
   attributeChangedCallback(name: string, _old: string | null, val: string | null): void {

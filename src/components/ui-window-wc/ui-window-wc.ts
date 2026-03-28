@@ -54,6 +54,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   private _titleBarStyle: string = 'normal'
   private _cleanups: Array<() => void> = []
   private _destroyed: boolean = false
+  private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
   private _resizeHandles: HTMLDivElement[] = []
   private _allowMoveOffParent: boolean = true
   private _closable: boolean = true
@@ -157,6 +158,8 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   private _buildOptions: UIWindowOptions | null = null
 
   connectedCallback(): void {
+    if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
+
     this._ensureBuilt()
     if (!this._configured) this._readAttributes()
 
@@ -170,7 +173,9 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   }
 
   disconnectedCallback(): void {
-    // Don't destroy — element may be re-attached
+    if (!this._destroyed && this.hasAttribute('auto-destroy')) {
+      this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
+    }
   }
 
   attributeChangedCallback(name: string, old: string | null, val: string | null): void {

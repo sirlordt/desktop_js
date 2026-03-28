@@ -66,6 +66,7 @@ export class ScrollBoxWC extends HTMLElement {
   private _scrollListeners: Set<ScrollEventHandler> = new Set()
   private _cleanups: Array<() => void> = []
   private _destroyed: boolean = false
+  private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
 
   // --- Lifecycle ---
   private _initialized: boolean = false
@@ -130,6 +131,8 @@ export class ScrollBoxWC extends HTMLElement {
   }
 
   connectedCallback(): void {
+    if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
+
     if (!this._configured) {
       this._readAttributes()
     }
@@ -141,6 +144,12 @@ export class ScrollBoxWC extends HTMLElement {
         this._applyAttribute(name, val)
       }
       this._pendingAttrs = null
+    }
+  }
+
+  disconnectedCallback(): void {
+    if (!this._destroyed && this.hasAttribute('auto-destroy')) {
+      this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
     }
   }
 

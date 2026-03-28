@@ -520,7 +520,35 @@ export const popupsWCDemo: DemoRoute = {
     w4Menu.addChild(new UIMenuItemWC({ text: 'Quit', shortcut: 'Ctrl+Q', leftElement: makeIcon(ICONS.x) }))
     w4MenuBtn.addEventListener('click', () => w4Menu.toggle())
 
+    const w4DetSubBtn = makeBtn('Open Detachable Submenu')
+    const w4DetSubRoot = new UIPopupWC({ anchor: w4DetSubBtn, alignment: 'BottomLeft', width: 200, height: 200, detachable: true, resizable: true, title: 'Tools' })
+    w4DetSubRoot.overlord = standaloneWin2
+
+    const w4DrawItem = new UIMenuItemWC({ text: 'Drawing', leftElement: makeIcon(ICONS.brush) })
+    const w4DrawSub = new UIPopupWC({ anchor: w4DrawItem, kind: 'menu', width: 180, height: 180, detachable: true, resizable: true, title: 'Drawing' })
+    const w4BrushTypeItem = new UIMenuItemWC({ text: 'Brush Type', leftElement: makeIcon(ICONS.brush) })
+    const w4BrushTypeSub = new UIPopupWC({ anchor: w4BrushTypeItem, kind: 'menu', width: 160, height: 140, detachable: true, resizable: true, title: 'Brush Type' })
+    ;['Round', 'Flat', 'Fan', 'Palette Knife'].forEach(t => w4BrushTypeSub.addChild(new UIMenuItemWC({ text: t })))
+    w4BrushTypeItem.subMenu = w4BrushTypeSub
+    w4DrawSub.addChild(new UIMenuItemWC({ text: 'Pencil', leftElement: makeIcon(ICONS.type) }))
+    w4DrawSub.addChild(w4BrushTypeItem)
+    w4DrawSub.addChild(new UIMenuItemWC({ text: 'Eraser', leftElement: makeIcon(ICONS.eraser) }))
+    w4DrawSub.addChild(new UIMenuItemWC({ text: 'Fill', leftElement: makeIcon(ICONS.paintBucket) }))
+    w4DrawItem.subMenu = w4DrawSub
+
+    const w4TransformItem = new UIMenuItemWC({ text: 'Transform', leftElement: makeIcon(ICONS.move) })
+    const w4TransformSub = new UIPopupWC({ anchor: w4TransformItem, kind: 'menu', width: 160, height: 120, detachable: true, resizable: true, title: 'Transform' })
+    ;['Move', 'Rotate', 'Scale', 'Skew'].forEach(t => w4TransformSub.addChild(new UIMenuItemWC({ text: t })))
+    w4TransformItem.subMenu = w4TransformSub
+
+    w4DetSubRoot.addChild(new UIMenuItemWC({ text: 'Select All', shortcut: 'Ctrl+A', leftElement: makeIcon(ICONS.cursor) }))
+    w4DetSubRoot.addChild(w4DrawItem)
+    w4DetSubRoot.addChild(w4TransformItem)
+    w4DetSubRoot.addChild(new UIMenuItemWC({ text: 'Flatten', leftElement: makeIcon(ICONS.layers) }))
+    w4DetSubBtn.addEventListener('click', () => w4DetSubRoot.toggle())
+
     standaloneWin2.contentElement.appendChild(w4MenuBtn)
+    standaloneWin2.contentElement.appendChild(w4DetSubBtn)
     standaloneWin2.contentElement.appendChild(w4Status)
 
     const standaloneRow = document.createElement('div')

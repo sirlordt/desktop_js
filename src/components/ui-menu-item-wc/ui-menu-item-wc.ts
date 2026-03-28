@@ -416,9 +416,14 @@ export class UIMenuItemWC extends HTMLElement {
     }
 
     // Auto-wire overlord: if the sub-menu is detachable and has no overlord,
-    // find the parent popup's window and use it as overlord.
+    // inherit the parent popup's overlord (the real WM-managed window) so
+    // detached tools register correctly with the WindowManager's z-order.
+    // Fall back to the parent popup's own window for standalone (no-WM) cases.
     if (this._subMenu.detachable && !(this._subMenu as any)._overlord) {
-      if (parentPopup?.window) {
+      const parentOverlord = parentPopup ? (parentPopup as any)._overlord as any : null
+      if (parentOverlord) {
+        this._subMenu.overlord = parentOverlord
+      } else if (parentPopup?.window) {
         this._subMenu.overlord = parentPopup.window
       }
     }

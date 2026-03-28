@@ -251,15 +251,18 @@
 .ui-btn:focus {
   outline: var(--focus-ring-width) solid var(--_btn-focus-color);
   outline-offset: var(--focus-ring-offset);
+  border-color: transparent;
 }
 
 :host([data-simulate-focus]) .ui-btn {
   outline: var(--focus-ring-width) solid var(--_btn-focus-color);
   outline-offset: var(--focus-ring-offset);
+  border-color: transparent;
 }
 
 :host([focusable="false"]) .ui-btn:focus {
   outline: none;
+  border-color: var(--_btn-border-color);
 }
 
 /* ── Disabled (GTK4: keep variant colors, wash out) ── */

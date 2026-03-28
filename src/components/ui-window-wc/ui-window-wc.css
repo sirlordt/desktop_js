@@ -178,6 +178,24 @@
   background-color: var(--view-bg-color);
 }
 
+.body [data-focusable]:focus {
+  outline: var(--focus-ring-width, 2px) solid var(--focus-ring-color, rgba(53, 132, 228, 0.5));
+  outline-offset: var(--focus-ring-offset, 2px);
+}
+
+.body ui-button[data-focusable]:focus {
+  outline: none;
+}
+
+:host(.win95) .body [data-focusable]:focus {
+  outline: 1px dotted var(--focus-ring-color, #000);
+  outline-offset: -1px;
+}
+
+:host(.win95) .body ui-button[data-focusable]:focus {
+  outline: none;
+}
+
 .body--hidden {
   display: none !important;
 }

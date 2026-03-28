@@ -131,6 +131,24 @@
   background-color: var(--view-bg-color);
 }
 
+.ui-window__body [data-focusable]:focus {
+  outline: var(--focus-ring-width, 2px) solid var(--focus-ring-color, rgba(53, 132, 228, 0.5));
+  outline-offset: var(--focus-ring-offset, 2px);
+}
+
+.ui-window__body ui-button[data-focusable]:focus {
+  outline: none;
+}
+
+[data-theme^="win95"] .ui-window__body [data-focusable]:focus {
+  outline: 1px dotted var(--focus-ring-color, #000);
+  outline-offset: -1px;
+}
+
+[data-theme^="win95"] .ui-window__body ui-button[data-focusable]:focus {
+  outline: none;
+}
+
 .ui-window__body--hidden {
   display: none !important;
 }

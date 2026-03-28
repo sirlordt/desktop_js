@@ -1,6 +1,6 @@
 import { UIView } from '../common/ui-view'
 import { UIHint } from '../ui-hint/ui-hint'
-import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus'
+import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus-core'
 import type { HintAlignment, UIHintOptions } from '../common/types'
 import styles from './ui-button.css?raw'
 

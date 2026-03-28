@@ -198,6 +198,7 @@ export class UIPopup {
     if (this._kind === 'menu') {
       // Menu mode: anchor keeps real focus, popup uses document-level keyboard nav
       if (this._window.onFocused) this._window.onFocused()
+      // Tab closes popup without restoring focus (handled in _bindMenuNav)
     } else {
       // Container mode: move real focus to popup for Tab cycling
       el.focus({ preventScroll: true })
@@ -337,6 +338,15 @@ export class UIPopup {
   private _bindMenuNav(): void {
     this._keyNavHandler = (e: KeyboardEvent) => {
       if (this._state !== 'attached') return
+      if (e.key === 'Tab') {
+        // Close popup without restoring focus — let Tab move naturally
+        if (this._focusedBeforeOpen) {
+          dispatchSimulateFocus(this._focusedBeforeOpen, false)
+          this._focusedBeforeOpen = null
+        }
+        this.close()
+        return
+      }
       const items = this._getMenuItems()
       if (items.length === 0) return
       if (e.key === 'ArrowDown') {

@@ -610,9 +610,12 @@ export class UIPopupWC extends HTMLElement {
     this._keyNavHandler = (e: KeyboardEvent) => {
       if (this._state !== 'attached') return
 
-      // If the sub-menu was closed externally, clear the stale reference
-      if (this._activeSubMenu && this._activeSubMenu._state === 'closed') {
-        this._activeSubMenu = null
+      // Walk the chain and clean up any closed references
+      { let c: UIPopupWC = this
+        while (c._activeSubMenu) {
+          if (c._activeSubMenu._state === 'closed') { c._activeSubMenu = null; break }
+          c = c._activeSubMenu
+        }
       }
       // If a sub-menu chain is actively receiving navigation, delegate to the deepest level
       if (this._activeSubMenu) {
@@ -819,9 +822,13 @@ export class UIPopupWC extends HTMLElement {
       if (!UIPopupWC._containsDeep(win, active) && !this._anchor || !UIPopupWC._containsDeep(this._anchor!, active)) return
 
       // Delegate to active sub-menu chain (same logic as attached mode)
-      // If the sub-menu was closed (e.g. by request-parent-close), clear the stale reference
-      if (this._activeSubMenu && this._activeSubMenu._state === 'closed') {
-        this._activeSubMenu = null
+      // Walk the chain and clean up any closed references (e.g. sub-menu closed
+      // by request-parent-close while an intermediate level is still detached)
+      { let c: UIPopupWC = this
+        while (c._activeSubMenu) {
+          if (c._activeSubMenu._state === 'closed') { c._activeSubMenu = null; break }
+          c = c._activeSubMenu
+        }
       }
       if (this._activeSubMenu) {
         const { deepest, parent } = UIPopupWC._findDeepestActive(this)

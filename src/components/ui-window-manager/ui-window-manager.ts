@@ -751,6 +751,22 @@ export class UIWindowManager extends UIPanel {
     return child.topmost ? this._zOrderTopmost : this._zOrder
   }
 
+  /** Highest z-index currently assigned to any managed window or tool */
+  get maxZIndex(): number {
+    let max = 0
+    for (const child of [...this._zOrder, ...this._zOrderTopmost]) {
+      const z = child.zIndex
+      if (z > max) max = z
+      const asWin = child as UIWindow
+      if ('tools' in asWin) {
+        for (const tool of asWin.tools) {
+          if (tool.zIndex > max) max = tool.zIndex
+        }
+      }
+    }
+    return max
+  }
+
   private _reassignZIndexes(): void {
     const assignList = (list: IWindowChild[], base: number) => {
       let z = base

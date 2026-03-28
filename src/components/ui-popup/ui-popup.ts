@@ -2,6 +2,7 @@ import type { PopupState, PopupKind, UIPopupOptions } from '../common/types'
 import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-focus'
 import { findBestPosition } from '../common/positioning'
 import { UIWindow } from '../ui-window/ui-window'
+import { UIWindowManager } from '../ui-window-manager/ui-window-manager'
 import './ui-popup.css'
 
 type PopupEventName = 'show' | 'close' | 'detach' | 'attach'
@@ -184,8 +185,10 @@ export class UIPopup {
     }
 
     // Position above anchor's stacking context
-    const anchorZ = this._getAnchorZIndex()
-    el.style.zIndex = `${anchorZ + 1}`
+    // Position above all managed windows
+    const wm = this._findWindowManager()
+    const topZ = wm ? wm.maxZIndex : this._getAnchorZIndex()
+    el.style.zIndex = `${topZ + 2}`
 
     this._reposition()
 
@@ -444,6 +447,16 @@ export class UIPopup {
     if (deepestWindow) return deepestWindow
 
     return this._anchor.parentElement ?? document.body
+  }
+
+  /** Walk up from anchor to find a UIWindowManager */
+  private _findWindowManager(): UIWindowManager | null {
+    let el: HTMLElement | null = this._anchor
+    while (el) {
+      if ('uiWm' in el.dataset && el instanceof UIWindowManager) return el
+      el = el.parentElement
+    }
+    return null
   }
 
   // ── Private: Positioning ──

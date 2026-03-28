@@ -2,6 +2,7 @@ import type { PopupState, PopupKind, UIPopupOptions } from '../common/types'
 import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-focus-core'
 import { findBestPosition } from '../common/positioning'
 import { WindowWC } from '../ui-window-wc/ui-window-wc'
+import { WindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
 
 type PopupEventName = 'show' | 'close' | 'detach' | 'attach'
 type PopupHandler = (...args: any[]) => void
@@ -179,8 +180,10 @@ export class PopupWC {
       if (anchorW > this._window.width) this._window.width = anchorW
     }
 
-    const anchorZ = this._getAnchorZIndex()
-    el.style.zIndex = `${anchorZ + 1}`
+    // Position above all managed windows
+    const wm = this._findWindowManager()
+    const topZ = wm ? wm.maxZIndex : this._getAnchorZIndex()
+    el.style.zIndex = `${topZ + 2}`
 
     this._reposition()
 
@@ -382,6 +385,26 @@ export class PopupWC {
     }
     if (deepestWindow) return deepestWindow
     return this._anchor.parentElement ?? document.body
+  }
+
+  /** Walk up from anchor (crossing shadow boundaries) to find a WindowManagerWC */
+  private _findWindowManager(): WindowManagerWC | null {
+    let el: HTMLElement | null = this._anchor
+    while (el) {
+      if (el instanceof WindowManagerWC) return el
+      const parent: HTMLElement | null = el.parentElement
+      if (parent) {
+        el = parent
+      } else {
+        const root = el.getRootNode() as ShadowRoot | Document
+        if (root instanceof ShadowRoot) {
+          el = root.host as HTMLElement
+        } else {
+          break
+        }
+      }
+    }
+    return null
   }
 
   // ── Positioning ──

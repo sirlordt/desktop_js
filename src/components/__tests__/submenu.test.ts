@@ -943,6 +943,63 @@ describe('sub-menus', () => {
       expect(itemFlatten.classList.contains('highlight')).toBe(true)
     })
 
+    it('Enter on sub-menu item closes attached sub-menu and returns control to detached parent', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      const itemFlatten = createItem('Flatten')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+      root.addChild(itemFlatten)
+
+      const sub = createPopup({ detachable: true, title: 'Drawing' })
+      let pencilClicked = false
+      const subItemPencil = createItem('Pencil')
+      subItemPencil.onClick(() => { pencilClicked = true })
+      const subItemEraser = createItem('Eraser')
+      sub.addChild(subItemPencil)
+      sub.addChild(subItemEraser)
+      itemDrawing.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Detach the ROOT popup
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      anchor.focus()
+      await flush()
+
+      // Navigate to Drawing → open sub-menu → highlight Pencil
+      pressKey('ArrowDown')   // Select All
+      pressKey('ArrowDown')   // Drawing
+      pressKey('ArrowRight')  // open sub-menu, highlight Pencil
+      await flush(50)
+      expect(sub.state).toBe('attached')
+      expect(subItemPencil.classList.contains('highlight')).toBe(true)
+
+      // Press Enter on Pencil — should click, close sub-menu, return control to parent
+      pressKey('Enter')
+      await flush(100)
+      expect(pencilClicked).toBe(true)
+      expect(sub.state).toBe('closed')
+
+      // Parent should still be detached and Drawing still highlighted
+      expect(root.state).toBe('detached')
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      // Arrow keys should now control the PARENT, not the dead sub-menu
+      pressKey('ArrowDown')
+      await flush()
+      expect(itemFlatten.classList.contains('highlight')).toBe(true)
+      expect(itemDrawing.classList.contains('highlight')).toBe(false)
+    })
+
     it('delegated nav works for 3-level deep sub-menus in detached root', async () => {
       anchor = createAnchor()
       anchor.focus()
@@ -996,6 +1053,87 @@ describe('sub-menus', () => {
       await flush()
       expect(l1Item0.classList.contains('highlight')).toBe(true)
       expect(l2Item1.classList.contains('highlight')).toBe(false)
+    })
+
+    it('Enter in 3-level deep sub-menu closes all attached levels and returns control to detached root', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      const itemFlatten = createItem('Flatten')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+      root.addChild(itemFlatten)
+
+      const level1 = createPopup({ detachable: true, title: 'Drawing' })
+      const l1Pencil = createItem('Pencil')
+      const l1BrushType = createItem('Brush Type')
+      const l1Eraser = createItem('Eraser')
+      level1.addChild(l1Pencil)
+      level1.addChild(l1BrushType)
+      level1.addChild(l1Eraser)
+      itemDrawing.subMenu = level1
+
+      const level2 = createPopup({ detachable: true, title: 'Brush Type' })
+      let roundClicked = false
+      const l2Round = createItem('Round')
+      l2Round.onClick(() => { roundClicked = true })
+      const l2Flat = createItem('Flat')
+      level2.addChild(l2Round)
+      level2.addChild(l2Flat)
+      l1BrushType.subMenu = level2
+
+      root.show()
+      await flush(50)
+
+      // Detach root
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      anchor.focus()
+      await flush()
+
+      // Navigate: root → Drawing → level1 → Brush Type → level2 → Round
+      pressKey('ArrowDown')   // Select All
+      pressKey('ArrowDown')   // Drawing
+      pressKey('ArrowRight')  // open level1, highlight Pencil
+      await flush(50)
+      expect(level1.state).toBe('attached')
+      expect(l1Pencil.classList.contains('highlight')).toBe(true)
+
+      pressKey('ArrowDown')   // Brush Type
+      expect(l1BrushType.classList.contains('highlight')).toBe(true)
+
+      pressKey('ArrowRight')  // open level2, highlight Round
+      await flush(50)
+      expect(level2.state).toBe('attached')
+      expect(l2Round.classList.contains('highlight')).toBe(true)
+
+      // Enter on Round — should click, close level2 AND level1, return to root
+      pressKey('Enter')
+      await flush(150)
+
+      expect(roundClicked).toBe(true)
+      expect(level2.state).toBe('closed')
+      expect(level1.state).toBe('closed')
+      expect(root.state).toBe('detached')
+
+      // Drawing should still be highlighted in root
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      // Arrow keys should control the ROOT again
+      pressKey('ArrowDown')
+      await flush()
+      expect(itemFlatten.classList.contains('highlight')).toBe(true)
+      expect(itemDrawing.classList.contains('highlight')).toBe(false)
+
+      // And going back up
+      pressKey('ArrowUp')
+      await flush()
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
     })
 
     it('Enter opens sub-menu when root popup is detached and item has sub-menu', async () => {

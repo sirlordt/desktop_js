@@ -516,6 +516,7 @@ export class UIPopup {
       el.style.top = `${curTop - parentRect.top}px`
     }
     this._window.positioning = 'absolute'
+    el.style.zIndex = ''
 
     // Become tool of overlord
     this._overlord.addTool(this._window)

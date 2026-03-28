@@ -466,6 +466,7 @@ export class PopupWC {
       el.style.top = `${curTop - parentRect.top}px`
     }
     this._window.positioning = 'absolute'
+    el.style.zIndex = ''
 
     this._overlord.addTool(this._window)
 

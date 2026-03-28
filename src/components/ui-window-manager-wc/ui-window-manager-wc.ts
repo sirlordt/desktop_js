@@ -224,7 +224,7 @@ export class WindowManagerWC extends PanelWC {
   addWindow(child: IWindowChild): void {
     if (this._windows.includes(child)) return
     this._windows.push(child)
-    this.appendChild(child.element)
+    if (child.element.parentNode !== this) this.appendChild(child.element)
 
     if (child.isFloating) {
       const mgrW = this.clientWidth, mgrH = this.clientHeight

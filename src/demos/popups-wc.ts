@@ -201,5 +201,95 @@ export const popupsWCDemo: DemoRoute = {
     container.appendChild(wm)
     wm.addWindow(emptyWin)
     wm.addWindow(secondWin)
+
+    // ── 7. Standalone Window (outside WM) ──
+    const sec7 = document.createElement('div'); sec7.style.cssText = 'margin-bottom:32px;margin-top:50px;'
+    sec7.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Standalone Window (no WindowManager)</h2>'
+    root.appendChild(sec7)
+
+    const standaloneWin = new WindowWC({ title: 'Window 3 (standalone)', left: 0, top: 0, width: 500, height: 300, positioning: 'relative' })
+    const standaloneStatus = document.createElement('div')
+    standaloneStatus.style.cssText = 'margin-top:8px;font-size:12px;opacity:0.6;width:100%;'
+    standaloneStatus.textContent = 'Same buttons but outside a WindowManager.'
+
+    // Detachable
+    const sDetachBtn = makeBtn('Open Detachable')
+    const sPopupDetach = new PopupWC({
+      anchor: sDetachBtn, alignment: 'BottomLeft', width: 180, height: 200,
+      title: 'Tool Palette', detachable: true, resizable: true,
+    })
+    sPopupDetach.overlord = standaloneWin
+    tools.forEach(([text, key]) => {
+      const item = new MenuItemWC({ text, shortcut: key })
+      sPopupDetach.addChild(item)
+      item.onClick(() => { standaloneStatus.textContent = `Tool: ${text}` })
+    })
+    sDetachBtn.addEventListener('click', () => sPopupDetach.toggle())
+    sPopupDetach.on('detach', () => { standaloneStatus.textContent = 'Popup detached! Now a tool window.' })
+    sPopupDetach.on('attach', () => { standaloneStatus.textContent = 'Popup returned.' })
+
+    // Container
+    const sContainerBtn = makeBtn('Open Container')
+    const sPopupContainer = new PopupWC({
+      anchor: sContainerBtn, kind: 'container', alignment: 'BottomLeft',
+      width: 220, height: 160, title: 'Settings', detachable: true, resizable: true,
+    })
+    sPopupContainer.overlord = standaloneWin
+    const sSettings = document.createElement('div')
+    sSettings.style.cssText = 'display:flex;flex-direction:column;gap:10px;padding:12px 14px;'
+    const sCb1 = document.createElement('label')
+    sCb1.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;'
+    sCb1.setAttribute('data-focusable', ''); sCb1.innerHTML = '<input type="checkbox" checked> Auto-save'
+    const sCb2 = document.createElement('label')
+    sCb2.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;'
+    sCb2.setAttribute('data-focusable', ''); sCb2.innerHTML = '<input type="checkbox"> Dark mode'
+    const sApply = makeBtn('Apply', 'solid')
+    sApply.style.alignSelf = 'flex-end'
+    sApply.addEventListener('click', () => { standaloneStatus.textContent = 'Settings applied!' })
+    sSettings.appendChild(sCb1); sSettings.appendChild(sCb2); sSettings.appendChild(sApply)
+    sPopupContainer.addChild(sSettings)
+    sContainerBtn.addEventListener('click', () => sPopupContainer.toggle())
+
+    // Layers
+    const sLayersBtn = makeBtn('Open Layers')
+    const sPopupLayers = new PopupWC({
+      anchor: sLayersBtn, alignment: 'BottomLeft', width: 180, height: 180,
+      title: 'Layers', detachable: true, resizable: true,
+    })
+    sPopupLayers.overlord = standaloneWin
+    ;[['Background', 'F1'], ['Foreground', 'F2'], ['Overlay', 'F3'], ['Mask', 'F4'], ['Shadow', 'F5'], ['Glow', 'F6']].forEach(([text, key]) => {
+      const item = new MenuItemWC({ text, shortcut: key })
+      sPopupLayers.addChild(item)
+      item.onClick(() => { standaloneStatus.textContent = `Layer: ${text}` })
+    })
+    sLayersBtn.addEventListener('click', () => sPopupLayers.toggle())
+
+    standaloneWin.contentElement.style.padding = '10px'
+    standaloneWin.contentElement.style.display = 'flex'
+    standaloneWin.contentElement.style.flexWrap = 'wrap'
+    standaloneWin.contentElement.style.gap = '8px'
+    standaloneWin.contentElement.style.alignContent = 'flex-start'
+    standaloneWin.contentElement.appendChild(sDetachBtn)
+    standaloneWin.contentElement.appendChild(sContainerBtn)
+    standaloneWin.contentElement.appendChild(sLayersBtn)
+    standaloneWin.contentElement.appendChild(standaloneStatus)
+
+    // Window 4 — standalone empty window to test focus alternation
+    const standaloneWin2 = new WindowWC({ title: 'Window 4 (standalone)', left: 0, top: 0, width: 350, height: 250, positioning: 'relative' })
+    standaloneWin2.contentElement.style.padding = '10px'
+    const w4Label = document.createElement('div')
+    w4Label.style.cssText = 'font-size:13px;opacity:0.6;'
+    w4Label.textContent = 'Click here or on Window 3 to test focus alternation without a WindowManager.'
+    standaloneWin2.contentElement.appendChild(w4Label)
+
+    const standaloneRow = document.createElement('div')
+    standaloneRow.style.cssText = 'display:flex;gap:16px;align-items:flex-start;'
+    standaloneRow.appendChild(standaloneWin)
+    standaloneRow.appendChild(standaloneWin2)
+    sec7.appendChild(standaloneRow)
+
+    // Focus management for standalone windows is handled automatically by
+    // WindowWC — no WindowManager needed. Each window calls onFocused() on
+    // mousedown when it has no manager.
   },
 }

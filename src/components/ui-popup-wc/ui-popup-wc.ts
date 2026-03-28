@@ -287,7 +287,11 @@ export class PopupWC extends HTMLElement {
     const el = win as HTMLElement
     el.classList.remove('wm-anim', 'wm-anim-close', 'wm-anim-open-start')
     el.style.opacity = ''; el.style.pointerEvents = ''
-    if (!el.parentNode) this._resolveParent().appendChild(el)
+    const parent = this._resolveParent()
+    if (!el.parentNode) parent.appendChild(el)
+    // Use absolute positioning when inside a positioned container (WM/Window)
+    // so overflow:hidden clips the popup and coords are container-relative.
+    if (parent !== document.body) el.style.position = 'absolute'
     this._state = 'attached'
 
     win.resetLastFocused()
@@ -497,11 +501,13 @@ export class PopupWC extends HTMLElement {
   private _resolveParent(): HTMLElement {
     if (this._parentRef) return this._parentRef
     if (!this._anchor) return document.body
+    // Walk up from the anchor (crossing shadow boundaries) to find
+    // a WindowManagerWC. Only a WM provides the positioned container
+    // needed for absolute popup placement. Without a WM, fall back
+    // to document.body with fixed positioning.
     let el: HTMLElement | null = this._anchor
-    let deepestWindow: HTMLElement | null = null
     while (el) {
       if (el.tagName === 'WINDOW-MANAGER-WC') return el
-      if (el.tagName === 'WINDOW-WC') deepestWindow = el
       const parent: HTMLElement | null = el.parentElement
       if (parent) {
         el = parent
@@ -514,8 +520,7 @@ export class PopupWC extends HTMLElement {
         }
       }
     }
-    if (deepestWindow) return deepestWindow
-    return this._anchor.parentElement ?? document.body
+    return document.body
   }
 
   /** Walk up from anchor (crossing shadow boundaries) to find a WindowManagerWC */
@@ -577,6 +582,13 @@ export class PopupWC extends HTMLElement {
     const w = el.offsetWidth || this._width
     const h = el.offsetHeight || this._height
     const { pos } = findBestPosition(anchorRect, w, h, this._alignment as any, this._margin)
+    // findBestPosition returns viewport coords. When the popup is position:absolute
+    // inside a container (e.g. WindowManagerWC), convert to container-relative.
+    if (el.style.position === 'absolute' && el.offsetParent) {
+      const r = el.offsetParent.getBoundingClientRect()
+      pos.left -= r.left
+      pos.top -= r.top
+    }
     el.style.left = `${Math.round(pos.left)}px`
     el.style.top = `${Math.round(pos.top)}px`
   }
@@ -592,18 +604,33 @@ export class PopupWC extends HTMLElement {
     this._window.closable = true
 
     const el = this._window as HTMLElement
-    const parentEl = this._overlord.manager?.element
-    if (parentEl) {
-      const parentRect = parentEl.getBoundingClientRect()
-      const curLeft = parseFloat(el.style.left) || 0
-      const curTop = parseFloat(el.style.top) || 0
-      el.style.left = `${curLeft - parentRect.left}px`
-      el.style.top = `${curTop - parentRect.top}px`
-    }
+    const wasFixed = el.style.position === 'fixed'
+    const fixedLeft = parseFloat(el.style.left) || 0
+    const fixedTop = parseFloat(el.style.top) || 0
+
     this._window.positioning = 'absolute'
     el.style.zIndex = ''
 
     this._overlord.addTool(this._window)
+
+    // Without a WM, addTool doesn't move the element — append it next
+    // to the overlord so absolute positioning is relative to the same parent.
+    if (!this._overlord.manager) {
+      const target = (this._overlord as HTMLElement).parentElement
+      if (target) {
+        if (el.parentNode !== target) target.appendChild(el)
+        // Ensure parent is a positioning context for absolute children
+        if (getComputedStyle(target).position === 'static') target.style.position = 'relative'
+      }
+    }
+
+    // Convert viewport coords to offsetParent-relative after the element
+    // has been placed in its final parent.
+    if (wasFixed && el.offsetParent) {
+      const r = el.offsetParent.getBoundingClientRect()
+      el.style.left = `${fixedLeft - r.left}px`
+      el.style.top = `${fixedTop - r.top}px`
+    }
 
     this._window.onClosed = () => this._returnFromDetached()
 

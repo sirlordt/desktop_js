@@ -713,6 +713,19 @@ export class WindowWC extends HTMLElement implements IWindowChild {
         const hasSimFocus = wc.hasAttribute('data-simulate-focus')
         if (wc !== this && !isOurTool && !hasSimFocus) wc.titleBarElement.classList.remove('focused')
       })
+
+      // Without a WindowManager, manage z-index manually: push all sibling
+      // windows to base z-index, then bring this window and its tools on top.
+      if (!this.manager) {
+        let maxZ = 0
+        parent.querySelectorAll('window-wc').forEach(el => {
+          const z = parseInt((el as HTMLElement).style.zIndex) || 0
+          if (z > maxZ) maxZ = z
+        })
+        const topZ = maxZ + 1
+        this.style.zIndex = `${topZ}`
+        this._tools.forEach((t, i) => { (t as HTMLElement).style.zIndex = `${topZ + 1 + i}` })
+      }
     }
     if (this._lastFocusedEl && this._containsFocusable(this._lastFocusedEl)) {
       this._lastFocusedEl.focus({ preventScroll: true })
@@ -1088,6 +1101,14 @@ export class WindowWC extends HTMLElement implements IWindowChild {
       if (target) target.focus()
       else e.preventDefault()
     })
+
+    // Standalone focus: when no WindowManager, handle focus on mousedown.
+    // If this is a tool window, focus the overlord (which focuses its tools too).
+    this.addEventListener('mousedown', () => {
+      if (this.manager) return
+      const target = this._overlord ?? this
+      target.onFocused()
+    }, true)
 
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return

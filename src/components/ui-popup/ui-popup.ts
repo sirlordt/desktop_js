@@ -195,9 +195,14 @@ export class UIPopup {
       dispatchSimulateFocus(this._focusedBeforeOpen, true)
     }
 
-    // Take focus on the popup window (not on children)
-    el.focus({ preventScroll: true })
-    if (this._window.onFocused) this._window.onFocused()
+    if (this._kind === 'menu') {
+      // Menu mode: anchor keeps real focus, popup uses document-level keyboard nav
+      if (this._window.onFocused) this._window.onFocused()
+    } else {
+      // Container mode: move real focus to popup for Tab cycling
+      el.focus({ preventScroll: true })
+      if (this._window.onFocused) this._window.onFocused()
+    }
 
     // Click outside
     if (this._closeOnClickOutside) {

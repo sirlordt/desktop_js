@@ -106,7 +106,7 @@ export const popupsWCDemo: DemoRoute = {
     popupDetach.overlord = emptyWin
 
     const tools: [string, string][] = [['Select', 'Ctrl+A'], ['Move', 'Ctrl+M'], ['Rotate', 'Ctrl+R'], ['Scale', 'Alt+S'],
-      ['Brush', 'Ctrl+B'], ['Eraser', 'Alt+E'], ['Fill', 'Ctrl+G'], ['Text', 'Ctrl+T']]
+      ['Brush', 'Ctrl+B'], ['Eraser', 'Alt+E'], ['Fill', 'Ctrl+G'], ['Text', 'Ctrl+T'], ['Content-Aware Fill', 'Ctrl+Shift+F']]
     tools.forEach(([text, key]) => {
       const item = new UIMenuItemWC({ text, shortcut: key })
       popupDetach.addChild(item)

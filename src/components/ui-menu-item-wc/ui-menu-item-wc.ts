@@ -313,6 +313,21 @@ export class UIMenuItemWC extends HTMLElement {
     this._textEl.classList.add(`text--${this._textAlign}`)
   }
 
+  /** Minimum width needed to display text + shortcut without ellipsis */
+  get naturalWidth(): number {
+    const center = this._centerEl
+    let w = center.scrollWidth // natural content width including padding
+    if (this.classList.contains('has-left')) {
+      const ls = getComputedStyle(this._leftEl)
+      w += this._leftEl.offsetWidth + parseFloat(ls.marginLeft) + parseFloat(ls.marginRight)
+    }
+    if (this.classList.contains('has-right')) {
+      const rs = getComputedStyle(this._rightEl)
+      w += this._rightEl.offsetWidth + parseFloat(rs.marginRight)
+    }
+    return Math.ceil(w)
+  }
+
   private _simulateFocus = false
   get simulateFocus(): boolean { return this._simulateFocus }
   set simulateFocus(v: boolean) {

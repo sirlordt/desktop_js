@@ -31,7 +31,7 @@ export class UIPopupWC extends HTMLElement {
   private _height: number = 250
   private _resizable: boolean = false
   private _scrollMode: ScrollMode | undefined = undefined
-  private _minWidth: number = 50
+  private _minWidth: number = 150
   private _minHeight: number = 100
 
   private _closeOnClickOutside: boolean = true
@@ -147,7 +147,7 @@ export class UIPopupWC extends HTMLElement {
       case 'margin': this._margin = val !== null ? parseFloat(val) : 4; break
       case 'width': this._width = val !== null ? parseFloat(val) : 200; break
       case 'height': this._height = val !== null ? parseFloat(val) : 250; break
-      case 'min-width': this._minWidth = val !== null ? parseFloat(val) : 50; break
+      case 'min-width': this._minWidth = val !== null ? parseFloat(val) : 150; break
       case 'min-height': this._minHeight = val !== null ? parseFloat(val) : 100; break
       case 'resizable': this._resizable = val !== null; break
       case 'detachable': this._detachable = val !== null; break
@@ -208,9 +208,13 @@ export class UIPopupWC extends HTMLElement {
       showShortcuts: false,
       minWidth: this._minWidth,
       minHeight: this._minHeight,
-      scroll: this._scrollMode ?? ((this._resizable && this._kind === 'menu') ? 'both' : undefined),
+      scroll: this._scrollMode ?? ((this._resizable && this._kind === 'menu') ? 'vertical' : undefined),
       scrollBarSize: 'small',
     })
+
+    // While attached the popup manages its own z-index and focus; prevent
+    // the WM's MutationObserver from adding a mousedown-focus handler.
+    this._window.isFloating = false
 
     if (this._detachable) this._window.closable = false
 
@@ -339,6 +343,11 @@ export class UIPopupWC extends HTMLElement {
     this._activeIndex = -1
 
     if (this._kind === 'menu') this._setChildrenFocusable(false)
+
+    // Auto-size menu popups to fit their widest item
+    if (this._kind === 'menu') {
+      this._autoSizeMenuWidth(win)
+    }
 
     const anchorRect = this._anchor.getBoundingClientRect()
     const anchorW = Math.ceil(anchorRect.width)
@@ -508,8 +517,8 @@ export class UIPopupWC extends HTMLElement {
       if (!UIPopupWC._containsDeep(win, active) && !this._anchor || !UIPopupWC._containsDeep(this._anchor!, active)) return
       const items = this._getMenuItems()
       if (items.length === 0) return
-      if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1; this._highlightMenuItem(items) }
+      if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items); this._bringToolToFront() }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1; this._highlightMenuItem(items); this._bringToolToFront() }
       else if (e.key === 'Enter' && this._activeIndex >= 0) { e.preventDefault(); e.stopPropagation(); items[this._activeIndex].click() }
     }
     document.addEventListener('keydown', this._keyNavHandler, true)
@@ -522,9 +531,37 @@ export class UIPopupWC extends HTMLElement {
       if (this._state !== 'detached') return
       this._activeIndex = -1; this._clearHighlight()
       if (this._window?.scrollBox) this._window.scrollBox.scrollContentTo(0, 0)
+      this._bringToolToFront()
     }
     this._anchor.addEventListener('blur', this._anchorBlurHandler)
     this._anchor.addEventListener('focus', this._anchorFocusHandler)
+  }
+
+  /** Bring the detached tool window to the front of its sibling tools */
+  private _bringToolToFront(): void {
+    if (!this._window || !this._overlord) return
+    if (this._overlord.manager) {
+      this._overlord.manager.bringToFront(this._window as any)
+    } else {
+      // Standalone: reorder _tools and refresh z-indexes only (no focus change)
+      const tools = (this._overlord as any)._tools as UIWindowWC[]
+      const idx = tools.indexOf(this._window)
+      if (idx !== -1 && idx !== tools.length - 1) {
+        tools.splice(idx, 1); tools.push(this._window)
+      }
+      // Reassign z-indexes without calling onFocused (which restores _lastFocusedEl)
+      const parent = (this._overlord as HTMLElement).parentElement
+      if (parent) {
+        let maxZ = 0
+        parent.querySelectorAll('window-wc').forEach(el => {
+          const z = parseInt((el as HTMLElement).style.zIndex) || 0
+          if (z > maxZ) maxZ = z
+        })
+        const topZ = maxZ + 1
+        ;(this._overlord as HTMLElement).style.zIndex = `${topZ}`
+        tools.forEach((t: any, i: number) => { (t as HTMLElement).style.zIndex = `${topZ + 1 + i}` })
+      }
+    }
   }
 
   // ── Container nav ──
@@ -649,6 +686,7 @@ export class UIPopupWC extends HTMLElement {
     const fixedTop = parseFloat(el.style.top) || 0
 
     this._window.positioning = 'absolute'
+    this._window.isFloating = true   // restore so WM manages it as a tool
     el.style.zIndex = ''
 
     this._overlord.addTool(this._window)
@@ -690,6 +728,7 @@ export class UIPopupWC extends HTMLElement {
       this._window.resetLastFocused()
       const first = this._window.contentElement.querySelector('[data-focusable]') as HTMLElement | null
       if (first) first.focus({ preventScroll: true })
+      this._bringToolToFront()
     }
 
     this._emit('detach')
@@ -739,6 +778,23 @@ export class UIPopupWC extends HTMLElement {
   }
 
   // ── Menu helpers ──
+
+  /** Measure all menu items and set the popup width to fit the widest one */
+  private _autoSizeMenuWidth(win: UIWindowWC): void {
+    const items = win.contentElement.querySelectorAll<HTMLElement>('menuitem-wc')
+    let maxW = 0
+    for (const item of items) {
+      const nw = (item as any).naturalWidth
+      if (typeof nw === 'number' && nw > maxW) maxW = nw
+    }
+    // Account for scrollbar width (vertical scrollbar takes ~14px for small)
+    const sbExtra = win.scrollBox ? 14 : 0
+    const needed = maxW + sbExtra
+    if (needed > this._minWidth) {
+      win.width = needed
+      win.minWidth = needed
+    }
+  }
 
   private _getMenuItems(): HTMLElement[] {
     if (!this._window) return []

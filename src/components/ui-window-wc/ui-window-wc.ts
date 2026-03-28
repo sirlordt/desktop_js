@@ -1103,6 +1103,45 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
 
   private get _groupOwner(): UIWindowWC { return this._overlord ?? this }
 
+  /** Walk up from el (crossing shadow boundaries) to find a tool window, then bring it to front */
+  private _bringContainingToolToFront(el: HTMLElement): void {
+    let node: HTMLElement | null = el
+    while (node) {
+      if (node.tagName === 'WINDOW-WC') {
+        const win = node as UIWindowWC
+        if (!win.isTool) return
+        if (this.manager) {
+          this.manager.bringToFront(win)
+        } else if (win._overlord) {
+          // Standalone: reorder _tools and refresh z-indexes only (no focus steal)
+          const tools = win._overlord._tools
+          const idx = tools.indexOf(win)
+          if (idx !== -1 && idx !== tools.length - 1) {
+            tools.splice(idx, 1); tools.push(win)
+          }
+          const parent = (win._overlord as HTMLElement).parentElement
+          if (parent) {
+            let maxZ = 0
+            parent.querySelectorAll('window-wc').forEach(e => {
+              const z = parseInt((e as HTMLElement).style.zIndex) || 0
+              if (z > maxZ) maxZ = z
+            })
+            const topZ = maxZ + 1
+            ;(win._overlord as HTMLElement).style.zIndex = `${topZ}`
+            tools.forEach((t, i) => { (t as HTMLElement).style.zIndex = `${topZ + 1 + i}` })
+          }
+        }
+        return
+      }
+      const parent = node.parentElement
+      if (parent) { node = parent }
+      else {
+        const root = node.getRootNode()
+        node = root instanceof ShadowRoot ? root.host as HTMLElement : null
+      }
+    }
+  }
+
   private _bindFocusTrap(): void {
     this._bodyEl.addEventListener('focusin', (e: Event) => {
       const target = e.target as HTMLElement
@@ -1120,11 +1159,18 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
     })
 
     // Standalone focus: when no WindowManager, handle focus on mousedown.
-    // If this is a tool window, focus the overlord (which focuses its tools too).
+    // If this is a tool window, move it to front of siblings then focus the overlord.
     this.addEventListener('mousedown', () => {
       if (this.manager) return
-      const target = this._overlord ?? this
-      target.onFocused()
+      const owner = this._overlord ?? this
+      if (this._overlord) {
+        const tools = this._overlord._tools
+        const idx = tools.indexOf(this)
+        if (idx !== -1 && idx !== tools.length - 1) {
+          tools.splice(idx, 1); tools.push(this)
+        }
+      }
+      owner.onFocused()
     }, true)
 
     const handler = (e: KeyboardEvent) => {
@@ -1147,6 +1193,9 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
         ? els[idx <= 0 ? els.length - 1 : idx - 1]
         : els[(idx + 1) % els.length]
       target.focus({ preventScroll: true })
+
+      // If the focused target is inside a tool window, bring it to front
+      this._bringContainingToolToFront(target)
     }
 
     document.addEventListener('keydown', handler, true)

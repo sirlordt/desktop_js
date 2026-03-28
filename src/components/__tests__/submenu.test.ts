@@ -1334,6 +1334,102 @@ describe('sub-menus', () => {
   })
 
   // ═══════════════════════════════════════
+  // 7c-2b. Escape closes only the active keyboard level
+  // ═══════════════════════════════════════
+
+  describe('Escape closes only the active keyboard level', () => {
+    it('Escape in attached sub-menu closes only that level, not the root', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup()
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+
+      const sub = createPopup()
+      const subItem0 = createItem('Pencil')
+      const subItem1 = createItem('Eraser')
+      sub.addChild(subItem0)
+      sub.addChild(subItem1)
+      itemDrawing.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Navigate to Drawing and open sub-menu
+      pressKey('ArrowDown')   // Select All
+      pressKey('ArrowDown')   // Drawing
+      pressKey('ArrowRight')  // open sub-menu
+      await flush(50)
+      expect(sub.state).toBe('attached')
+      expect(subItem0.classList.contains('highlight')).toBe(true)
+
+      // Escape should close ONLY the sub-menu, not the root
+      pressKey('Escape')
+      await flush(50)
+      expect(sub.state).toBe('closed')
+      expect(root.state).toBe('attached')  // root stays open!
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      // Second Escape should close root
+      pressKey('Escape')
+      await flush(50)
+      expect(root.state).toBe('closed')
+    })
+
+    it('Escape in 3-level chain closes one level at a time', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup()
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemDrawing)
+
+      const level1 = createPopup()
+      const l1BrushType = createItem('Brush Type')
+      level1.addChild(l1BrushType)
+      itemDrawing.subMenu = level1
+
+      const level2 = createPopup()
+      const l2Round = createItem('Round')
+      level2.addChild(l2Round)
+      l1BrushType.subMenu = level2
+
+      root.show()
+      await flush(50)
+
+      // Navigate all the way to level2
+      pressKey('ArrowDown')   // Drawing
+      pressKey('ArrowRight')  // open level1
+      await flush(50)
+      pressKey('ArrowRight')  // open level2
+      await flush(50)
+      expect(level2.state).toBe('attached')
+
+      // First Escape: close level2, return to level1
+      pressKey('Escape')
+      await flush(50)
+      expect(level2.state).toBe('closed')
+      expect(level1.state).toBe('attached')
+      expect(l1BrushType.classList.contains('highlight')).toBe(true)
+
+      // Second Escape: close level1, return to root
+      pressKey('Escape')
+      await flush(50)
+      expect(level1.state).toBe('closed')
+      expect(root.state).toBe('attached')
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      // Third Escape: close root
+      pressKey('Escape')
+      await flush(50)
+      expect(root.state).toBe('closed')
+    })
+  })
+
+  // ═══════════════════════════════════════
   // 7c-3. Anchor blur/focus clears/restores highlight across all detached levels
   // ═══════════════════════════════════════
 

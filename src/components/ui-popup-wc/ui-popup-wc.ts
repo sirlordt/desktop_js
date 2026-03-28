@@ -494,7 +494,9 @@ export class UIPopupWC extends HTMLElement {
       })
     }
 
-    if (this._closeOnEscape) {
+    // Menu-kind popups handle Escape in _bindMenuNav / _bindDetachedMenuNav
+    // so they can close one level at a time. Non-menu popups use the generic handler.
+    if (this._closeOnEscape && this._kind !== 'menu') {
       this._escapeHandler = (e: KeyboardEvent) => {
         if (this._state !== 'attached') return
         if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close() }
@@ -679,6 +681,11 @@ export class UIPopupWC extends HTMLElement {
           dispatchSimulateFocus(this._focusedBeforeOpen, false)
           this._focusedBeforeOpen = null
         }
+        this.close()
+        return
+      }
+      if (e.key === 'Escape' && this._closeOnEscape) {
+        e.preventDefault(); e.stopPropagation()
         this.close()
         return
       }

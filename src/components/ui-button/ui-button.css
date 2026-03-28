@@ -248,16 +248,23 @@
 
 /* ── Focus ── */
 
+@keyframes focus-fade-in {
+  from { outline-color: transparent; }
+  to   { outline-color: var(--_btn-focus-color); }
+}
+
 .ui-btn:focus {
   outline: var(--focus-ring-width) solid var(--_btn-focus-color);
   outline-offset: var(--focus-ring-offset);
   border-color: transparent;
+  animation: focus-fade-in 200ms ease-out;
 }
 
 :host([data-simulate-focus]) .ui-btn {
   outline: var(--focus-ring-width) solid var(--_btn-focus-color);
   outline-offset: var(--focus-ring-offset);
   border-color: transparent;
+  animation: focus-fade-in 200ms ease-out;
 }
 
 :host([focusable="false"]) .ui-btn:focus {
@@ -465,6 +472,11 @@
 }
 
 /* WIN95 Focus: dotted inner rectangle (like real Win95) */
+:host(.win95) .ui-btn:focus,
+:host(.win95[data-simulate-focus]) .ui-btn {
+  animation: none;
+}
+
 :host(.win95) .ui-btn:focus {
   outline: none;
 }

@@ -84,6 +84,10 @@ export interface UIMenuItemOptions {
   disabled?: boolean
   requestParentClose?: boolean
   className?: string
+  /** Sub-menu popup to show when this item is activated */
+  subMenu?: HTMLElement | null
+  /** Alignment override for the sub-menu. Default: 'RightTop' */
+  subMenuAlignment?: HintAlignment
 }
 
 // ── Popup types ──

@@ -88,6 +88,107 @@ export const popupsWCDemo: DemoRoute = {
     })
     btn1.addEventListener('click', () => popup1.toggle())
 
+    // ── 1b. Sub-menus ──
+    const secSub = document.createElement('div'); secSub.style.cssText = 'margin-bottom:32px;'
+    secSub.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Sub-menus (nested, multi-level)</h2>'
+    const btnSub = makeBtn('Open Menu with Sub-menus'); secSub.appendChild(btnSub); root.appendChild(secSub)
+
+    const popupSub = new UIPopupWC({ anchor: btnSub, alignment: 'BottomLeft', width: 220, height: 250 })
+
+    // "New" item with sub-menu
+    const newItem = new UIMenuItemWC({ text: 'New', leftElement: makeIcon(ICONS.file) })
+    const newSub = new UIPopupWC({ anchor: newItem, kind: 'menu', width: 180, height: 160 })
+    // Level 2: "Project" has its own sub-menu
+    const projItem = new UIMenuItemWC({ text: 'Project...', leftElement: makeIcon(ICONS.folderOpen) })
+    const projSub = new UIPopupWC({ anchor: projItem, kind: 'menu', width: 160, height: 120 })
+    ;['React', 'Vue', 'Svelte', 'Angular'].forEach(t => projSub.addChild(new UIMenuItemWC({ text: t })))
+    projItem.subMenu = projSub
+
+    newSub.addChild(new UIMenuItemWC({ text: 'File', leftElement: makeIcon(ICONS.file) }))
+    newSub.addChild(projItem)
+    newSub.addChild(new UIMenuItemWC({ text: 'Snippet', leftElement: makeIcon(ICONS.type) }))
+    newItem.subMenu = newSub
+
+    // "View" item with sub-menu
+    const viewItem = new UIMenuItemWC({ text: 'View', leftElement: makeIcon(ICONS.eye) })
+    const viewSub = new UIPopupWC({ anchor: viewItem, kind: 'menu', width: 180, height: 140 })
+    ;['Zoom In', 'Zoom Out', 'Reset Zoom', 'Full Screen'].forEach(t => viewSub.addChild(new UIMenuItemWC({ text: t })))
+    viewItem.subMenu = viewSub
+
+    popupSub.addChild(newItem)
+    popupSub.addChild(new UIMenuItemWC({ text: 'Open...', shortcut: 'Ctrl+O', leftElement: makeIcon(ICONS.folderOpen) }))
+    popupSub.addChild(viewItem)
+    popupSub.addChild(new UIMenuItemWC({ text: 'Save', shortcut: 'Ctrl+S', leftElement: makeIcon(ICONS.save) }))
+    popupSub.addChild(new UIMenuItemWC({ text: 'Close', shortcut: 'Ctrl+W', leftElement: makeIcon(ICONS.x) }))
+    btnSub.addEventListener('click', () => popupSub.toggle())
+
+    // ── 1c. Detachable sub-menus (3 levels, all detachable) ──
+    const secDetSub = document.createElement('div'); secDetSub.style.cssText = 'margin-bottom:32px;'
+    secDetSub.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Detachable Sub-menus (3 levels, all detachable)</h2>'
+    const btnDetSub = makeBtn('Open Detachable Menu'); secDetSub.appendChild(btnDetSub); root.appendChild(secDetSub)
+
+    const detSubRoot = new UIPopupWC({ anchor: btnDetSub, alignment: 'BottomLeft', width: 200, height: 200, detachable: true, resizable: true, title: 'Tools' })
+
+    // Level 1: Drawing sub-menu
+    const drawItem = new UIMenuItemWC({ text: 'Drawing', leftElement: makeIcon(ICONS.brush) })
+    const drawSub = new UIPopupWC({ anchor: drawItem, kind: 'menu', width: 180, height: 180, detachable: true, resizable: true, title: 'Drawing' })
+    // Level 2: Brush type sub-menu
+    const brushTypeItem = new UIMenuItemWC({ text: 'Brush Type', leftElement: makeIcon(ICONS.brush) })
+    const brushTypeSub = new UIPopupWC({ anchor: brushTypeItem, kind: 'menu', width: 160, height: 140, detachable: true, resizable: true, title: 'Brush Type' })
+    ;['Round', 'Flat', 'Fan', 'Palette Knife'].forEach(t => brushTypeSub.addChild(new UIMenuItemWC({ text: t })))
+    brushTypeItem.subMenu = brushTypeSub
+    drawSub.addChild(new UIMenuItemWC({ text: 'Pencil', leftElement: makeIcon(ICONS.type) }))
+    drawSub.addChild(brushTypeItem)
+    drawSub.addChild(new UIMenuItemWC({ text: 'Eraser', leftElement: makeIcon(ICONS.eraser) }))
+    drawSub.addChild(new UIMenuItemWC({ text: 'Fill', leftElement: makeIcon(ICONS.paintBucket) }))
+    drawItem.subMenu = drawSub
+
+    // Level 1: Transform sub-menu
+    const transformItem = new UIMenuItemWC({ text: 'Transform', leftElement: makeIcon(ICONS.move) })
+    const transformSub = new UIPopupWC({ anchor: transformItem, kind: 'menu', width: 160, height: 120, detachable: true, resizable: true, title: 'Transform' })
+    ;['Move', 'Rotate', 'Scale', 'Skew'].forEach(t => transformSub.addChild(new UIMenuItemWC({ text: t })))
+    transformItem.subMenu = transformSub
+
+    detSubRoot.addChild(new UIMenuItemWC({ text: 'Select All', shortcut: 'Ctrl+A', leftElement: makeIcon(ICONS.cursor) }))
+    detSubRoot.addChild(drawItem)
+    detSubRoot.addChild(transformItem)
+    detSubRoot.addChild(new UIMenuItemWC({ text: 'Flatten', leftElement: makeIcon(ICONS.layers) }))
+    btnDetSub.addEventListener('click', () => detSubRoot.toggle())
+
+    // ── 1d. Sub-menu with container (level 3 is container) ──
+    const secContSub = document.createElement('div'); secContSub.style.cssText = 'margin-bottom:32px;'
+    secContSub.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Sub-menu with Container (level 3 = container)</h2>'
+    const btnContSub = makeBtn('Open Menu'); secContSub.appendChild(btnContSub); root.appendChild(secContSub)
+
+    const contSubRoot = new UIPopupWC({ anchor: btnContSub, alignment: 'BottomLeft', width: 200, height: 180 })
+
+    // Level 1: "Settings" opens level 2
+    const settingsItem = new UIMenuItemWC({ text: 'Settings', leftElement: makeIcon(ICONS.grid) })
+    const settingsSub = new UIPopupWC({ anchor: settingsItem, kind: 'menu', width: 180, height: 140 })
+    // Level 2: "Theme" opens container at level 3
+    const themeItem = new UIMenuItemWC({ text: 'Theme', leftElement: makeIcon(ICONS.compass) })
+    const themeSub = new UIPopupWC({ anchor: themeItem, kind: 'container', width: 200, height: 160 })
+    const themeContent = document.createElement('div')
+    themeContent.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:10px 12px;font-size:13px;'
+    for (const name of ['GTK4 Light', 'GTK4 Dark', 'Win95', 'Win95 Dark']) {
+      const label = document.createElement('label')
+      label.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;'
+      label.innerHTML = `<input type="radio" name="theme-demo" ${name === 'GTK4 Dark' ? 'checked' : ''}> ${name}`
+      themeContent.appendChild(label)
+    }
+    themeSub.addChild(themeContent)
+    themeItem.subMenu = themeSub
+
+    settingsSub.addChild(new UIMenuItemWC({ text: 'General', leftElement: makeIcon(ICONS.file) }))
+    settingsSub.addChild(themeItem)
+    settingsSub.addChild(new UIMenuItemWC({ text: 'Keybindings', leftElement: makeIcon(ICONS.type) }))
+    settingsItem.subMenu = settingsSub
+
+    contSubRoot.addChild(settingsItem)
+    contSubRoot.addChild(new UIMenuItemWC({ text: 'About', leftElement: makeIcon(ICONS.eye) }))
+    contSubRoot.addChild(new UIMenuItemWC({ text: 'Quit', shortcut: 'Ctrl+Q', leftElement: makeIcon(ICONS.x) }))
+    btnContSub.addEventListener('click', () => contSubRoot.toggle())
+
     // ── 2. Auto-flip ──
     const sec2 = document.createElement('div'); sec2.style.cssText = 'margin-bottom:32px;'
     sec2.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Auto-flip (buttons near edges)</h2>'
@@ -266,6 +367,52 @@ export const popupsWCDemo: DemoRoute = {
     emptyWin.contentElement.appendChild(containerBtn2)
     statusLabel.style.width = '100%'
     emptyWin.contentElement.appendChild(statusLabel)
+    // ── Window 2: Sub-menu demo inside managed window ──
+    secondWin.contentElement.style.padding = '10px'
+    secondWin.contentElement.style.display = 'flex'
+    secondWin.contentElement.style.flexWrap = 'wrap'
+    secondWin.contentElement.style.gap = '8px'
+    secondWin.contentElement.style.alignContent = 'flex-start'
+
+    const w2Status = document.createElement('div')
+    w2Status.style.cssText = 'font-size:12px;opacity:0.6;width:100%;'
+    w2Status.textContent = 'Sub-menus inside a managed window.'
+
+    const w2MenuBtn = makeBtn('Open Menu')
+    const w2Menu = new UIPopupWC({ anchor: w2MenuBtn, alignment: 'BottomLeft', width: 200, height: 200 })
+    // Level 1: "Edit" sub-menu
+    const w2EditItem = new UIMenuItemWC({ text: 'Edit', leftElement: makeIcon(ICONS.type) })
+    const w2EditSub = new UIPopupWC({ anchor: w2EditItem, kind: 'menu', width: 170, height: 140 })
+    // Level 2: "Clipboard" sub-menu
+    const w2ClipItem = new UIMenuItemWC({ text: 'Clipboard', leftElement: makeIcon(ICONS.file) })
+    const w2ClipSub = new UIPopupWC({ anchor: w2ClipItem, kind: 'menu', width: 150, height: 120 })
+    ;['Cut', 'Copy', 'Paste', 'Paste Special'].forEach(t => w2ClipSub.addChild(new UIMenuItemWC({ text: t })))
+    w2ClipItem.subMenu = w2ClipSub
+    w2EditSub.addChild(new UIMenuItemWC({ text: 'Undo', shortcut: 'Ctrl+Z', leftElement: makeIcon(ICONS.rotateCw) }))
+    w2EditSub.addChild(new UIMenuItemWC({ text: 'Redo', shortcut: 'Ctrl+Y' }))
+    w2EditSub.addChild(w2ClipItem)
+    w2EditItem.subMenu = w2EditSub
+    w2Menu.addChild(w2EditItem)
+    w2Menu.addChild(new UIMenuItemWC({ text: 'Find...', shortcut: 'Ctrl+F', leftElement: makeIcon(ICONS.eye) }))
+    w2Menu.addChild(new UIMenuItemWC({ text: 'Replace...', shortcut: 'Ctrl+H' }))
+    w2MenuBtn.addEventListener('click', () => w2Menu.toggle())
+
+    const w2DetachBtn = makeBtn('Open Detachable Submenu')
+    const w2DetMenu = new UIPopupWC({ anchor: w2DetachBtn, alignment: 'BottomLeft', width: 190, height: 180, detachable: true, title: 'Image' })
+    w2DetMenu.overlord = secondWin
+    const w2AdjustItem = new UIMenuItemWC({ text: 'Adjustments', leftElement: makeIcon(ICONS.wand) })
+    const w2AdjustSub = new UIPopupWC({ anchor: w2AdjustItem, kind: 'menu', width: 160, height: 140, detachable: true, title: 'Adjustments' })
+    ;['Brightness', 'Contrast', 'Saturation', 'Hue'].forEach(t => w2AdjustSub.addChild(new UIMenuItemWC({ text: t })))
+    w2AdjustItem.subMenu = w2AdjustSub
+    w2DetMenu.addChild(new UIMenuItemWC({ text: 'Crop', leftElement: makeIcon(ICONS.maximize) }))
+    w2DetMenu.addChild(w2AdjustItem)
+    w2DetMenu.addChild(new UIMenuItemWC({ text: 'Resize', leftElement: makeIcon(ICONS.move) }))
+    w2DetachBtn.addEventListener('click', () => w2DetMenu.toggle())
+
+    secondWin.contentElement.appendChild(w2MenuBtn)
+    secondWin.contentElement.appendChild(w2DetachBtn)
+    secondWin.contentElement.appendChild(w2Status)
+
     container.appendChild(wm)
     wm.addWindow(emptyWin)
     wm.addWindow(secondWin)
@@ -342,13 +489,39 @@ export const popupsWCDemo: DemoRoute = {
     standaloneWin.contentElement.appendChild(sLayersBtn)
     standaloneWin.contentElement.appendChild(standaloneStatus)
 
-    // Window 4 — standalone empty window to test focus alternation
+    // Window 4 — standalone window with sub-menu demo
     const standaloneWin2 = new UIWindowWC({ title: 'Window 4 (standalone)', left: 0, top: 0, width: 350, height: 250, positioning: 'relative' })
     standaloneWin2.contentElement.style.padding = '10px'
-    const w4Label = document.createElement('div')
-    w4Label.style.cssText = 'font-size:13px;opacity:0.6;'
-    w4Label.textContent = 'Click here or on Window 3 to test focus alternation without a WindowManager.'
-    standaloneWin2.contentElement.appendChild(w4Label)
+    standaloneWin2.contentElement.style.display = 'flex'
+    standaloneWin2.contentElement.style.flexWrap = 'wrap'
+    standaloneWin2.contentElement.style.gap = '8px'
+    standaloneWin2.contentElement.style.alignContent = 'flex-start'
+
+    const w4Status = document.createElement('div')
+    w4Status.style.cssText = 'font-size:12px;opacity:0.6;width:100%;'
+    w4Status.textContent = 'Sub-menus in standalone window (no WM).'
+
+    const w4MenuBtn = makeBtn('Open Menu')
+    const w4Menu = new UIPopupWC({ anchor: w4MenuBtn, alignment: 'BottomLeft', width: 190, height: 180 })
+    // Level 1: "View" sub-menu
+    const w4ViewItem = new UIMenuItemWC({ text: 'View', leftElement: makeIcon(ICONS.eye) })
+    const w4ViewSub = new UIPopupWC({ anchor: w4ViewItem, kind: 'menu', width: 170, height: 140 })
+    // Level 2: "Layout" sub-menu
+    const w4LayoutItem = new UIMenuItemWC({ text: 'Layout', leftElement: makeIcon(ICONS.grid) })
+    const w4LayoutSub = new UIPopupWC({ anchor: w4LayoutItem, kind: 'menu', width: 150, height: 100 })
+    ;['Single', 'Split', 'Grid'].forEach(t => w4LayoutSub.addChild(new UIMenuItemWC({ text: t })))
+    w4LayoutItem.subMenu = w4LayoutSub
+    w4ViewSub.addChild(new UIMenuItemWC({ text: 'Zoom In', shortcut: 'Ctrl+=' }))
+    w4ViewSub.addChild(new UIMenuItemWC({ text: 'Zoom Out', shortcut: 'Ctrl+-' }))
+    w4ViewSub.addChild(w4LayoutItem)
+    w4ViewItem.subMenu = w4ViewSub
+    w4Menu.addChild(w4ViewItem)
+    w4Menu.addChild(new UIMenuItemWC({ text: 'Help', leftElement: makeIcon(ICONS.compass) }))
+    w4Menu.addChild(new UIMenuItemWC({ text: 'Quit', shortcut: 'Ctrl+Q', leftElement: makeIcon(ICONS.x) }))
+    w4MenuBtn.addEventListener('click', () => w4Menu.toggle())
+
+    standaloneWin2.contentElement.appendChild(w4MenuBtn)
+    standaloneWin2.contentElement.appendChild(w4Status)
 
     const standaloneRow = document.createElement('div')
     standaloneRow.style.cssText = 'display:flex;gap:16px;align-items:flex-start;'

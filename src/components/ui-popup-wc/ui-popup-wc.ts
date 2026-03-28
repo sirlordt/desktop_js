@@ -3,6 +3,7 @@ import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-fo
 import { findBestPosition } from '../common/positioning'
 import { UIWindowWC } from '../ui-window-wc/ui-window-wc'
 import { UIWindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
+import type { UIMenuItemWC } from '../ui-menu-item-wc/ui-menu-item-wc'
 
 type PopupEventName = 'show' | 'close' | 'detach' | 'attach'
 type PopupHandler = (...args: any[]) => void
@@ -48,6 +49,11 @@ export class UIPopupWC extends HTMLElement {
   private _overlord: UIWindowWC | null = null
   private _parentRef: HTMLElement | null = null
 
+  /** Set automatically by UIMenuItemWC.subMenu setter */
+  _parentMenuItem: UIMenuItemWC | null = null
+  /** Tracks which sub-menu popup is currently receiving keyboard navigation */
+  private _activeSubMenu: UIPopupWC | null = null
+
   private _configured = false
 
   static get observedAttributes() {
@@ -64,6 +70,37 @@ export class UIPopupWC extends HTMLElement {
   }
 
   /** Check if target (or any of its shadow hosts) is inside container */
+  /** Walk the _activeSubMenu chain to find the deepest popup receiving navigation */
+  private static _findDeepestActive(root: UIPopupWC): { deepest: UIPopupWC; parent: UIPopupWC } {
+    let parent: UIPopupWC = root
+    let current: UIPopupWC = root._activeSubMenu!
+    while (current._activeSubMenu) {
+      parent = current
+      current = current._activeSubMenu
+    }
+    return { deepest: current, parent }
+  }
+
+  /** Walk up from a menu item to find the UIPopupWC whose window contains it */
+  private static _findOwnerPopup(item: HTMLElement): UIPopupWC | null {
+    // The item lives inside a UIWindowWC's contentElement. The UIPopupWC owns that window.
+    // Walk up to find window-wc, then find the popup-wc that references it.
+    let el: HTMLElement | null = item.parentElement
+    while (el) {
+      if (el.tagName === 'POPUP-WC') return el as unknown as UIPopupWC
+      // The item is inside the popup's window contentElement (light DOM).
+      // The popup-wc element is in the DOM but the window is portaled.
+      // So we check all popup-wc elements to find the one whose window contains the item.
+      el = el.parentElement
+    }
+    // Fallback: search all popup-wc elements
+    for (const p of document.querySelectorAll('popup-wc')) {
+      const popup = p as unknown as UIPopupWC
+      if (popup.window && popup.window.contentElement?.contains(item)) return popup
+    }
+    return null
+  }
+
   private static _containsDeep(container: HTMLElement, target: HTMLElement): boolean {
     let current: HTMLElement | null = target
     while (current) {
@@ -228,11 +265,29 @@ export class UIPopupWC extends HTMLElement {
     // the WM's MutationObserver from adding a mousedown-focus handler.
     this._window.isFloating = false
 
+
     if (this._detachable) this._window.closable = false
 
     // Auto-close on request-parent-close from UIMenuItemWC
     this._window.addEventListener('request-parent-close', () => {
-      if (this._state === 'attached') requestAnimationFrame(() => this.close())
+      if (this._state === 'attached') {
+        // Collect all attached ancestors, then close all at once (no staggered rAF)
+        requestAnimationFrame(() => {
+          const chain: UIPopupWC[] = []
+          let current: UIPopupWC = this
+          while (current._state === 'attached') {
+            chain.push(current)
+            const parentItem: UIMenuItemWC | null = current._parentMenuItem
+            if (!parentItem || !parentItem.requestParentClose) break
+            // Walk up: find the popup that contains the parent menu item
+            const owner = UIPopupWC._findOwnerPopup(parentItem)
+            if (!owner) break
+            current = owner
+          }
+          // Close all levels in one tick (innermost first)
+          for (const p of chain) p.close()
+        })
+      }
     })
 
     // Mouse highlight for menu kind
@@ -245,12 +300,25 @@ export class UIPopupWC extends HTMLElement {
         const items = this._getMenuItems()
         const idx = items.indexOf(target)
         if (idx !== -1 && idx !== this._activeIndex) {
+          // Close sibling sub-menu when hovering a different item
+          if (this._activeIndex >= 0) {
+            const prev = items[this._activeIndex] as any
+            if (prev?.hasSubMenu) prev.closeSubMenuIfAttached()
+          }
+          this._activeSubMenu = null
           this._activeIndex = idx
           this._highlightMenuItem(items)
         }
       })
       this._window.contentElement.addEventListener('mouseleave', () => {
         if (this._state === 'closed') return
+        // Don't clear highlight if the highlighted item has an open sub-menu
+        // (mouse is traveling from parent item to sub-menu popup)
+        if (this._activeIndex >= 0) {
+          const items = this._getMenuItems()
+          const active = items[this._activeIndex] as any
+          if (active?.hasSubMenu && active.subMenu?.visible) return
+        }
         this._activeIndex = -1
         this._clearHighlight()
       })
@@ -338,6 +406,14 @@ export class UIPopupWC extends HTMLElement {
   get scrollMode(): ScrollMode | undefined { return this._scrollMode }
   set scrollMode(v: ScrollMode | undefined) { this._scrollMode = v }
 
+  /** Whether this popup is being used as a sub-menu (has a parent menu item) */
+  get isSubMenu(): boolean { return this._parentMenuItem !== null }
+
+  /** Close only if in attached state (used for cascade close) */
+  closeIfAttached(): void {
+    if (this._state === 'attached') this.close()
+  }
+
   show(): void {
     if (this._state !== 'closed' || this._destroyed) return
     if (!this._anchor) return
@@ -383,15 +459,21 @@ export class UIPopupWC extends HTMLElement {
 
     this._reposition()
 
-    // Simulate focus on whoever had focus before (traverse shadow roots)
-    this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
-    if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
-
-    if (this._kind === 'menu') {
-      // Menu mode: anchor keeps real focus, popup uses document-level keyboard nav
+    if (this._parentMenuItem) {
+      // Sub-menu: skip focus management entirely — the root popup owns it.
+      // Just visually mark this window's titlebar as focused.
+      win.simulateFocus = true
+    } else if (this._kind === 'menu') {
+      // Root menu: anchor keeps real focus, popup uses document-level keyboard nav
+      this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
+      if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
       if (win.onFocused) win.onFocused()
+    } else if (this._kind === 'container' && this._parentMenuItem) {
+      // Container sub-menu: do NOT steal focus — already handled above
     } else {
-      // Container mode: move real focus to popup for Tab cycling
+      // Container mode (standalone): move real focus to popup for Tab cycling
+      this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
+      if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
       el.focus({ preventScroll: true })
       if (win.onFocused) win.onFocused()
     }
@@ -402,6 +484,8 @@ export class UIPopupWC extends HTMLElement {
           if (this._state !== 'attached') return
           const path = e.composedPath()
           if (path.includes(el) || path.includes(this._anchor!)) return
+          // Don't close if click is inside a descendant sub-menu's window
+          if (this._isClickInsideDescendantSubMenu(path)) return
           this.close()
         }
         document.addEventListener('mousedown', this._clickOutsideHandler, true)
@@ -420,12 +504,22 @@ export class UIPopupWC extends HTMLElement {
       if (this._state !== 'attached') return
       const path = e.composedPath()
       if (path.includes(win as HTMLElement)) return
+      // Don't close if scroll is inside a descendant sub-menu's window
+      if (this._isClickInsideDescendantSubMenu(path)) return
+      // Don't close on page-level scroll if popup is position:fixed (it doesn't move)
+      if (el.style.position === 'fixed') {
+        const scrollTarget = path[0]
+        if (scrollTarget === document || scrollTarget === document.documentElement || scrollTarget === document.body) return
+      }
       this.close()
     }) as () => void
     document.addEventListener('scroll', this._scrollHandler, { capture: true, passive: true })
 
-    if (this._kind === 'menu') this._bindMenuNav()
-    else this._bindContainerNav()
+    // Sub-menu popups don't bind their own keyboard handler — the parent popup
+    // handles all keyboard delegation via _activeSubMenu chain.
+    if (this._kind === 'menu' && !this._parentMenuItem) this._bindMenuNav()
+    else if (this._kind !== 'menu') this._bindContainerNav()
+    // else: menu sub-menu — no keyboard binding needed (parent handles it)
 
     requestAnimationFrame(() => {
       if (win.scrollBox) {
@@ -443,6 +537,11 @@ export class UIPopupWC extends HTMLElement {
     if (this._state === 'detached') { this._returnFromDetached(); return }
     if (this._state === 'closed') return
     if (!this._window) return
+
+    // Close any open child sub-menus first
+    this._closeAllChildSubMenus()
+    this._activeSubMenu = null
+
     this._removeListeners()
 
     if (this._focusedBeforeOpen) {
@@ -507,6 +606,64 @@ export class UIPopupWC extends HTMLElement {
   private _bindMenuNav(): void {
     this._keyNavHandler = (e: KeyboardEvent) => {
       if (this._state !== 'attached') return
+
+      // If a sub-menu chain is actively receiving navigation, delegate to the deepest level
+      if (this._activeSubMenu) {
+        // Walk the chain to find deepest active sub-menu and its parent
+        const { deepest, parent } = UIPopupWC._findDeepestActive(this)
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault(); e.stopPropagation()
+          deepest._navigateUpDown(e.key === 'ArrowDown' ? 1 : -1)
+          return
+        }
+        if (e.key === 'ArrowRight') {
+          // Check if the deepest sub-menu's highlighted item also has a sub-menu
+          const subItem = deepest._getHighlightedItem()
+          if (subItem && (subItem as any).hasSubMenu) {
+            e.preventDefault(); e.stopPropagation()
+            deepest._openSubMenuOfHighlighted()
+            return
+          }
+          return
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault(); e.stopPropagation()
+          // Go up one level: clear deepest and return to its parent
+          deepest._clearHighlight()
+          deepest._activeIndex = -1
+          // Close attached sub-menu if it was opened by ArrowRight
+          const deepestParentItem = deepest._parentMenuItem
+          if (deepestParentItem && deepest._state === 'attached') {
+            deepestParentItem.closeSubMenuIfAttached()
+          }
+          parent._activeSubMenu = null
+          return
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault(); e.stopPropagation()
+          const subItem = deepest._getHighlightedItem()
+          if (subItem) {
+            if ((subItem as any).hasSubMenu) {
+              deepest._openSubMenuOfHighlighted()
+            } else {
+              subItem.click()
+            }
+          }
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault(); e.stopPropagation()
+          deepest._clearHighlight()
+          deepest._activeIndex = -1
+          if (deepest._parentMenuItem && deepest._state === 'attached') {
+            deepest._parentMenuItem.closeSubMenuIfAttached()
+          }
+          parent._activeSubMenu = null
+          return
+        }
+      }
+
       if (e.key === 'Tab') {
         if (this._focusedBeforeOpen) {
           dispatchSimulateFocus(this._focusedBeforeOpen, false)
@@ -517,11 +674,130 @@ export class UIPopupWC extends HTMLElement {
       }
       const items = this._getMenuItems()
       if (items.length === 0) return
-      if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1; this._highlightMenuItem(items) }
-      else if (e.key === 'Enter' && this._activeIndex >= 0) { e.preventDefault(); e.stopPropagation(); items[this._activeIndex].click() }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault(); e.stopPropagation()
+        // Close any open sibling sub-menu when moving highlight
+        this._closeSiblingSubMenus()
+        this._activeIndex = (this._activeIndex + 1) % items.length
+        this._highlightMenuItem(items)
+      }
+      else if (e.key === 'ArrowUp') {
+        e.preventDefault(); e.stopPropagation()
+        this._closeSiblingSubMenus()
+        this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1
+        this._highlightMenuItem(items)
+      }
+      else if (e.key === 'ArrowRight' && this._activeIndex >= 0) {
+        e.preventDefault(); e.stopPropagation()
+        this._openSubMenuOfHighlighted()
+      }
+      else if (e.key === 'ArrowLeft') {
+        // If this is a sub-menu in attached state, close and return to parent
+        if (this._parentMenuItem && this._state === 'attached') {
+          e.preventDefault(); e.stopPropagation()
+          this.close()
+        }
+      }
+      else if (e.key === 'Enter' && this._activeIndex >= 0) {
+        e.preventDefault(); e.stopPropagation()
+        const item = items[this._activeIndex]
+        if ((item as any).hasSubMenu) {
+          this._openSubMenuOfHighlighted()
+        } else {
+          item.click()
+        }
+      }
     }
     document.addEventListener('keydown', this._keyNavHandler, true)
+  }
+
+  /** Navigate up/down within this popup's items (called when this popup is receiving delegated nav) */
+  _navigateUpDown(direction: 1 | -1): void {
+    const items = this._getMenuItems()
+    if (items.length === 0) return
+    if (direction === 1) {
+      this._activeIndex = (this._activeIndex + 1) % items.length
+    } else {
+      this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1
+    }
+    this._highlightMenuItem(items)
+  }
+
+  /** Get the currently highlighted menu item element */
+  _getHighlightedItem(): HTMLElement | null {
+    if (this._activeIndex < 0) return null
+    const items = this._getMenuItems()
+    return items[this._activeIndex] ?? null
+  }
+
+  /** Open the sub-menu of the currently highlighted item */
+  private _openSubMenuOfHighlighted(): void {
+    const items = this._getMenuItems()
+    if (this._activeIndex < 0 || this._activeIndex >= items.length) return
+    const item = items[this._activeIndex] as any
+    if (!item.hasSubMenu) return
+
+    const subPopup = item.subMenu as UIPopupWC
+    if (subPopup.state === 'detached') {
+      // Sub-menu is detached — redirect navigation to it without opening
+      this._activeSubMenu = subPopup
+      subPopup._activeIndex = -1
+      subPopup._navigateUpDown(1) // highlight first item
+    } else {
+      // Open the sub-menu
+      item.openSubMenu()
+      // Redirect navigation to the newly opened sub-menu
+      this._activeSubMenu = subPopup
+      subPopup._activeIndex = -1
+      subPopup._navigateUpDown(1) // highlight first item
+    }
+  }
+
+  /** Close any open sibling sub-menus (only one sub-menu open per level) */
+  /** Close all open sub-menus of items in this popup (recursive) */
+  private _closeAllChildSubMenus(): void {
+    if (!this._window) return
+    const items = this._getMenuItems()
+    for (const item of items) {
+      const mi = item as any
+      if (mi.hasSubMenu && mi.subMenu?.visible) {
+        const subPopup = mi.subMenu as UIPopupWC
+        subPopup._closeAllChildSubMenus()
+        if (subPopup._state === 'attached') subPopup.close()
+      }
+    }
+  }
+
+  /** Check if a click event path includes any descendant sub-menu's window */
+  private _isClickInsideDescendantSubMenu(path: EventTarget[]): boolean {
+    if (!this._window) return false
+    const items = this._getMenuItems()
+    for (const item of items) {
+      const mi = item as any
+      if (!mi.hasSubMenu || !mi.subMenu?.visible) continue
+      const subPopup = mi.subMenu as UIPopupWC
+      const subWin = subPopup.window as HTMLElement | null
+      if (subWin && path.includes(subWin)) return true
+      // Recurse into deeper levels
+      if (subPopup._isClickInsideDescendantSubMenu(path)) return true
+    }
+    return false
+  }
+
+  private _closeSiblingSubMenus(): void {
+    if (this._activeSubMenu) {
+      this._activeSubMenu._clearHighlight()
+      this._activeSubMenu._activeIndex = -1
+      this._activeSubMenu = null
+    }
+    // Close any attached sub-menus from menu items
+    const items = this._getMenuItems()
+    for (const item of items) {
+      if ((item as any).hasSubMenu) {
+        (item as any).closeSubMenuIfAttached()
+      }
+    }
   }
 
   private _bindDetachedMenuNav(): void {
@@ -690,7 +966,7 @@ export class UIPopupWC extends HTMLElement {
   // ── Detach ──
 
   private _detach(): void {
-    if (!this._overlord || !this._window) return
+    if (!this._window) return
     this._removeListeners()
     this._state = 'detached'
 
@@ -698,34 +974,42 @@ export class UIPopupWC extends HTMLElement {
     this._window.closable = true
 
     const el = this._window as HTMLElement
-    const wasFixed = el.style.position === 'fixed'
-    const fixedLeft = parseFloat(el.style.left) || 0
-    const fixedTop = parseFloat(el.style.top) || 0
 
-    this._window.positioning = 'absolute'
-    this._window.isFloating = true   // restore so WM manages it as a tool
-    el.style.zIndex = ''
+    if (this._overlord) {
+      // Detach with overlord: become a tool window relative to the overlord
+      const wasFixed = el.style.position === 'fixed'
+      const fixedLeft = parseFloat(el.style.left) || 0
+      const fixedTop = parseFloat(el.style.top) || 0
 
-    this._overlord.addTool(this._window)
+      this._window.positioning = 'absolute'
+      this._window.isFloating = true   // restore so WM manages it as a tool
+      el.style.zIndex = ''
 
-    // Without a WM, addTool doesn't move the element — append it next
-    // to the overlord so absolute positioning is relative to the same parent.
-    if (!this._overlord.manager) {
-      const target = (this._overlord as HTMLElement).parentElement
-      if (target) {
-        if (el.parentNode !== target) target.appendChild(el)
-        // Ensure parent is a positioning context for absolute children
-        if (getComputedStyle(target).position === 'static') target.style.position = 'relative'
+      this._overlord.addTool(this._window)
+
+      // Without a WM, addTool doesn't move the element — append it next
+      // to the overlord so absolute positioning is relative to the same parent.
+      if (!this._overlord.manager) {
+        const target = (this._overlord as HTMLElement).parentElement
+        if (target) {
+          if (el.parentNode !== target) target.appendChild(el)
+          // Ensure parent is a positioning context for absolute children
+          if (getComputedStyle(target).position === 'static') target.style.position = 'relative'
+        }
       }
-    }
 
-    // Convert viewport coords to offsetParent-relative after the element
-    // has been placed in its final parent.
-    if (wasFixed && el.offsetParent) {
-      const r = el.offsetParent.getBoundingClientRect()
-      el.style.left = `${fixedLeft - r.left}px`
-      el.style.top = `${fixedTop - r.top}px`
+      // Convert viewport coords to offsetParent-relative after the element
+      // has been placed in its final parent.
+      if (wasFixed && el.offsetParent) {
+        const r = el.offsetParent.getBoundingClientRect()
+        el.style.left = `${fixedLeft - r.left}px`
+        el.style.top = `${fixedTop - r.top}px`
+      }
+
+      if (this._overlord.manager) this._overlord.manager.bringToFront(this._overlord)
+      if (this._overlord.onFocused) this._overlord.onFocused()
     }
+    // else: standalone detach — keep position:fixed, stay in current parent
 
     this._window.onClosed = () => this._returnFromDetached()
 
@@ -733,9 +1017,6 @@ export class UIPopupWC extends HTMLElement {
       dispatchSimulateFocus(this._focusedBeforeOpen, false)
       this._focusedBeforeOpen = null
     }
-
-    if (this._overlord.manager) this._overlord.manager.bringToFront(this._overlord)
-    if (this._overlord.onFocused) this._overlord.onFocused()
 
     if (this._kind === 'menu') {
       this._activeIndex = -1; this._clearHighlight()

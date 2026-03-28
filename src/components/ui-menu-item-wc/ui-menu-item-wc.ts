@@ -1,6 +1,7 @@
-import type { MenuItemSize, MenuItemTextAlign, UIMenuItemOptions } from '../common/types'
+import type { MenuItemSize, MenuItemTextAlign, UIMenuItemOptions, HintAlignment } from '../common/types'
 import { applySimulateFocus } from '../common/simulate-focus-core'
 import { UIHintWC } from '../ui-hint-wc/ui-hint-wc'
+import type { UIPopupWC } from '../ui-popup-wc/ui-popup-wc'
 import cssText from './ui-menu-item-wc.css?inline'
 
 const MENUITEM_ATTRS = [
@@ -44,6 +45,14 @@ export class UIMenuItemWC extends HTMLElement {
   private _hint: UIHintWC | null = null
   private _resizeObserver: ResizeObserver | null = null
 
+  // Sub-menu
+  private _subMenu: UIPopupWC | null = null
+  private _subMenuAlignment: HintAlignment = 'RightTop'
+  private _subMenuArrow: HTMLElement | null = null
+  private _subMenuOpenTimer: ReturnType<typeof setTimeout> | null = null
+  private _subMenuCloseTimer: ReturnType<typeof setTimeout> | null = null
+  private _hasCustomRight: boolean = false
+
   static get observedAttributes() {
     return [...MENUITEM_ATTRS]
   }
@@ -62,6 +71,9 @@ export class UIMenuItemWC extends HTMLElement {
     }
     this._buildDOM()
     this._syncTheme()
+
+    // Apply subMenu after DOM is built (needs _rightEl)
+    if (options?.subMenu) this.subMenu = options.subMenu as UIPopupWC
 
     // Theme observer
     const obs = new MutationObserver(() => this._syncTheme())
@@ -85,6 +97,8 @@ export class UIMenuItemWC extends HTMLElement {
     if (o.leftElement) this._leftElement = o.leftElement
     if (o.pushedElement) this._pushedElement = o.pushedElement
     if (this._pushable && !this._pushedElement) this._pushedElement = UIMenuItemWC._makeCheckIcon()
+    if (o.subMenuAlignment) this._subMenuAlignment = o.subMenuAlignment
+    // subMenu is deferred — applied after DOM is built (see constructor)
   }
 
   private _buildDOM(): void {
@@ -266,13 +280,22 @@ export class UIMenuItemWC extends HTMLElement {
   }
 
   set rightElement(el: HTMLElement | null) {
-    // Clear non-slot children (preserve the <slot> for framework content)
-    UIMenuItemWC._clearNonSlotChildren(this._rightEl)
+    // Clear non-slot children (preserve the <slot> for framework content and submenu arrow)
+    const toRemove: Node[] = []
+    for (let i = 0; i < this._rightEl.childNodes.length; i++) {
+      const node = this._rightEl.childNodes[i]
+      if (node instanceof HTMLSlotElement) continue
+      if (node === this._subMenuArrow) continue
+      toRemove.push(node)
+    }
+    for (const node of toRemove) this._rightEl.removeChild(node)
+
+    this._hasCustomRight = !!el
     if (el) {
-      this._rightEl.appendChild(el)
+      this._rightEl.insertBefore(el, this._subMenuArrow)
       this._rightEl.classList.add('has-content')
       this.classList.add('has-right')
-    } else {
+    } else if (!this._subMenuArrow) {
       this._rightEl.classList.remove('has-content')
       this.classList.remove('has-right')
     }
@@ -348,6 +371,149 @@ export class UIMenuItemWC extends HTMLElement {
     applySimulateFocus(this, v)
   }
 
+  // ── Sub-menu API ──
+
+  get subMenu(): UIPopupWC | null { return this._subMenu }
+  set subMenu(popup: UIPopupWC | null) {
+    // Detach previous
+    if (this._subMenu) {
+      (this._subMenu as any)._parentMenuItem = null
+      this._removeSubMenuArrow()
+    }
+
+    this._subMenu = popup
+
+    if (popup) {
+      // Wire up the popup
+      (popup as any)._parentMenuItem = this
+      popup.anchor = this
+      popup.alignment = this._subMenuAlignment
+      popup.closeOnClickOutside = false
+      popup.closeOnEscape = false
+      // Don't close parent when sub-menu items request close — cascade handles this
+      if (!this._hasCustomRight) this._showSubMenuArrow()
+      this._bindSubMenuHover()
+    }
+  }
+
+  get hasSubMenu(): boolean { return this._subMenu !== null }
+
+  get subMenuAlignment(): HintAlignment { return this._subMenuAlignment }
+  set subMenuAlignment(v: HintAlignment) {
+    this._subMenuAlignment = v
+    if (this._subMenu) this._subMenu.alignment = v
+  }
+
+  /** Open the sub-menu (called by parent popup keyboard nav) */
+  openSubMenu(): void {
+    if (!this._subMenu || this._disabled) return
+    if (this._subMenu.visible) return
+
+    // Close any sibling sub-menus in the same parent popup first
+    const parentPopup = this._findOwnerPopup()
+    if (parentPopup) {
+      (parentPopup as any)._closeSiblingSubMenus()
+    }
+
+    // Auto-wire overlord: if the sub-menu is detachable and has no overlord,
+    // find the parent popup's window and use it as overlord.
+    if (this._subMenu.detachable && !(this._subMenu as any)._overlord) {
+      if (parentPopup?.window) {
+        this._subMenu.overlord = parentPopup.window
+      }
+    }
+
+    this._subMenu.show()
+  }
+
+  /** Walk up the DOM to find the UIPopupWC that owns this menu item */
+  private _findOwnerPopup(): UIPopupWC | null {
+    // The item lives inside a popup's window contentElement.
+    // Walk up to find popup-wc, or search all popups.
+    let el: HTMLElement | null = this.parentElement
+    while (el) {
+      if (el.tagName === 'POPUP-WC') return el as unknown as UIPopupWC
+      el = el.parentElement
+    }
+    // Fallback: search all popups whose window contains this item
+    for (const p of document.querySelectorAll('popup-wc')) {
+      const popup = p as unknown as UIPopupWC
+      if (popup.window && popup.window.contentElement?.contains(this)) return popup
+    }
+    return null
+  }
+
+  /** Close the sub-menu if it's in attached state */
+  closeSubMenuIfAttached(): void {
+    if (!this._subMenu) return
+    if (this._subMenu.state === 'attached') this._subMenu.close()
+  }
+
+  private _showSubMenuArrow(): void {
+    if (this._subMenuArrow) return
+    this._subMenuArrow = UIMenuItemWC._makeSvg(['M6 3l5 5-5 5'], 12)
+    this._subMenuArrow.classList.add('submenu-arrow')
+    this._rightEl.appendChild(this._subMenuArrow)
+    this._rightEl.classList.add('has-content')
+    this.classList.add('has-right')
+  }
+
+  private _removeSubMenuArrow(): void {
+    if (!this._subMenuArrow) return
+    this._subMenuArrow.remove()
+    this._subMenuArrow = null
+    if (!this._hasCustomRight) {
+      this._rightEl.classList.remove('has-content')
+      this.classList.remove('has-right')
+    }
+  }
+
+  private _bindSubMenuHover(): void {
+    // Hover open (200ms delay) — mouse enters this item → open its sub-menu
+    const onEnter = () => {
+      if (!this._subMenu || this._disabled) return
+      this._cancelSubMenuOpen()
+      if (this._subMenu.visible) return
+      this._subMenuOpenTimer = setTimeout(() => { this._subMenuOpenTimer = null; this.openSubMenu() }, 200)
+    }
+    const onLeave = () => {
+      // Only cancel the pending open timer — do NOT close the sub-menu on leave.
+      // Sub-menus close when a sibling item is hovered (handled by UIPopupWC mouseover),
+      // or when the parent popup closes (handled by _closeAllChildSubMenus).
+      this._cancelSubMenuOpen()
+    }
+    this.addEventListener('mouseenter', onEnter)
+    this.addEventListener('mouseleave', onLeave)
+    this._cleanups.push(
+      () => this.removeEventListener('mouseenter', onEnter),
+      () => this.removeEventListener('mouseleave', onLeave),
+    )
+  }
+
+  private _cancelSubMenuOpen(): void {
+    if (this._subMenuOpenTimer !== null) { clearTimeout(this._subMenuOpenTimer); this._subMenuOpenTimer = null }
+  }
+
+  private _cancelSubMenuClose(): void {
+    if (this._subMenuCloseTimer !== null) { clearTimeout(this._subMenuCloseTimer); this._subMenuCloseTimer = null }
+  }
+
+  /** Check if any descendant sub-menu's window is being hovered */
+  private _isDescendantSubMenuHovered(): boolean {
+    if (!this._subMenu || !this._subMenu.window) return false
+    const win = this._subMenu.window as HTMLElement
+    if (win.matches(':hover')) return true
+    // Check items inside this sub-menu for their own open sub-menus
+    const items = this._subMenu.window!.contentElement?.querySelectorAll('menuitem-wc') ?? []
+    for (const item of items) {
+      const mi = item as any
+      if (mi.hasSubMenu && mi.subMenu?.visible) {
+        if (mi._isDescendantSubMenuHovered()) return true
+      }
+    }
+    return false
+  }
+
   onClick(handler: () => void): void { this._clickHandlers.add(handler) }
   offClick(handler: () => void): void { this._clickHandlers.delete(handler) }
   onPushedChange(handler: (pushed: boolean) => void): void { this._pushedChangeHandlers.add(handler) }
@@ -356,6 +522,10 @@ export class UIMenuItemWC extends HTMLElement {
   destroy(): void {
     if (this._destroyed) return
     this._destroyed = true
+    this._cancelSubMenuOpen()
+    this._cancelSubMenuClose()
+    if (this._subMenu) (this._subMenu as any)._parentMenuItem = null
+    this._subMenu = null
     for (const fn of this._cleanups) fn()
     this._cleanups.length = 0
     this._clickHandlers.clear()
@@ -413,6 +583,14 @@ export class UIMenuItemWC extends HTMLElement {
     const onClick = (e: MouseEvent) => {
       if (this._disabled) return
       e.preventDefault()
+
+      // If item has a sub-menu, open it instead of emitting click/close
+      if (this._subMenu) {
+        if (this._subMenu.visible) return
+        this.openSubMenu()
+        return
+      }
+
       if (this._pushable) this.pushed = !this._pushed
       for (const h of this._clickHandlers) h()
 

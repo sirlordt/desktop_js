@@ -13,6 +13,11 @@
   outline: none;
 }
 
+:host(:focus),
+:host(:focus-visible) {
+  outline: none;
+}
+
 /* =====================
    Animations
    ===================== */

@@ -1,9 +1,9 @@
 import { UIToolButton } from '../common/ui-tool-button-core'
 import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus-core'
-import { HintWC } from '../ui-hint-wc/ui-hint-wc'
-import { ScrollBoxWC } from '../ui-scrollbox-wc/ui-scrollbox-wc'
+import { UIHintWC } from '../ui-hint-wc/ui-hint-wc'
+import { UIScrollBoxWC } from '../ui-scrollbox-wc/ui-scrollbox-wc'
 import type { IWindowChild, WindowState, WindowKind, UIPosition, UIWindowOptions, ScrollMode, TitleAlign, ScrollBarSize } from '../common/types'
-import type { WindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
+import type { UIWindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
 import cssText from './ui-window-wc.css?inline'
 
 let windowCounter = 0
@@ -17,11 +17,11 @@ const WINDOW_ATTRS = [
   'titlebar-height', 'auto-unfold',
 ] as const
 
-export class WindowWC extends HTMLElement implements IWindowChild {
+export class UIWindowWC extends HTMLElement implements IWindowChild {
   windowId: string = ''
   contentElement!: HTMLDivElement
   titleBarElement!: HTMLDivElement
-  private _scrollBox: ScrollBoxWC | null = null
+  private _scrollBox: UIScrollBoxWC | null = null
   private _bodyEl!: HTMLDivElement
 
   windowState: WindowState = 'normal'
@@ -29,10 +29,10 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   modal: boolean = false
   topmost: boolean = false
 
-  manager: WindowManagerWC | null = null
+  manager: UIWindowManagerWC | null = null
 
-  private _tools: WindowWC[] = []
-  private _overlord: WindowWC | null = null
+  private _tools: UIWindowWC[] = []
+  private _overlord: UIWindowWC | null = null
 
   private _shadow: ShadowRoot
   private _title: string = 'Window'
@@ -87,11 +87,11 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   private _minBtn: UIToolButton | null = null
   private _maxBtn: UIToolButton | null = null
   private _btnSize: number = 20
-  private _titleHint: HintWC | null = null
-  private _foldHint: HintWC | null = null
-  private _minHint: HintWC | null = null
-  private _maxHint: HintWC | null = null
-  private _closeHint: HintWC | null = null
+  private _titleHint: UIHintWC | null = null
+  private _foldHint: UIHintWC | null = null
+  private _minHint: UIHintWC | null = null
+  private _maxHint: UIHintWC | null = null
+  private _closeHint: UIHintWC | null = null
   private _showHints: boolean = true
   private _showShortcuts: boolean = true
   private _folded: boolean = false
@@ -303,7 +303,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     this.titleBarElement.appendChild(this._titleEl)
 
     // Title hint
-    this._titleHint = new HintWC()
+    this._titleHint = new UIHintWC()
     this._titleHint.configure({ anchor: this._titleEl, content: this._title, trigger: 'programmatic', arrow: true })
     this._titleEl.addEventListener('mouseenter', () => {
       if (!this._titleHint || !this._showHints) return
@@ -356,8 +356,8 @@ export class WindowWC extends HTMLElement implements IWindowChild {
 
     // Hints
     if (this._showHints) {
-      const makeHint = (anchor: HTMLElement, text: string): HintWC => {
-        const h = new HintWC()
+      const makeHint = (anchor: HTMLElement, text: string): UIHintWC => {
+        const h = new UIHintWC()
         h.configure({ anchor, content: text, trigger: 'hover', showDelay: 400, hideDelay: 100, arrow: true })
         return h
       }
@@ -376,7 +376,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
 
     const scroll = this._scrollMode
     if (scroll && scroll !== 'none') {
-      this._scrollBox = document.createElement('scrollbox-wc') as unknown as ScrollBoxWC
+      this._scrollBox = document.createElement('scrollbox-wc') as unknown as UIScrollBoxWC
       this._scrollBox.configure({
         scroll,
         scrollBarSize: this._scrollBarSize,
@@ -552,7 +552,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     this._bodyEl.innerHTML = ''
 
     if (mode !== 'none') {
-      this._scrollBox = document.createElement('scrollbox-wc') as unknown as ScrollBoxWC
+      this._scrollBox = document.createElement('scrollbox-wc') as unknown as UIScrollBoxWC
       this._scrollBox.configure({ scroll: mode, scrollBarSize: scrollBarSize ?? 'small', borderWidth: 0, backgroundColor: 'inherit' })
       this._scrollBox.style.width = '100%'
       this._scrollBox.style.height = '100%'
@@ -586,11 +586,11 @@ export class WindowWC extends HTMLElement implements IWindowChild {
 
   // ── Tool windows ──
 
-  get tools(): readonly WindowWC[] { return this._tools }
-  get overlord(): WindowWC | null { return this._overlord }
+  get tools(): readonly UIWindowWC[] { return this._tools }
+  get overlord(): UIWindowWC | null { return this._overlord }
   get isTool(): boolean { return this._overlord !== null }
 
-  addTool(win: WindowWC): boolean {
+  addTool(win: UIWindowWC): boolean {
     if (win._overlord || win._tools.length > 0 || win === this || this._overlord || this._tools.includes(win)) return false
     this._tools.push(win)
     win._overlord = this
@@ -610,7 +610,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     return true
   }
 
-  removeTool(win: WindowWC): boolean {
+  removeTool(win: UIWindowWC): boolean {
     const idx = this._tools.indexOf(win)
     if (idx === -1) return false
     this._tools.splice(idx, 1)
@@ -713,7 +713,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     const parent = this.parentElement
     if (parent) {
       parent.querySelectorAll('window-wc').forEach(el => {
-        const wc = el as WindowWC
+        const wc = el as UIWindowWC
         const isOurTool = this._tools.includes(wc)
         const hasSimFocus = wc.hasAttribute('data-simulate-focus')
         if (wc !== this && !isOurTool && !hasSimFocus) wc.titleBarElement.classList.remove('focused')
@@ -812,7 +812,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   get visible(): boolean { return this.style.display !== 'none' }
   set visible(v: boolean) { this.style.display = v ? '' : 'none' }
 
-  get scrollBox(): ScrollBoxWC | null { return this._scrollBox }
+  get scrollBox(): UIScrollBoxWC | null { return this._scrollBox }
 
   get titleBarStyle(): string { return this._titleBarStyle }
   set titleBarStyle(v: string) {
@@ -1051,7 +1051,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     return Array.from(this._bodyEl.querySelectorAll('[data-focusable]')).filter(el => {
       if ((el as HTMLInputElement).disabled) return false
       if (el.hasAttribute('tabindex')) return true
-      if (WindowWC._nativeFocusable.test(el.tagName)) return true
+      if (UIWindowWC._nativeFocusable.test(el.tagName)) return true
       if (el.shadowRoot?.delegatesFocus) return true
       return false
     }) as HTMLElement[]
@@ -1083,7 +1083,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
 
   /** Find which [data-focusable] element contains the deep active element */
   private _findActiveIndex(els: HTMLElement[]): number {
-    const deep = WindowWC._deepActiveElement()
+    const deep = UIWindowWC._deepActiveElement()
     if (!deep) return -1
     // Walk up from deep active element to find a match in els
     let current: HTMLElement | null = deep
@@ -1101,7 +1101,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     return -1
   }
 
-  private get _groupOwner(): WindowWC { return this._overlord ?? this }
+  private get _groupOwner(): UIWindowWC { return this._overlord ?? this }
 
   private _bindFocusTrap(): void {
     this._bodyEl.addEventListener('focusin', (e: Event) => {
@@ -1132,7 +1132,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
       if (!this.titleBarElement.classList.contains('focused')) return
 
       // Check if focus is within this window (traverse shadow roots)
-      const deepActive = WindowWC._deepActiveElement()
+      const deepActive = UIWindowWC._deepActiveElement()
       if (deepActive && !this._containsFocusable(deepActive) && deepActive !== this) return
 
       if (this._overlord) return
@@ -1176,4 +1176,4 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   get isDestroyed(): boolean { return this._destroyed }
 }
 
-customElements.define('window-wc', WindowWC)
+customElements.define('window-wc', UIWindowWC)

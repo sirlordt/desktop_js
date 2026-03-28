@@ -1,8 +1,8 @@
-import { ScrollBoxWC } from '../components/ui-scrollbox-wc/ui-scrollbox-wc'
+import { UIScrollBoxWC } from '../components/ui-scrollbox-wc/ui-scrollbox-wc'
 import type { ScrollBarSize, ScrollMode, VerticalScrollPosition, HorizontalScrollPosition, ScrollBoxScrollBarConfig } from '../components/common/types'
 import type { DemoRoute } from '../header'
 
-const allBoxes: ScrollBoxWC[] = []
+const allBoxes: UIScrollBoxWC[] = []
 
 export const scrollboxWCDemo: DemoRoute = {
   id: 'scrollbox-wc',
@@ -267,11 +267,11 @@ interface MakeBoxOpts {
   vRightConfig?: ScrollBoxScrollBarConfig
 }
 
-function makeBox(o: MakeBoxOpts): ScrollBoxWC {
+function makeBox(o: MakeBoxOpts): UIScrollBoxWC {
   const contentW = o.contentW ?? 800
   const contentH = o.contentH ?? 600
 
-  const sb = document.createElement('scrollbox-wc') as unknown as ScrollBoxWC
+  const sb = document.createElement('scrollbox-wc') as unknown as UIScrollBoxWC
   sb.configure({
     scroll: o.scroll,
     verticalScroll: o.verticalScroll,

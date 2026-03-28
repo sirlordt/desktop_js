@@ -38,7 +38,7 @@ const PANEL_ATTRS = [
  *
  * Zero CSS — all styling is inline via UIView.
  */
-export class PanelWC extends HTMLElement {
+export class UIPanelWC extends HTMLElement {
   readonly core: UIView
 
   private _bg: string = ''
@@ -92,7 +92,7 @@ export class PanelWC extends HTMLElement {
   connectedCallback(): void {
     if (this._autoDestroyTimer !== null) { clearTimeout(this._autoDestroyTimer); this._autoDestroyTimer = null }
 
-    // Register with parent PanelWC if nested (every time, not just first)
+    // Register with parent UIPanelWC if nested (every time, not just first)
     this._registerWithParent()
 
     if (this._initialized) {
@@ -220,14 +220,14 @@ export class PanelWC extends HTMLElement {
   // Hierarchy
   // =====================
 
-  get parentPanel(): PanelWC | null {
+  get parentPanel(): UIPanelWC | null {
     const p = this.parentElement
-    if (p instanceof PanelWC) return p
+    if (p instanceof UIPanelWC) return p
     return null
   }
 
-  get childPanels(): PanelWC[] {
-    return Array.from(this.children).filter((c): c is PanelWC => c instanceof PanelWC)
+  get childPanels(): UIPanelWC[] {
+    return Array.from(this.children).filter((c): c is UIPanelWC => c instanceof UIPanelWC)
   }
 
   // =====================
@@ -285,16 +285,16 @@ export class PanelWC extends HTMLElement {
   }
 
   /**
-   * Auto-register with parent PanelWC's UIView hierarchy.
+   * Auto-register with parent UIPanelWC's UIView hierarchy.
    * This enables the UIView align/anchor layout system to work
    * via DOM nesting instead of manual `parent = ...` assignment.
    */
   private _registerWithParent(): void {
     const parent = this.parentElement
-    if (parent instanceof PanelWC) {
+    if (parent instanceof UIPanelWC) {
       this.core.parent = parent.core
     }
   }
 }
 
-customElements.define('panel-wc', PanelWC)
+customElements.define('panel-wc', UIPanelWC)

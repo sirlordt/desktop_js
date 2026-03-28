@@ -1,4 +1,4 @@
-import '../components/ui-button/ui-button'
+import '../components/ui-button-wc/ui-button-wc'
 import type { DemoRoute } from '../header'
 
 export const layoutDemo: DemoRoute = {

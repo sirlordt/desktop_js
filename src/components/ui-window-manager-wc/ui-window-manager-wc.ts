@@ -1,5 +1,5 @@
-import { PanelWC } from '../ui-panel-wc/ui-panel-wc'
-import type { WindowWC } from '../ui-window-wc/ui-window-wc'
+import { UIPanelWC } from '../ui-panel-wc/ui-panel-wc'
+import type { UIWindowWC } from '../ui-window-wc/ui-window-wc'
 import type { IWindowChild, WindowChildInfo, UIWindowManagerOptions, WindowCycleShortcut, WindowState } from '../common/types'
 
 const Z_BASE = 10
@@ -8,10 +8,10 @@ const ANIM_DURATION = 200
 
 /**
  * <window-manager-wc> — Web Component window manager.
- * Extends PanelWC and manages WindowWC instances with z-ordering,
+ * Extends UIPanelWC and manages UIWindowWC instances with z-ordering,
  * focus management, minimize grid, maximize, modal backdrops, and animations.
  */
-export class WindowManagerWC extends PanelWC {
+export class UIWindowManagerWC extends UIPanelWC {
   private _windows: IWindowChild[] = []
   private _zOrder: IWindowChild[] = []
   private _zOrderTopmost: IWindowChild[] = []
@@ -32,7 +32,7 @@ export class WindowManagerWC extends PanelWC {
   private _childObserver: MutationObserver | null = null
 
   static get observedAttributes(): string[] {
-    return [...PanelWC.observedAttributes, 'animated', 'minimize-slot-width', 'minimize-slot-height']
+    return [...UIPanelWC.observedAttributes, 'animated', 'minimize-slot-width', 'minimize-slot-height']
   }
 
   constructor(options?: UIWindowManagerOptions) {
@@ -184,7 +184,7 @@ export class WindowManagerWC extends PanelWC {
   }
 
   private get _cycleOrder(): IWindowChild[] {
-    const isNotTool = (c: IWindowChild) => !('isTool' in c && (c as WindowWC).isTool)
+    const isNotTool = (c: IWindowChild) => !('isTool' in c && (c as UIWindowWC).isTool)
     const normal = this._windows.filter(c => !c.topmost && isNotTool(c))
     const topmost = this._windows.filter(c => c.topmost && isNotTool(c))
     return [...normal, ...topmost]
@@ -298,7 +298,7 @@ export class WindowManagerWC extends PanelWC {
     if (!child.isFloating) return
     if (this._modalChild && child !== this._modalChild) return
 
-    const asWin = child as WindowWC
+    const asWin = child as UIWindowWC
     if ('overlord' in asWin && asWin.overlord) {
       const overlord = asWin.overlord
       const toolIdx = overlord.tools.indexOf(asWin)
@@ -346,7 +346,7 @@ export class WindowManagerWC extends PanelWC {
 
   minimizeChild(child: IWindowChild): boolean {
     if (child.windowState === 'minimized') return false
-    const asWin = child as WindowWC
+    const asWin = child as UIWindowWC
     if ('isTool' in asWin && asWin.isTool) return false
     if (this._emitBefore('before-minimize', child)) return false
 
@@ -390,7 +390,7 @@ export class WindowManagerWC extends PanelWC {
 
   restoreChild(child: IWindowChild): boolean {
     if (child.windowState === 'normal') return false
-    const asWin = child as WindowWC
+    const asWin = child as UIWindowWC
     if ('isTool' in asWin && asWin.isTool) return false
     if (this._emitBefore('before-restore', child)) return false
 
@@ -435,7 +435,7 @@ export class WindowManagerWC extends PanelWC {
 
   maximizeChild(child: IWindowChild): boolean {
     if (child.windowState === 'maximized') return false
-    const asWin = child as WindowWC
+    const asWin = child as UIWindowWC
     if ('isTool' in asWin && asWin.isTool) return false
     if (this._emitBefore('before-maximize', child)) return false
 
@@ -556,7 +556,7 @@ export class WindowManagerWC extends PanelWC {
       newList.push(c)
     }
     move(child)
-    const asWin = child as WindowWC
+    const asWin = child as UIWindowWC
     if ('tools' in asWin) { for (const tool of asWin.tools) move(tool) }
     this._reassignZIndexes()
   }
@@ -640,7 +640,7 @@ export class WindowManagerWC extends PanelWC {
     for (const child of [...this._zOrder, ...this._zOrderTopmost]) {
       const z = child.zIndex
       if (z > max) max = z
-      const asWin = child as WindowWC
+      const asWin = child as UIWindowWC
       if ('tools' in asWin) {
         for (const tool of asWin.tools) {
           if (tool.zIndex > max) max = tool.zIndex
@@ -655,7 +655,7 @@ export class WindowManagerWC extends PanelWC {
       let z = base
       for (const child of list) {
         if (child.modal) continue
-        const asWin = child as WindowWC
+        const asWin = child as UIWindowWC
         if ('isTool' in asWin && asWin.isTool) continue
         child.zIndex = z; z += Z_STEP
         if ('tools' in asWin) { for (const tool of asWin.tools) { tool.zIndex = z; z += Z_STEP } }
@@ -672,4 +672,4 @@ export class WindowManagerWC extends PanelWC {
   }
 }
 
-customElements.define('window-manager-wc', WindowManagerWC)
+customElements.define('window-manager-wc', UIWindowManagerWC)

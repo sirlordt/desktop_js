@@ -1,11 +1,11 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { HintWC } from '../ui-hint-wc/ui-hint-wc'
+import { UIHintWC } from '../ui-hint-wc/ui-hint-wc'
 
 function flush(): Promise<void> {
   return new Promise(r => setTimeout(r, 50))
 }
 
-describe('HintWC', () => {
+describe('UIHintWC', () => {
   const cleanups: HTMLElement[] = []
 
   function createAnchor(): HTMLDivElement {
@@ -30,16 +30,16 @@ describe('HintWC', () => {
   // ── Construction ──
 
   describe('Construction', () => {
-    it('should create a HintWC with new HintWC()', () => {
-      const hint = new HintWC()
+    it('should create a UIHintWC with new UIHintWC()', () => {
+      const hint = new UIHintWC()
       cleanups.push(hint)
-      expect(hint).toBeInstanceOf(HintWC)
+      expect(hint).toBeInstanceOf(UIHintWC)
       expect(hint).toBeInstanceOf(HTMLElement)
     })
 
     it('should configure via configure()', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({
         anchor,
@@ -61,7 +61,7 @@ describe('HintWC', () => {
 
   describe('Properties', () => {
     it('should get/set alignment', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       expect(hint.alignment).toBe('BottomCenter')
       hint.alignment = 'RightTop'
@@ -69,7 +69,7 @@ describe('HintWC', () => {
     })
 
     it('should get/set margin', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       expect(hint.margin).toBe(2)
       hint.margin = 12
@@ -78,7 +78,7 @@ describe('HintWC', () => {
 
     it('should get/set arrow and arrowSize', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'test' })
       expect(hint.arrow).toBe(false)
@@ -90,7 +90,7 @@ describe('HintWC', () => {
 
     it('should get/set borderRadius, borderColor, borderWidth', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'test' })
       hint.borderRadius = 8
@@ -102,7 +102,7 @@ describe('HintWC', () => {
     })
 
     it('should get/set disabled', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       expect(hint.disabled).toBe(false)
       hint.disabled = true
@@ -111,7 +111,7 @@ describe('HintWC', () => {
 
     it('should get/set name', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'test', name: 'my-hint' })
       expect(hint.name).toBe('my-hint')
@@ -121,7 +121,7 @@ describe('HintWC', () => {
 
     it('should get/set content', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'initial' })
       expect(hint.content).toBe('initial')
@@ -130,7 +130,7 @@ describe('HintWC', () => {
     })
 
     it('should get/set showDelay and hideDelay', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.showDelay = 500
       hint.hideDelay = 100
@@ -139,7 +139,7 @@ describe('HintWC', () => {
     })
 
     it('should get/set animation and animationDuration', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.animation = 'none'
       expect(hint.animation).toBe('none')
@@ -149,7 +149,7 @@ describe('HintWC', () => {
 
     it('should get/set anchor', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       expect(hint.anchor).toBeNull()
       hint.anchor = anchor
@@ -157,7 +157,7 @@ describe('HintWC', () => {
     })
 
     it('should get/set trigger', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.trigger = 'click'
       expect(hint.trigger).toEqual(['click'])
@@ -166,7 +166,7 @@ describe('HintWC', () => {
     })
 
     it('should get/set marginMouseCursorX and marginMouseCursorY', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.marginMouseCursorX = 20
       hint.marginMouseCursorY = 25
@@ -180,7 +180,7 @@ describe('HintWC', () => {
   describe('show/hide', () => {
     it('should make visible=true on showImmediate()', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'Tooltip text', trigger: 'programmatic' })
 
@@ -192,7 +192,7 @@ describe('HintWC', () => {
 
     it('should make visible=false on hideImmediate()', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'Tooltip text', trigger: 'programmatic' })
 
@@ -211,7 +211,7 @@ describe('HintWC', () => {
   describe('Content', () => {
     it('should render string content as HTML', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: '<b>Bold</b>', trigger: 'programmatic' })
 
@@ -226,7 +226,7 @@ describe('HintWC', () => {
 
     it('should render HTMLElement content by appending', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, trigger: 'programmatic' })
 
@@ -249,7 +249,7 @@ describe('HintWC', () => {
   describe('Disabled', () => {
     it('should hide immediately when disabled is set to true', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'Tooltip', trigger: 'programmatic' })
 
@@ -264,7 +264,7 @@ describe('HintWC', () => {
 
     it('should not show when disabled', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'Tooltip', trigger: 'programmatic', disabled: true })
 
@@ -279,7 +279,7 @@ describe('HintWC', () => {
   describe('Auto-destroy', () => {
     it('should always destroy on disconnect (deferred)', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'test', trigger: 'programmatic' })
       document.body.appendChild(hint)
@@ -290,7 +290,7 @@ describe('HintWC', () => {
 
     it('should cancel destroy if re-attached before timeout', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'test', trigger: 'programmatic' })
       document.body.appendChild(hint)
@@ -308,7 +308,7 @@ describe('HintWC', () => {
   describe('Events', () => {
     it('should fire hint-show CustomEvent on showImmediate()', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'Tooltip', trigger: 'programmatic' })
       document.body.appendChild(hint)
@@ -323,7 +323,7 @@ describe('HintWC', () => {
 
     it('should fire hint-hide CustomEvent on hideImmediate()', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       hint.configure({ anchor, content: 'Tooltip', trigger: 'programmatic' })
       document.body.appendChild(hint)
@@ -345,14 +345,14 @@ describe('HintWC', () => {
   describe('readonly getters', () => {
     it('popupElement returns the popup div', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       hint.configure({ anchor, content: 'Test' })
       cleanups.push(hint)
       expect(hint.popupElement).toBeInstanceOf(HTMLDivElement)
     })
 
     it('visible is false by default', () => {
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       cleanups.push(hint)
       const anchor = createAnchor()
       hint.configure({ anchor, content: 'Test' })
@@ -361,7 +361,7 @@ describe('HintWC', () => {
 
     it('currentAlignment returns alignment', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       hint.configure({ anchor, content: 'Test', alignment: 'TopCenter' })
       cleanups.push(hint)
       expect(hint.currentAlignment).toBeTruthy()
@@ -373,7 +373,7 @@ describe('HintWC', () => {
   describe('additional methods', () => {
     it('toggle shows/hides', async () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       hint.configure({ anchor, content: 'Test', showDelay: 0, hideDelay: 0 })
       cleanups.push(hint)
       hint.showImmediate()
@@ -385,7 +385,7 @@ describe('HintWC', () => {
 
     it('reposition does not throw', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       hint.configure({ anchor, content: 'Test' })
       cleanups.push(hint)
       hint.showImmediate()
@@ -395,7 +395,7 @@ describe('HintWC', () => {
 
     it('on/off vanilla listeners', () => {
       const anchor = createAnchor()
-      const hint = new HintWC() as any
+      const hint = new UIHintWC() as any
       hint.configure({ anchor, content: 'Test' })
       cleanups.push(hint)
       let count = 0

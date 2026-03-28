@@ -1,8 +1,8 @@
-import '../components/ui-button/ui-button'
-import { PopupWC } from '../components/ui-popup-wc/ui-popup-wc'
-import { MenuItemWC } from '../components/ui-menu-item-wc/ui-menu-item-wc'
-import { WindowManagerWC } from '../components/ui-window-manager-wc/ui-window-manager-wc'
-import { WindowWC } from '../components/ui-window-wc/ui-window-wc'
+import '../components/ui-button-wc/ui-button-wc'
+import { UIPopupWC } from '../components/ui-popup-wc/ui-popup-wc'
+import { UIMenuItemWC } from '../components/ui-menu-item-wc/ui-menu-item-wc'
+import { UIWindowManagerWC } from '../components/ui-window-manager-wc/ui-window-manager-wc'
+import { UIWindowWC } from '../components/ui-window-wc/ui-window-wc'
 import type { DemoRoute } from '../header'
 
 function makeBtn(text: string, variant = 'outline'): HTMLElement {
@@ -21,7 +21,7 @@ export const popupsWCDemo: DemoRoute = {
     container.style.padding = '20px'
     container.style.overflow = 'auto'
 
-    const wm = new WindowManagerWC({ width: 900, height: 600 })
+    const wm = new UIWindowManagerWC({ width: 900, height: 600 })
     wm.style.border = '1px solid #888'
     wm.style.display = 'block'
 
@@ -32,9 +32,9 @@ export const popupsWCDemo: DemoRoute = {
     sec1.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Basic Popup</h2>'
     const btn1 = makeBtn('Open Popup'); sec1.appendChild(btn1); root.appendChild(sec1)
 
-    const popup1 = new PopupWC({ anchor: btn1, alignment: 'BottomLeft', width: 220, height: 200 })
+    const popup1 = new UIPopupWC({ anchor: btn1, alignment: 'BottomLeft', width: 220, height: 200 })
     ;['New File', 'Open...', 'Save', 'Close'].forEach(text => {
-      popup1.addChild(new MenuItemWC({ text, shortcut: 'Ctrl+' + text[0] }))
+      popup1.addChild(new UIMenuItemWC({ text, shortcut: 'Ctrl+' + text[0] }))
     })
     btn1.addEventListener('click', () => popup1.toggle())
 
@@ -47,8 +47,8 @@ export const popupsWCDemo: DemoRoute = {
 
     for (const [label, align] of [['Left Edge', 'LeftTop'], ['Center', 'BottomCenter'], ['Right Edge', 'RightTop']] as const) {
       const btn = makeBtn(label); edgeRow.appendChild(btn)
-      const popup = new PopupWC({ anchor: btn, alignment: align, width: 200, height: 180 })
-      ;['Option A', 'Option B', 'Option C'].forEach(t => popup.addChild(new MenuItemWC({ text: t })))
+      const popup = new UIPopupWC({ anchor: btn, alignment: align, width: 200, height: 180 })
+      ;['Option A', 'Option B', 'Option C'].forEach(t => popup.addChild(new UIMenuItemWC({ text: t })))
       btn.addEventListener('click', () => popup.toggle())
     }
 
@@ -63,8 +63,8 @@ export const popupsWCDemo: DemoRoute = {
       'LeftTop', 'LeftCenter', 'LeftBottom', 'RightTop', 'RightCenter', 'RightBottom']
     aligns.forEach(align => {
       const btn = makeBtn(align); alignGrid.appendChild(btn)
-      const popup = new PopupWC({ anchor: btn, alignment: align as any, width: 160, height: 120 })
-      ;['One', 'Two', 'Three'].forEach(t => popup.addChild(new MenuItemWC({ text: t })))
+      const popup = new UIPopupWC({ anchor: btn, alignment: align as any, width: 160, height: 120 })
+      ;['One', 'Two', 'Three'].forEach(t => popup.addChild(new UIMenuItemWC({ text: t })))
       btn.addEventListener('click', () => popup.toggle())
     })
 
@@ -73,8 +73,8 @@ export const popupsWCDemo: DemoRoute = {
     sec4.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Resizable Popup</h2>'
     root.appendChild(sec4)
     const btn4 = makeBtn('Open Resizable'); sec4.appendChild(btn4)
-    const popup4 = new PopupWC({ anchor: btn4, alignment: 'BottomLeft', width: 250, height: 200, resizable: true, minWidth: 150, minHeight: 100 })
-    for (let i = 1; i <= 6; i++) popup4.addChild(new MenuItemWC({ text: `Resizable Item ${i}` }))
+    const popup4 = new UIPopupWC({ anchor: btn4, alignment: 'BottomLeft', width: 250, height: 200, resizable: true, minWidth: 150, minHeight: 100 })
+    for (let i = 1; i <= 6; i++) popup4.addChild(new UIMenuItemWC({ text: `Resizable Item ${i}` }))
     btn4.addEventListener('click', () => popup4.toggle())
 
     // ── 5. Mini-Drag ──
@@ -82,8 +82,8 @@ export const popupsWCDemo: DemoRoute = {
     sec5.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Mini-Drag Popup</h2>'
     root.appendChild(sec5)
     const btn5 = makeBtn('Open Mini-Drag'); sec5.appendChild(btn5)
-    const popup5 = new PopupWC({ anchor: btn5, alignment: 'BottomLeft', width: 200, height: 180, title: 'Tools', resizable: true })
-    ;['Select', 'Move', 'Rotate', 'Scale', 'Brush', 'Eraser'].forEach(text => popup5.addChild(new MenuItemWC({ text })))
+    const popup5 = new UIPopupWC({ anchor: btn5, alignment: 'BottomLeft', width: 200, height: 180, title: 'Tools', resizable: true })
+    ;['Select', 'Move', 'Rotate', 'Scale', 'Brush', 'Eraser'].forEach(text => popup5.addChild(new UIMenuItemWC({ text })))
     btn5.addEventListener('click', () => popup5.toggle())
 
     // ── 6. Detachable ──
@@ -91,15 +91,15 @@ export const popupsWCDemo: DemoRoute = {
     sec6.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Detachable Popup (drag titlebar to detach)</h2>'
     root.appendChild(sec6)
 
-    const emptyWin = new WindowWC({ title: 'Window 1', left: 20, top: 20, width: 400, height: 300 })
-    const secondWin = new WindowWC({ title: 'Window 2', left: 500, top: 20, width: 350, height: 250 })
+    const emptyWin = new UIWindowWC({ title: 'Window 1', left: 20, top: 20, width: 400, height: 300 })
+    const secondWin = new UIWindowWC({ title: 'Window 2', left: 500, top: 20, width: 350, height: 250 })
 
     const detachBtn = makeBtn('Open Detachable')
     const statusLabel = document.createElement('div')
     statusLabel.style.cssText = 'margin-top:8px;font-size:12px;opacity:0.6;'
     statusLabel.textContent = 'Click button to open popup. Drag its titlebar to detach.'
 
-    const popupDetach = new PopupWC({
+    const popupDetach = new UIPopupWC({
       anchor: detachBtn, alignment: 'BottomLeft', width: 180, height: 200,
       title: 'Tool Palette', detachable: true, resizable: true,
     })
@@ -108,7 +108,7 @@ export const popupsWCDemo: DemoRoute = {
     const tools: [string, string][] = [['Select', 'Ctrl+A'], ['Move', 'Ctrl+M'], ['Rotate', 'Ctrl+R'], ['Scale', 'Alt+S'],
       ['Brush', 'Ctrl+B'], ['Eraser', 'Alt+E'], ['Fill', 'Ctrl+G'], ['Text', 'Ctrl+T']]
     tools.forEach(([text, key]) => {
-      const item = new MenuItemWC({ text, shortcut: key })
+      const item = new UIMenuItemWC({ text, shortcut: key })
       popupDetach.addChild(item)
       item.onClick(() => { statusLabel.textContent = `Tool: ${text}` })
     })
@@ -118,7 +118,7 @@ export const popupsWCDemo: DemoRoute = {
 
     // Container popup
     const containerBtn = makeBtn('Open Container')
-    const popupContainer = new PopupWC({
+    const popupContainer = new UIPopupWC({
       anchor: containerBtn, kind: 'container', alignment: 'BottomLeft',
       width: 220, height: 160, title: 'Settings', detachable: true, resizable: true,
     })
@@ -145,13 +145,13 @@ export const popupsWCDemo: DemoRoute = {
 
     // Layers popup
     const detachBtn2 = makeBtn('Open Layers')
-    const popupDetach2 = new PopupWC({
+    const popupDetach2 = new UIPopupWC({
       anchor: detachBtn2, alignment: 'BottomLeft', width: 180, height: 180,
       title: 'Layers', detachable: true, resizable: true,
     })
     popupDetach2.overlord = emptyWin
     ;[['Background', 'F1'], ['Foreground', 'F2'], ['Overlay', 'F3'], ['Mask', 'F4'], ['Shadow', 'F5'], ['Glow', 'F6']].forEach(([text, key]) => {
-      const item = new MenuItemWC({ text, shortcut: key })
+      const item = new UIMenuItemWC({ text, shortcut: key })
       popupDetach2.addChild(item)
       item.onClick(() => { statusLabel.textContent = `Layer: ${text}` })
     })
@@ -161,7 +161,7 @@ export const popupsWCDemo: DemoRoute = {
 
     // Preferences popup
     const containerBtn2 = makeBtn('Open Preferences')
-    const popupContainer2 = new PopupWC({
+    const popupContainer2 = new UIPopupWC({
       anchor: containerBtn2, kind: 'container', alignment: 'BottomLeft',
       width: 240, height: 180, title: 'Preferences', detachable: true, resizable: true,
     })
@@ -207,20 +207,20 @@ export const popupsWCDemo: DemoRoute = {
     sec7.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Standalone Window (no WindowManager)</h2>'
     root.appendChild(sec7)
 
-    const standaloneWin = new WindowWC({ title: 'Window 3 (standalone)', left: 0, top: 0, width: 500, height: 300, positioning: 'relative' })
+    const standaloneWin = new UIWindowWC({ title: 'Window 3 (standalone)', left: 0, top: 0, width: 500, height: 300, positioning: 'relative' })
     const standaloneStatus = document.createElement('div')
     standaloneStatus.style.cssText = 'margin-top:8px;font-size:12px;opacity:0.6;width:100%;'
     standaloneStatus.textContent = 'Same buttons but outside a WindowManager.'
 
     // Detachable
     const sDetachBtn = makeBtn('Open Detachable')
-    const sPopupDetach = new PopupWC({
+    const sPopupDetach = new UIPopupWC({
       anchor: sDetachBtn, alignment: 'BottomLeft', width: 180, height: 200,
       title: 'Tool Palette', detachable: true, resizable: true,
     })
     sPopupDetach.overlord = standaloneWin
     tools.forEach(([text, key]) => {
-      const item = new MenuItemWC({ text, shortcut: key })
+      const item = new UIMenuItemWC({ text, shortcut: key })
       sPopupDetach.addChild(item)
       item.onClick(() => { standaloneStatus.textContent = `Tool: ${text}` })
     })
@@ -230,7 +230,7 @@ export const popupsWCDemo: DemoRoute = {
 
     // Container
     const sContainerBtn = makeBtn('Open Container')
-    const sPopupContainer = new PopupWC({
+    const sPopupContainer = new UIPopupWC({
       anchor: sContainerBtn, kind: 'container', alignment: 'BottomLeft',
       width: 220, height: 160, title: 'Settings', detachable: true, resizable: true,
     })
@@ -252,13 +252,13 @@ export const popupsWCDemo: DemoRoute = {
 
     // Layers
     const sLayersBtn = makeBtn('Open Layers')
-    const sPopupLayers = new PopupWC({
+    const sPopupLayers = new UIPopupWC({
       anchor: sLayersBtn, alignment: 'BottomLeft', width: 180, height: 180,
       title: 'Layers', detachable: true, resizable: true,
     })
     sPopupLayers.overlord = standaloneWin
     ;[['Background', 'F1'], ['Foreground', 'F2'], ['Overlay', 'F3'], ['Mask', 'F4'], ['Shadow', 'F5'], ['Glow', 'F6']].forEach(([text, key]) => {
-      const item = new MenuItemWC({ text, shortcut: key })
+      const item = new UIMenuItemWC({ text, shortcut: key })
       sPopupLayers.addChild(item)
       item.onClick(() => { standaloneStatus.textContent = `Layer: ${text}` })
     })
@@ -275,7 +275,7 @@ export const popupsWCDemo: DemoRoute = {
     standaloneWin.contentElement.appendChild(standaloneStatus)
 
     // Window 4 — standalone empty window to test focus alternation
-    const standaloneWin2 = new WindowWC({ title: 'Window 4 (standalone)', left: 0, top: 0, width: 350, height: 250, positioning: 'relative' })
+    const standaloneWin2 = new UIWindowWC({ title: 'Window 4 (standalone)', left: 0, top: 0, width: 350, height: 250, positioning: 'relative' })
     standaloneWin2.contentElement.style.padding = '10px'
     const w4Label = document.createElement('div')
     w4Label.style.cssText = 'font-size:13px;opacity:0.6;'
@@ -289,7 +289,7 @@ export const popupsWCDemo: DemoRoute = {
     sec7.appendChild(standaloneRow)
 
     // Focus management for standalone windows is handled automatically by
-    // WindowWC — no WindowManager needed. Each window calls onFocused() on
+    // UIWindowWC — no WindowManager needed. Each window calls onFocused() on
     // mousedown when it has no manager.
   },
 }

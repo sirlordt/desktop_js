@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { WindowWC } from '../ui-window-wc/ui-window-wc'
+import { UIWindowWC } from '../ui-window-wc/ui-window-wc'
 
 function flush(): Promise<void> { return new Promise(r => setTimeout(r, 10)) }
 
@@ -21,8 +21,8 @@ describe('window-wc', () => {
       expect(el.shadowRoot).toBeTruthy()
     })
 
-    it('new WindowWC with options', () => {
-      el = new WindowWC({ title: 'Test', width: 300, height: 200 })
+    it('new UIWindowWC with options', () => {
+      el = new UIWindowWC({ title: 'Test', width: 300, height: 200 })
       document.body.appendChild(el)
       expect(el.title).toBe('Test')
       expect(el.width).toBe(300)
@@ -41,28 +41,28 @@ describe('window-wc', () => {
 
   describe('properties', () => {
     it('title', () => {
-      el = new WindowWC({ title: 'A' })
+      el = new UIWindowWC({ title: 'A' })
       document.body.appendChild(el)
       el.title = 'B'
       expect(el.title).toBe('B')
     })
 
     it('kind', () => {
-      el = new WindowWC()
+      el = new UIWindowWC()
       document.body.appendChild(el)
       el.kind = 'tool'
       expect(el.kind).toBe('tool')
     })
 
     it('positioning', () => {
-      el = new WindowWC()
+      el = new UIWindowWC()
       document.body.appendChild(el)
       el.positioning = 'fixed'
       expect(el.positioning).toBe('fixed')
     })
 
     it('left/top/width/height', () => {
-      el = new WindowWC({ left: 10, top: 20, width: 100, height: 50 })
+      el = new UIWindowWC({ left: 10, top: 20, width: 100, height: 50 })
       document.body.appendChild(el)
       expect(el.left).toBe(10)
       expect(el.top).toBe(20)
@@ -75,7 +75,7 @@ describe('window-wc', () => {
     })
 
     it('minWidth/minHeight/maxWidth/maxHeight', () => {
-      el = new WindowWC()
+      el = new UIWindowWC()
       document.body.appendChild(el)
       el.minWidth = 50
       el.minHeight = 30
@@ -88,7 +88,7 @@ describe('window-wc', () => {
     })
 
     it('boolean properties', () => {
-      el = new WindowWC({ resizable: true, movable: true })
+      el = new UIWindowWC({ resizable: true, movable: true })
       document.body.appendChild(el)
       el.resizable = false
       expect(el.resizable).toBe(false)
@@ -99,7 +99,7 @@ describe('window-wc', () => {
     })
 
     it('closable setter hides close button', () => {
-      el = new WindowWC({ title: 'Test', closable: true })
+      el = new UIWindowWC({ title: 'Test', closable: true })
       document.body.appendChild(el)
       el.closable = false
       // getter checks button existence, not visibility — verify button is hidden
@@ -108,7 +108,7 @@ describe('window-wc', () => {
     })
 
     it('showTitle / titleAlign', () => {
-      el = new WindowWC({ title: 'Test' })
+      el = new UIWindowWC({ title: 'Test' })
       document.body.appendChild(el)
       el.showTitle = false
       expect(el.showTitle).toBe(false)
@@ -117,7 +117,7 @@ describe('window-wc', () => {
     })
 
     it('showHints / showShortcuts', () => {
-      el = new WindowWC()
+      el = new UIWindowWC()
       document.body.appendChild(el)
       el.showHints = false
       expect(el.showHints).toBe(false)
@@ -126,14 +126,14 @@ describe('window-wc', () => {
     })
 
     it('allowMoveOffParent', () => {
-      el = new WindowWC()
+      el = new UIWindowWC()
       document.body.appendChild(el)
       el.allowMoveOffParent = false
       expect(el.allowMoveOffParent).toBe(false)
     })
 
     it('titleBarStyle / titleBarHeight', () => {
-      el = new WindowWC()
+      el = new UIWindowWC()
       document.body.appendChild(el)
       el.titleBarStyle = 'tool'
       expect(el.titleBarStyle).toBe('tool')
@@ -142,7 +142,7 @@ describe('window-wc', () => {
     })
 
     it('visible', () => {
-      el = new WindowWC({ title: 'V' })
+      el = new UIWindowWC({ title: 'V' })
       document.body.appendChild(el)
       expect(el.visible).toBe(true)
       el.visible = false
@@ -151,7 +151,7 @@ describe('window-wc', () => {
     })
 
     it('public fields: modal, topmost, autoUnfold', () => {
-      el = new WindowWC()
+      el = new UIWindowWC()
       document.body.appendChild(el)
       el.modal = true
       expect(el.modal).toBe(true)
@@ -195,13 +195,13 @@ describe('window-wc', () => {
 
   describe('content', () => {
     it('contentElement is accessible', () => {
-      el = new WindowWC({ title: 'Test' })
+      el = new UIWindowWC({ title: 'Test' })
       document.body.appendChild(el)
       expect(el.contentElement).toBeInstanceOf(HTMLElement)
     })
 
     it('can append children to contentElement', () => {
-      el = new WindowWC({ title: 'Test' })
+      el = new UIWindowWC({ title: 'Test' })
       document.body.appendChild(el)
       const child = document.createElement('div')
       child.textContent = 'Hello'
@@ -210,7 +210,7 @@ describe('window-wc', () => {
     })
 
     it('titleBarElement is accessible', () => {
-      el = new WindowWC({ title: 'Test' })
+      el = new UIWindowWC({ title: 'Test' })
       document.body.appendChild(el)
       expect(el.titleBarElement).toBeInstanceOf(HTMLElement)
     })
@@ -220,13 +220,13 @@ describe('window-wc', () => {
 
   describe('scrollBox', () => {
     it('null when no scroll configured', () => {
-      el = new WindowWC({ title: 'Test' })
+      el = new UIWindowWC({ title: 'Test' })
       document.body.appendChild(el)
       expect(el.scrollBox).toBeNull()
     })
 
     it('not null when scroll configured', () => {
-      el = new WindowWC({ title: 'Test', scroll: 'both' })
+      el = new UIWindowWC({ title: 'Test', scroll: 'both' })
       document.body.appendChild(el)
       expect(el.scrollBox).toBeTruthy()
     })
@@ -236,9 +236,9 @@ describe('window-wc', () => {
 
   describe('tool windows', () => {
     it('addTool / removeTool / tools / overlord / isTool', () => {
-      el = new WindowWC({ title: 'Main' })
+      el = new UIWindowWC({ title: 'Main' })
       document.body.appendChild(el)
-      const tool = new WindowWC({ title: 'Tool' }) as any
+      const tool = new UIWindowWC({ title: 'Tool' }) as any
       document.body.appendChild(tool)
 
       el.addTool(tool)
@@ -259,8 +259,8 @@ describe('window-wc', () => {
   describe('standalone focus (no WM)', () => {
     it('mousedown calls onFocused', async () => {
       const container = document.createElement('div')
-      const win1 = new WindowWC({ title: 'W1', positioning: 'relative' }) as any
-      const win2 = new WindowWC({ title: 'W2', positioning: 'relative' }) as any
+      const win1 = new UIWindowWC({ title: 'W1', positioning: 'relative' }) as any
+      const win2 = new UIWindowWC({ title: 'W2', positioning: 'relative' }) as any
       container.appendChild(win1)
       container.appendChild(win2)
       document.body.appendChild(container)
@@ -280,8 +280,8 @@ describe('window-wc', () => {
 
     it('standalone z-index management', async () => {
       const container = document.createElement('div')
-      const win1 = new WindowWC({ title: 'W1', positioning: 'relative' }) as any
-      const win2 = new WindowWC({ title: 'W2', positioning: 'relative' }) as any
+      const win1 = new UIWindowWC({ title: 'W1', positioning: 'relative' }) as any
+      const win2 = new UIWindowWC({ title: 'W2', positioning: 'relative' }) as any
       container.appendChild(win1)
       container.appendChild(win2)
       document.body.appendChild(container)
@@ -304,14 +304,14 @@ describe('window-wc', () => {
 
   describe('destroy()', () => {
     it('sets isDestroyed to true', () => {
-      el = new WindowWC({ title: 'Test' })
+      el = new UIWindowWC({ title: 'Test' })
       document.body.appendChild(el)
       el.destroy()
       expect(el.isDestroyed).toBe(true)
     })
 
     it('double destroy is safe', () => {
-      el = new WindowWC({ title: 'Test' })
+      el = new UIWindowWC({ title: 'Test' })
       document.body.appendChild(el)
       el.destroy()
       expect(() => el.destroy()).not.toThrow()
@@ -322,7 +322,7 @@ describe('window-wc', () => {
 
   describe('additional properties', () => {
     it('zIndex', () => {
-      el = new WindowWC({ title: 'Z', zIndex: 50 })
+      el = new UIWindowWC({ title: 'Z', zIndex: 50 })
       document.body.appendChild(el)
       expect(el.zIndex).toBe(50)
       el.zIndex = 100
@@ -330,13 +330,13 @@ describe('window-wc', () => {
     })
 
     it('element getter', () => {
-      el = new WindowWC({ title: 'E' })
+      el = new UIWindowWC({ title: 'E' })
       document.body.appendChild(el)
       expect(el.element).toBe(el)
     })
 
     it('minimizable / maximizable setters hide buttons', () => {
-      el = new WindowWC({ title: 'T', minimizable: true, maximizable: true })
+      el = new UIWindowWC({ title: 'T', minimizable: true, maximizable: true })
       document.body.appendChild(el)
       expect(el.minimizable).toBe(true)
       expect(el.maximizable).toBe(true)
@@ -349,7 +349,7 @@ describe('window-wc', () => {
     })
 
     it('simulateFocus', () => {
-      el = new WindowWC({ title: 'SF' })
+      el = new UIWindowWC({ title: 'SF' })
       document.body.appendChild(el)
       expect(el.simulateFocus).toBe(false)
       el.simulateFocus = true
@@ -357,19 +357,19 @@ describe('window-wc', () => {
     })
 
     it('windowState default is normal', () => {
-      el = new WindowWC({ title: 'WS' })
+      el = new UIWindowWC({ title: 'WS' })
       document.body.appendChild(el)
       expect(el.windowState).toBe('normal')
     })
 
     it('folded is false by default', () => {
-      el = new WindowWC({ title: 'F' })
+      el = new UIWindowWC({ title: 'F' })
       document.body.appendChild(el)
       expect(el.folded).toBe(false)
     })
 
     it('contentElement via slot', () => {
-      el = new WindowWC({ title: 'Slot' })
+      el = new UIWindowWC({ title: 'Slot' })
       document.body.appendChild(el)
       const child = document.createElement('div')
       el.contentElement.appendChild(child)
@@ -381,7 +381,7 @@ describe('window-wc', () => {
 
   describe('additional methods', () => {
     it('fold/unfold with foldable window', () => {
-      el = new WindowWC({ title: 'Fold', foldable: true })
+      el = new UIWindowWC({ title: 'Fold', foldable: true })
       document.body.appendChild(el)
       el.fold()
       expect(el.folded).toBe(true)
@@ -390,13 +390,13 @@ describe('window-wc', () => {
     })
 
     it('flash does not throw', () => {
-      el = new WindowWC({ title: 'Flash' })
+      el = new UIWindowWC({ title: 'Flash' })
       document.body.appendChild(el)
       expect(() => el.flash(2)).not.toThrow()
     })
 
     it('resetLastFocused does not throw', () => {
-      el = new WindowWC({ title: 'Reset' })
+      el = new UIWindowWC({ title: 'Reset' })
       document.body.appendChild(el)
       expect(() => el.resetLastFocused()).not.toThrow()
     })

@@ -1,8 +1,8 @@
 import { UIView } from '../common/ui-view'
-import { HintWC } from '../ui-hint-wc/ui-hint-wc'
+import { UIHintWC } from '../ui-hint-wc/ui-hint-wc'
 import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus-core'
 import type { HintAlignment, HintWCOptions } from '../common/types'
-import styles from './ui-button.css?raw'
+import styles from './ui-button-wc.css?raw'
 
 /** Attributes handled by the layout core */
 const CORE_ATTRS = [
@@ -19,7 +19,7 @@ const BUTTON_ATTRS = [
   'hint', 'hint-alignment', 'hint-arrow',
 ] as const
 
-export class UIButton extends HTMLElement {
+export class UIButtonWC extends HTMLElement {
   static get observedAttributes() {
     return [...CORE_ATTRS, ...BUTTON_ATTRS]
   }
@@ -31,7 +31,7 @@ export class UIButton extends HTMLElement {
   private _iconLeftEl!: HTMLSpanElement
   private _iconRightEl!: HTMLSpanElement
   private _labelEl!: HTMLSpanElement
-  private _hint: HintWC | null = null
+  private _hint: UIHintWC | null = null
   private _hintExternal: boolean = false
 
   constructor() {
@@ -315,9 +315,9 @@ export class UIButton extends HTMLElement {
 
   // ── Hint integration ──
 
-  get uiHint(): HintWC | null { return this._hint }
+  get uiHint(): UIHintWC | null { return this._hint }
 
-  set uiHint(hint: HintWC | null) {
+  set uiHint(hint: UIHintWC | null) {
     this._destroyInternalHint()
     if (hint) {
       this._hint = hint
@@ -328,10 +328,10 @@ export class UIButton extends HTMLElement {
     }
   }
 
-  setHint(options: Partial<Omit<HintWCOptions, 'anchor'>>): HintWC {
+  setHint(options: Partial<Omit<HintWCOptions, 'anchor'>>): UIHintWC {
     this._destroyInternalHint()
     this._hintExternal = false
-    const hint = new HintWC({
+    const hint = new UIHintWC({
       anchor: this,
       trigger: 'hover',
       showDelay: 300,
@@ -359,7 +359,7 @@ export class UIButton extends HTMLElement {
       this._hint.alignment = alignment
       this._hint.arrow = arrow
     } else {
-      this._hint = new HintWC({
+      this._hint = new UIHintWC({
         anchor: this,
         content: text,
         alignment,
@@ -379,4 +379,4 @@ export class UIButton extends HTMLElement {
   }
 }
 
-customElements.define('ui-button', UIButton)
+customElements.define('ui-button', UIButtonWC)

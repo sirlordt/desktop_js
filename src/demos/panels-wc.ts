@@ -1,7 +1,7 @@
-import { PanelWC } from '../components/ui-panel-wc/ui-panel-wc'
+import { UIPanelWC } from '../components/ui-panel-wc/ui-panel-wc'
 import type { DemoRoute } from '../header'
 
-let rootPanel: PanelWC | null = null
+let rootPanel: UIPanelWC | null = null
 
 export const panelsWCDemo: DemoRoute = {
   id: 'panels-wc',
@@ -116,8 +116,8 @@ export const panelsWCDemo: DemoRoute = {
 // Helpers
 // =====================
 
-function makePanel(options: import('../components/ui-panel-wc/ui-panel-wc').PanelWCOptions): PanelWC {
-  const p = new PanelWC()
+function makePanel(options: import('../components/ui-panel-wc/ui-panel-wc').PanelWCOptions): UIPanelWC {
+  const p = new UIPanelWC()
   p.configure(options)
   return p
 }

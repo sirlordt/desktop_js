@@ -1,9 +1,9 @@
-import { ScrollBarWC } from '../components/ui-scrollbar-wc/ui-scrollbar-wc'
+import { UIScrollBarWC } from '../components/ui-scrollbar-wc/ui-scrollbar-wc'
 import { UIToolButton } from '../components/common/ui-tool-button'
 import type { ScrollBarSize, UIScrollBarOptions } from '../components/common/types'
 import type { DemoRoute } from '../header'
 
-const allSbs: ScrollBarWC[] = []
+const allSbs: UIScrollBarWC[] = []
 
 export const scrollbarWCDemo: DemoRoute = {
   id: 'scrollbar-wc',
@@ -405,7 +405,7 @@ export const scrollbarWCDemo: DemoRoute = {
     const attrRow = document.createElement('div')
     attrRow.className = 'btn-demo-row'
 
-    const attrSb = document.createElement('scrollbar-wc') as ScrollBarWC
+    const attrSb = document.createElement('scrollbar-wc') as UIScrollBarWC
     attrSb.setAttribute('kind', 'horizontal')
     attrSb.setAttribute('size', 'medium')
     attrSb.setAttribute('max', '200')
@@ -437,8 +437,8 @@ export const scrollbarWCDemo: DemoRoute = {
 // Helpers
 // =====================
 
-function sb(opts: UIScrollBarOptions, width?: string, height?: string): ScrollBarWC {
-  const s = document.createElement('scrollbar-wc') as ScrollBarWC
+function sb(opts: UIScrollBarOptions, width?: string, height?: string): UIScrollBarWC {
+  const s = document.createElement('scrollbar-wc') as UIScrollBarWC
   s.configure(opts)
   if (width) s.style.width = width
   if (height) s.style.height = height

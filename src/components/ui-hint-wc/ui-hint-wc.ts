@@ -37,7 +37,7 @@ function applyArrowBaseStyles(el: HTMLDivElement): void {
   el.style.height = '0'
 }
 
-export class HintWC extends HTMLElement {
+export class UIHintWC extends HTMLElement {
   // --- Config ---
   private _alignment: HintAlignment = 'BottomCenter'
   private _margin: number = 2
@@ -712,4 +712,4 @@ export class HintWC extends HTMLElement {
   }
 }
 
-customElements.define('hint-wc', HintWC)
+customElements.define('hint-wc', UIHintWC)

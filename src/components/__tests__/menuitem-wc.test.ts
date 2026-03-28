@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { MenuItemWC } from '../ui-menu-item-wc/ui-menu-item-wc'
+import { UIMenuItemWC } from '../ui-menu-item-wc/ui-menu-item-wc'
 
 function flush(): Promise<void> { return new Promise(r => setTimeout(r, 10)) }
 
@@ -15,21 +15,21 @@ describe('menuitem-wc', () => {
 
   describe('construction', () => {
     it('creates with no options', () => {
-      el = new MenuItemWC()
+      el = new UIMenuItemWC()
       document.body.appendChild(el)
       expect(el).toBeInstanceOf(HTMLElement)
       expect(el.shadowRoot).toBeTruthy()
     })
 
     it('creates with text and shortcut', () => {
-      el = new MenuItemWC({ text: 'Save', shortcut: 'Ctrl+S' })
+      el = new UIMenuItemWC({ text: 'Save', shortcut: 'Ctrl+S' })
       document.body.appendChild(el)
       expect(el.text).toBe('Save')
       expect(el.shortcut).toBe('Ctrl+S')
     })
 
     it('creates with size and textAlign', () => {
-      el = new MenuItemWC({ text: 'Test', size: 'large', textAlign: 'center' })
+      el = new UIMenuItemWC({ text: 'Test', size: 'large', textAlign: 'center' })
       document.body.appendChild(el)
       expect(el.size).toBe('large')
       expect(el.textAlign).toBe('center')
@@ -40,7 +40,7 @@ describe('menuitem-wc', () => {
 
   describe('properties', () => {
     it('text getter/setter', () => {
-      el = new MenuItemWC({ text: 'Hello' })
+      el = new UIMenuItemWC({ text: 'Hello' })
       document.body.appendChild(el)
       expect(el.text).toBe('Hello')
       el.text = 'World'
@@ -48,14 +48,14 @@ describe('menuitem-wc', () => {
     })
 
     it('shortcut getter/setter', () => {
-      el = new MenuItemWC()
+      el = new UIMenuItemWC()
       document.body.appendChild(el)
       el.shortcut = 'Ctrl+Z'
       expect(el.shortcut).toBe('Ctrl+Z')
     })
 
     it('pushed getter/setter', () => {
-      el = new MenuItemWC({ text: 'T', pushable: true })
+      el = new UIMenuItemWC({ text: 'T', pushable: true })
       document.body.appendChild(el)
       expect(el.pushed).toBe(false)
       el.pushed = true
@@ -63,7 +63,7 @@ describe('menuitem-wc', () => {
     })
 
     it('disabled getter/setter', () => {
-      el = new MenuItemWC({ text: 'T' })
+      el = new UIMenuItemWC({ text: 'T' })
       document.body.appendChild(el)
       el.disabled = true
       expect(el.disabled).toBe(true)
@@ -71,28 +71,28 @@ describe('menuitem-wc', () => {
     })
 
     it('pushable getter/setter', () => {
-      el = new MenuItemWC({ text: 'T' })
+      el = new UIMenuItemWC({ text: 'T' })
       document.body.appendChild(el)
       el.pushable = true
       expect(el.pushable).toBe(true)
     })
 
     it('size getter/setter', () => {
-      el = new MenuItemWC({ text: 'T' })
+      el = new UIMenuItemWC({ text: 'T' })
       document.body.appendChild(el)
       el.size = 'small'
       expect(el.size).toBe('small')
     })
 
     it('textAlign getter/setter', () => {
-      el = new MenuItemWC({ text: 'T' })
+      el = new UIMenuItemWC({ text: 'T' })
       document.body.appendChild(el)
       el.textAlign = 'right'
       expect(el.textAlign).toBe('right')
     })
 
     it('requestParentClose getter/setter', () => {
-      el = new MenuItemWC({ text: 'T' })
+      el = new UIMenuItemWC({ text: 'T' })
       document.body.appendChild(el)
       el.requestParentClose = true
       expect(el.requestParentClose).toBe(true)
@@ -103,7 +103,7 @@ describe('menuitem-wc', () => {
 
   describe('click handling', () => {
     it('onClick handler is called', () => {
-      el = new MenuItemWC({ text: 'Click me' })
+      el = new UIMenuItemWC({ text: 'Click me' })
       document.body.appendChild(el)
       let clicked = false
       el.onClick(() => { clicked = true })
@@ -112,7 +112,7 @@ describe('menuitem-wc', () => {
     })
 
     it('offClick removes handler', () => {
-      el = new MenuItemWC({ text: 'Click me' })
+      el = new UIMenuItemWC({ text: 'Click me' })
       document.body.appendChild(el)
       let count = 0
       const handler = () => { count++ }
@@ -125,7 +125,7 @@ describe('menuitem-wc', () => {
     })
 
     it('disabled prevents click', () => {
-      el = new MenuItemWC({ text: 'Click me' })
+      el = new UIMenuItemWC({ text: 'Click me' })
       document.body.appendChild(el)
       el.disabled = true
       let clicked = false
@@ -139,7 +139,7 @@ describe('menuitem-wc', () => {
 
   describe('pushable', () => {
     it('click toggles pushed state', () => {
-      el = new MenuItemWC({ text: 'Toggle', pushable: true })
+      el = new UIMenuItemWC({ text: 'Toggle', pushable: true })
       document.body.appendChild(el)
       expect(el.pushed).toBe(false)
       el.click()
@@ -149,7 +149,7 @@ describe('menuitem-wc', () => {
     })
 
     it('menuitem-pushed event fires with detail', () => {
-      el = new MenuItemWC({ text: 'Toggle', pushable: true })
+      el = new UIMenuItemWC({ text: 'Toggle', pushable: true })
       document.body.appendChild(el)
       let detail: any = null
       el.addEventListener('menuitem-pushed', (e: any) => { detail = e.detail })
@@ -159,7 +159,7 @@ describe('menuitem-wc', () => {
     })
 
     it('onPushedChange handler is called', () => {
-      el = new MenuItemWC({ text: 'Toggle', pushable: true })
+      el = new UIMenuItemWC({ text: 'Toggle', pushable: true })
       document.body.appendChild(el)
       let pushedState: boolean | null = null
       el.onPushedChange((p: boolean) => { pushedState = p })
@@ -172,7 +172,7 @@ describe('menuitem-wc', () => {
 
   describe('events', () => {
     it('menuitem-click CustomEvent fires', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       let fired = false
       el.addEventListener('menuitem-click', () => { fired = true })
@@ -181,7 +181,7 @@ describe('menuitem-wc', () => {
     })
 
     it('menuitem-click bubbles and is composed', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       let evt: CustomEvent | null = null
       el.addEventListener('menuitem-click', (e: any) => { evt = e })
@@ -191,7 +191,7 @@ describe('menuitem-wc', () => {
     })
 
     it('request-parent-close fires when configured', () => {
-      el = new MenuItemWC({ text: 'Close', requestParentClose: true })
+      el = new UIMenuItemWC({ text: 'Close', requestParentClose: true })
       document.body.appendChild(el)
       let fired = false
       el.addEventListener('request-parent-close', () => { fired = true })
@@ -204,7 +204,7 @@ describe('menuitem-wc', () => {
 
   describe('element setters', () => {
     it('leftElement setter', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       const icon = document.createElement('span')
       icon.textContent = '★'
@@ -217,13 +217,13 @@ describe('menuitem-wc', () => {
 
   describe('destroy()', () => {
     it('does not throw', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       expect(() => el.destroy()).not.toThrow()
     })
 
     it('double destroy is safe', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       el.destroy()
       expect(() => el.destroy()).not.toThrow()
@@ -234,7 +234,7 @@ describe('menuitem-wc', () => {
 
   describe('additional setters', () => {
     it('rightElement setter', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       const icon = document.createElement('span')
       icon.textContent = '→'
@@ -244,7 +244,7 @@ describe('menuitem-wc', () => {
     })
 
     it('centerElement setter', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       const center = document.createElement('span')
       center.textContent = 'Center'
@@ -253,7 +253,7 @@ describe('menuitem-wc', () => {
     })
 
     it('pushedElement setter', () => {
-      el = new MenuItemWC({ text: 'Test', pushable: true })
+      el = new UIMenuItemWC({ text: 'Test', pushable: true })
       document.body.appendChild(el)
       const icon = document.createElement('span')
       icon.textContent = '✓'
@@ -262,21 +262,21 @@ describe('menuitem-wc', () => {
     })
 
     it('margin setter', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       el.margin = 8
       expect(true).toBe(true)
     })
 
     it('iconGap setter', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       el.iconGap = 12
       expect(true).toBe(true)
     })
 
     it('simulateFocus getter/setter', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       expect(el.simulateFocus).toBe(false)
       el.simulateFocus = true
@@ -288,7 +288,7 @@ describe('menuitem-wc', () => {
 
   describe('additional methods', () => {
     it('offPushedChange removes handler', () => {
-      el = new MenuItemWC({ text: 'Toggle', pushable: true })
+      el = new UIMenuItemWC({ text: 'Toggle', pushable: true })
       document.body.appendChild(el)
       let count = 0
       const handler = () => { count++ }
@@ -305,7 +305,7 @@ describe('menuitem-wc', () => {
 
   describe('event details', () => {
     it('menuitem-click bubbles and is composed', () => {
-      el = new MenuItemWC({ text: 'Test' })
+      el = new UIMenuItemWC({ text: 'Test' })
       document.body.appendChild(el)
       let evt: CustomEvent | null = null
       el.addEventListener('menuitem-click', (e: any) => { evt = e })

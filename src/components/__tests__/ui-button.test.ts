@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import '../ui-button/ui-button'
+import '../ui-button-wc/ui-button-wc'
 
-describe('UIButton (ui-button)', () => {
+describe('UIButtonWC (ui-button)', () => {
   const cleanups: HTMLElement[] = []
 
   afterEach(async () => {

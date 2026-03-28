@@ -1,6 +1,6 @@
 import type { MenuItemSize, MenuItemTextAlign, UIMenuItemOptions } from '../common/types'
 import { applySimulateFocus } from '../common/simulate-focus-core'
-import { HintWC } from '../ui-hint-wc/ui-hint-wc'
+import { UIHintWC } from '../ui-hint-wc/ui-hint-wc'
 import cssText from './ui-menu-item-wc.css?inline'
 
 const MENUITEM_ATTRS = [
@@ -8,7 +8,7 @@ const MENUITEM_ATTRS = [
   'disabled', 'request-parent-close', 'margin', 'icon-gap',
 ] as const
 
-export class MenuItemWC extends HTMLElement {
+export class UIMenuItemWC extends HTMLElement {
   private _shadow: ShadowRoot
   private _leftEl!: HTMLDivElement
   private _centerEl!: HTMLDivElement
@@ -41,7 +41,7 @@ export class MenuItemWC extends HTMLElement {
   private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
   private _configured = false
 
-  private _hint: HintWC | null = null
+  private _hint: UIHintWC | null = null
   private _resizeObserver: ResizeObserver | null = null
 
   static get observedAttributes() {
@@ -84,7 +84,7 @@ export class MenuItemWC extends HTMLElement {
 
     if (o.leftElement) this._leftElement = o.leftElement
     if (o.pushedElement) this._pushedElement = o.pushedElement
-    if (this._pushable && !this._pushedElement) this._pushedElement = MenuItemWC._makeCheckIcon()
+    if (this._pushable && !this._pushedElement) this._pushedElement = UIMenuItemWC._makeCheckIcon()
   }
 
   private _buildDOM(): void {
@@ -358,7 +358,7 @@ export class MenuItemWC extends HTMLElement {
   }
 
   private static _makeCheckIcon(): HTMLElement {
-    return MenuItemWC._makeSvg(['M3 8l3.5 3.5L13 5'], 14)
+    return UIMenuItemWC._makeSvg(['M3 8l3.5 3.5L13 5'], 14)
   }
 
   // ── Theme ──
@@ -442,7 +442,7 @@ export class MenuItemWC extends HTMLElement {
   private _checkTruncation(): void {
     const truncated = this._textEl.scrollWidth > this._textEl.clientWidth
     if (truncated && !this._hint) {
-      this._hint = new HintWC()
+      this._hint = new UIHintWC()
       this._hint.configure({
         anchor: this,
         content: this._text,
@@ -460,4 +460,4 @@ export class MenuItemWC extends HTMLElement {
   }
 }
 
-customElements.define('menuitem-wc', MenuItemWC)
+customElements.define('menuitem-wc', UIMenuItemWC)

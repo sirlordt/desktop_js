@@ -1,8 +1,8 @@
 import type { PopupState, PopupKind, UIPopupOptions, ScrollMode } from '../common/types'
 import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-focus-core'
 import { findBestPosition } from '../common/positioning'
-import { WindowWC } from '../ui-window-wc/ui-window-wc'
-import { WindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
+import { UIWindowWC } from '../ui-window-wc/ui-window-wc'
+import { UIWindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
 
 type PopupEventName = 'show' | 'close' | 'detach' | 'attach'
 type PopupHandler = (...args: any[]) => void
@@ -14,7 +14,7 @@ const POPUP_ATTRS = [
   'open', 'scroll',
 ] as const
 
-export class PopupWC extends HTMLElement {
+export class UIPopupWC extends HTMLElement {
   private _anchor: HTMLElement | null = null
   private _kind: PopupKind = 'menu'
   private _alignment: string = 'BottomLeft'
@@ -26,7 +26,7 @@ export class PopupWC extends HTMLElement {
   private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
   private _children: HTMLElement[] = []
   private _listeners = new Map<PopupEventName, Set<PopupHandler>>()
-  private _window: WindowWC | null = null
+  private _window: UIWindowWC | null = null
   private _width: number = 200
   private _height: number = 250
   private _resizable: boolean = false
@@ -45,7 +45,7 @@ export class PopupWC extends HTMLElement {
   private _activeIndex = -1
   private _focusedBeforeOpen: HTMLElement | null = null
 
-  private _overlord: WindowWC | null = null
+  private _overlord: UIWindowWC | null = null
   private _parentRef: HTMLElement | null = null
 
   private _configured = false
@@ -82,7 +82,7 @@ export class PopupWC extends HTMLElement {
   constructor(options?: UIPopupOptions) {
     super()
     // The popup-wc element itself is invisible — it acts as a controller.
-    // The visual popup is a WindowWC that portals to body/window-manager.
+    // The visual popup is a UIWindowWC that portals to body/window-manager.
     this.style.display = 'none'
 
     if (options) this.configure(options)
@@ -90,7 +90,7 @@ export class PopupWC extends HTMLElement {
 
   /**
    * Configure the popup programmatically.
-   * Creates the internal WindowWC and sets up event handlers.
+   * Creates the internal UIWindowWC and sets up event handlers.
    */
   configure(options: UIPopupOptions): void {
     const o = options
@@ -121,7 +121,7 @@ export class PopupWC extends HTMLElement {
       this._readAttributes()
     }
 
-    // Mirror children from <popup-wc> to internal WindowWC
+    // Mirror children from <popup-wc> to internal UIWindowWC
     this._mirrorChildren()
     if (!this._childObserver) {
       this._childObserver = new MutationObserver(() => this._mirrorChildren())
@@ -177,7 +177,7 @@ export class PopupWC extends HTMLElement {
     }
   }
 
-  /** Mirror light DOM children from <popup-wc> into the internal WindowWC's content */
+  /** Mirror light DOM children from <popup-wc> into the internal UIWindowWC's content */
   private _mirrorChildren(): void {
     if (!this._window) return
     const content = this._window.contentElement
@@ -186,12 +186,12 @@ export class PopupWC extends HTMLElement {
     }
   }
 
-  /** Create the internal WindowWC if it doesn't exist yet */
+  /** Create the internal UIWindowWC if it doesn't exist yet */
   private _ensureWindow(): void {
     if (this._window) return
 
     const showBar = this._detachable
-    this._window = new WindowWC({
+    this._window = new UIWindowWC({
       kind: 'tool',
       titleBarStyle: this._detachable ? 'tool' : 'normal',
       titleAlign: 'center',
@@ -214,7 +214,7 @@ export class PopupWC extends HTMLElement {
 
     if (this._detachable) this._window.closable = false
 
-    // Auto-close on request-parent-close from MenuItemWC
+    // Auto-close on request-parent-close from UIMenuItemWC
     this._window.addEventListener('request-parent-close', () => {
       if (this._state === 'attached') requestAnimationFrame(() => this.close())
     })
@@ -258,7 +258,7 @@ export class PopupWC extends HTMLElement {
   // ── Public API ──
 
   get element(): HTMLElement { return (this._window as HTMLElement) ?? (this as HTMLElement) }
-  get window(): WindowWC | null { return this._window }
+  get window(): UIWindowWC | null { return this._window }
   get state(): PopupState { return this._state }
   get visible(): boolean { return this._state !== 'closed' }
   get kind(): PopupKind { return this._kind }
@@ -276,7 +276,7 @@ export class PopupWC extends HTMLElement {
     if (this._window) applySimulateFocus(this._window, v)
   }
 
-  set overlord(win: WindowWC | null) { this._overlord = win }
+  set overlord(win: UIWindowWC | null) { this._overlord = win }
   get parentRef(): HTMLElement | null { return this._parentRef }
   set parentRef(el: HTMLElement | null) { this._parentRef = el }
 
@@ -355,7 +355,7 @@ export class PopupWC extends HTMLElement {
     this._reposition()
 
     // Simulate focus on whoever had focus before (traverse shadow roots)
-    this._focusedBeforeOpen = PopupWC._deepActiveElement()
+    this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
     if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
 
     if (this._kind === 'menu') {
@@ -503,9 +503,9 @@ export class PopupWC extends HTMLElement {
     const win = this._window
     this._keyNavHandler = (e: KeyboardEvent) => {
       if (this._state !== 'detached') return
-      const active = PopupWC._deepActiveElement()
+      const active = UIPopupWC._deepActiveElement()
       if (!active) return
-      if (!PopupWC._containsDeep(win, active) && !this._anchor || !PopupWC._containsDeep(this._anchor!, active)) return
+      if (!UIPopupWC._containsDeep(win, active) && !this._anchor || !UIPopupWC._containsDeep(this._anchor!, active)) return
       const items = this._getMenuItems()
       if (items.length === 0) return
       if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items) }
@@ -542,7 +542,7 @@ export class PopupWC extends HTMLElement {
     if (this._parentRef) return this._parentRef
     if (!this._anchor) return document.body
     // Walk up from the anchor (crossing shadow boundaries) to find
-    // a WindowManagerWC. Only a WM provides the positioned container
+    // a UIWindowManagerWC. Only a WM provides the positioned container
     // needed for absolute popup placement. Without a WM, fall back
     // to document.body with fixed positioning.
     let el: HTMLElement | null = this._anchor
@@ -563,12 +563,12 @@ export class PopupWC extends HTMLElement {
     return document.body
   }
 
-  /** Walk up from anchor (crossing shadow boundaries) to find a WindowManagerWC */
-  private _findWindowManager(): WindowManagerWC | null {
+  /** Walk up from anchor (crossing shadow boundaries) to find a UIWindowManagerWC */
+  private _findWindowManager(): UIWindowManagerWC | null {
     if (!this._anchor) return null
     let el: HTMLElement | null = this._anchor
     while (el) {
-      if (el instanceof WindowManagerWC) return el
+      if (el instanceof UIWindowManagerWC) return el
       const parent: HTMLElement | null = el.parentElement
       if (parent) {
         el = parent
@@ -623,7 +623,7 @@ export class PopupWC extends HTMLElement {
     const h = el.offsetHeight || this._height
     const { pos } = findBestPosition(anchorRect, w, h, this._alignment as any, this._margin)
     // findBestPosition returns viewport coords. When the popup is position:absolute
-    // inside a container (e.g. WindowManagerWC), convert to container-relative.
+    // inside a container (e.g. UIWindowManagerWC), convert to container-relative.
     if (el.style.position === 'absolute' && el.offsetParent) {
       const r = el.offsetParent.getBoundingClientRect()
       pos.left -= r.left
@@ -774,4 +774,4 @@ export class PopupWC extends HTMLElement {
   }
 }
 
-customElements.define('popup-wc', PopupWC)
+customElements.define('popup-wc', UIPopupWC)

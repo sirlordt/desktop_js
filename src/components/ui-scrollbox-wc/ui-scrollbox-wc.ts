@@ -1,4 +1,4 @@
-import { ScrollBarWC } from '../ui-scrollbar-wc/ui-scrollbar-wc'
+import { UIScrollBarWC } from '../ui-scrollbar-wc/ui-scrollbar-wc'
 import type {
   ScrollMode,
   VerticalScrollPosition,
@@ -18,7 +18,7 @@ const SCROLLBOX_ATTRS = [
   'border-style', 'background-color', 'opacity', 'disabled',
 ] as const
 
-export class ScrollBoxWC extends HTMLElement {
+export class UIScrollBoxWC extends HTMLElement {
   // --- Config ---
   private _scroll: ScrollMode = 'both'
   private _verticalScroll: VerticalScrollPosition = 'right'
@@ -44,11 +44,11 @@ export class ScrollBoxWC extends HTMLElement {
   private _contentWidth: number = 0
   private _contentHeight: number = 0
 
-  // --- ScrollBars (ScrollBarWC) ---
-  private _hScrollTop: ScrollBarWC | null = null
-  private _hScrollBottom: ScrollBarWC | null = null
-  private _vScrollLeft: ScrollBarWC | null = null
-  private _vScrollRight: ScrollBarWC | null = null
+  // --- ScrollBars (UIScrollBarWC) ---
+  private _hScrollTop: UIScrollBarWC | null = null
+  private _hScrollBottom: UIScrollBarWC | null = null
+  private _vScrollLeft: UIScrollBarWC | null = null
+  private _vScrollRight: UIScrollBarWC | null = null
 
   // --- DOM (inside shadow) ---
   private _shadow: ShadowRoot
@@ -260,10 +260,10 @@ export class ScrollBoxWC extends HTMLElement {
 
   get contentElement(): HTMLDivElement { return this._contentEl }
 
-  get hScrollTop(): ScrollBarWC | null { return this._hScrollTop }
-  get hScrollBottom(): ScrollBarWC | null { return this._hScrollBottom }
-  get vScrollLeft(): ScrollBarWC | null { return this._vScrollLeft }
-  get vScrollRight(): ScrollBarWC | null { return this._vScrollRight }
+  get hScrollTop(): UIScrollBarWC | null { return this._hScrollTop }
+  get hScrollBottom(): UIScrollBarWC | null { return this._hScrollBottom }
+  get vScrollLeft(): UIScrollBarWC | null { return this._vScrollLeft }
+  get vScrollRight(): UIScrollBarWC | null { return this._vScrollRight }
 
   get cornerTopLeft(): HTMLDivElement | null { return this._cornerTL }
   get cornerTopRight(): HTMLDivElement | null { return this._cornerTR }
@@ -456,8 +456,8 @@ export class ScrollBoxWC extends HTMLElement {
     }
   }
 
-  private _createScrollBar(kind: 'horizontal' | 'vertical', config?: ScrollBoxScrollBarConfig): ScrollBarWC {
-    const sb = document.createElement('scrollbar-wc') as ScrollBarWC
+  private _createScrollBar(kind: 'horizontal' | 'vertical', config?: ScrollBoxScrollBarConfig): UIScrollBarWC {
+    const sb = document.createElement('scrollbar-wc') as UIScrollBarWC
     sb.configure({
       kind,
       size: this._sbSize,
@@ -541,7 +541,7 @@ export class ScrollBoxWC extends HTMLElement {
     this._bottomRow.style.display = hasBottom ? 'flex' : 'none'
 
     // --- Bind scrollbar change events ---
-    const bindH = (sb: ScrollBarWC) => {
+    const bindH = (sb: UIScrollBarWC) => {
       sb.on('change', (v: number) => {
         this._scrollX = v
         this._syncScrollBars(sb)
@@ -549,7 +549,7 @@ export class ScrollBoxWC extends HTMLElement {
         this._emitScroll()
       })
     }
-    const bindV = (sb: ScrollBarWC) => {
+    const bindV = (sb: UIScrollBarWC) => {
       sb.on('change', (v: number) => {
         this._scrollY = v
         this._syncScrollBars(sb)
@@ -579,7 +579,7 @@ export class ScrollBoxWC extends HTMLElement {
     this._contentEl.style.transform = `translate(${-this._scrollX}px, ${-this._scrollY}px)`
   }
 
-  private _syncScrollBars(source?: ScrollBarWC): void {
+  private _syncScrollBars(source?: UIScrollBarWC): void {
     if (this._hScrollTop && this._hScrollTop !== source) this._hScrollTop.value = this._scrollX
     if (this._hScrollBottom && this._hScrollBottom !== source) this._hScrollBottom.value = this._scrollX
     if (this._vScrollLeft && this._vScrollLeft !== source) this._vScrollLeft.value = this._scrollY
@@ -700,4 +700,4 @@ export class ScrollBoxWC extends HTMLElement {
   }
 }
 
-customElements.define('scrollbox-wc', ScrollBoxWC)
+customElements.define('scrollbox-wc', UIScrollBoxWC)

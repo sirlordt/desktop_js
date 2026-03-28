@@ -1,12 +1,12 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { PopupWC } from '../ui-popup-wc/ui-popup-wc'
-import { MenuItemWC } from '../ui-menu-item-wc/ui-menu-item-wc'
+import { UIPopupWC } from '../ui-popup-wc/ui-popup-wc'
+import { UIMenuItemWC } from '../ui-menu-item-wc/ui-menu-item-wc'
 
 function flush(): Promise<void> {
   return new Promise(r => setTimeout(r, 10))
 }
 
-describe('PopupWC', () => {
+describe('UIPopupWC', () => {
   const cleanups: HTMLElement[] = []
 
   function createAnchor(): HTMLButtonElement {
@@ -30,16 +30,16 @@ describe('PopupWC', () => {
   // ── Construction ──
 
   describe('Construction', () => {
-    it('should create a PopupWC with new PopupWC()', () => {
-      const popup = new PopupWC()
+    it('should create a UIPopupWC with new UIPopupWC()', () => {
+      const popup = new UIPopupWC()
       cleanups.push(popup)
-      expect(popup).toBeInstanceOf(PopupWC)
+      expect(popup).toBeInstanceOf(UIPopupWC)
       expect(popup).toBeInstanceOf(HTMLElement)
     })
 
     it('should configure with options in constructor', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 200 })
+      const popup = new UIPopupWC({ anchor, width: 200 })
       cleanups.push(popup)
       expect(popup.anchor).toBe(anchor)
       expect(popup.width).toBe(200)
@@ -50,7 +50,7 @@ describe('PopupWC', () => {
 
   describe('Properties', () => {
     it('should get/set kind', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.kind).toBe('menu')
       popup.kind = 'container'
@@ -58,7 +58,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set alignment', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.alignment).toBe('BottomLeft')
       popup.alignment = 'TopRight'
@@ -66,7 +66,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set margin', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.margin).toBe(4)
       popup.margin = 10
@@ -74,7 +74,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set width and height', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       popup.width = 300
       popup.height = 400
@@ -83,7 +83,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set minWidth and minHeight', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       popup.minWidth = 80
       popup.minHeight = 120
@@ -92,7 +92,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set resizable', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.resizable).toBe(false)
       popup.resizable = true
@@ -100,7 +100,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set detachable', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.detachable).toBe(false)
       popup.detachable = true
@@ -108,7 +108,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set closeOnClickOutside', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.closeOnClickOutside).toBe(true)
       popup.closeOnClickOutside = false
@@ -116,7 +116,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set closeOnEscape', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.closeOnEscape).toBe(true)
       popup.closeOnEscape = false
@@ -124,7 +124,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set scrollMode', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.scrollMode).toBeUndefined()
       popup.scrollMode = 'both'
@@ -133,7 +133,7 @@ describe('PopupWC', () => {
 
     it('should get/set anchor', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.anchor).toBeNull()
       popup.anchor = anchor
@@ -141,7 +141,7 @@ describe('PopupWC', () => {
     })
 
     it('should get/set title', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.title).toBe('')
       popup.title = 'My Popup'
@@ -150,7 +150,7 @@ describe('PopupWC', () => {
 
     it('should get/set parentRef', () => {
       const div = document.createElement('div')
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.parentRef).toBeNull()
       popup.parentRef = div
@@ -163,7 +163,7 @@ describe('PopupWC', () => {
   describe('show/close/toggle', () => {
     it('should transition closed -> attached -> closed', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
 
       expect(popup.state).toBe('closed')
@@ -182,7 +182,7 @@ describe('PopupWC', () => {
 
     it('should toggle between closed and attached', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
 
       popup.toggle()
@@ -195,7 +195,7 @@ describe('PopupWC', () => {
     })
 
     it('should not show if no anchor is set', async () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       popup.show()
       await flush()
@@ -208,20 +208,20 @@ describe('PopupWC', () => {
   describe('addChild/removePopupChild/clearChildren', () => {
     it('should add a child element', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor }) as any
+      const popup = new UIPopupWC({ anchor }) as any
       cleanups.push(popup)
 
-      const item = new MenuItemWC({ text: 'Item 1' })
+      const item = new UIMenuItemWC({ text: 'Item 1' })
       popup.addChild(item)
       expect(popup.window.contentElement.contains(item)).toBe(true)
     })
 
     it('should remove a child element', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor }) as any
+      const popup = new UIPopupWC({ anchor }) as any
       cleanups.push(popup)
 
-      const item = new MenuItemWC({ text: 'Item 1' })
+      const item = new UIMenuItemWC({ text: 'Item 1' })
       popup.addChild(item)
       popup.removePopupChild(item)
       expect(popup.window.contentElement.contains(item)).toBe(false)
@@ -229,11 +229,11 @@ describe('PopupWC', () => {
 
     it('should clear all children', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor }) as any
+      const popup = new UIPopupWC({ anchor }) as any
       cleanups.push(popup)
 
-      popup.addChild(new MenuItemWC({ text: 'A' }))
-      popup.addChild(new MenuItemWC({ text: 'B' }))
+      popup.addChild(new UIMenuItemWC({ text: 'A' }))
+      popup.addChild(new UIMenuItemWC({ text: 'B' }))
       popup.clearChildren()
       expect(popup.window.contentElement.querySelectorAll('menuitem-wc').length).toBe(0)
     })
@@ -244,7 +244,7 @@ describe('PopupWC', () => {
   describe('Events', () => {
     it('should fire popup-show CustomEvent on show', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
       document.body.appendChild(popup)
 
@@ -259,7 +259,7 @@ describe('PopupWC', () => {
 
     it('should fire popup-close CustomEvent on close', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
       document.body.appendChild(popup)
 
@@ -277,7 +277,7 @@ describe('PopupWC', () => {
 
     it('should support on/off vanilla listeners', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
 
       const showHandler = vi.fn()
@@ -308,7 +308,7 @@ describe('PopupWC', () => {
   describe('Close on Escape', () => {
     it('should close when Escape is pressed and closeOnEscape=true', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150, closeOnEscape: true }) as any
+      const popup = new UIPopupWC({ anchor, width: 150, closeOnEscape: true }) as any
       cleanups.push(popup)
 
       popup.show()
@@ -322,7 +322,7 @@ describe('PopupWC', () => {
 
     it('should NOT close on Escape when closeOnEscape=false', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150, closeOnEscape: false }) as any
+      const popup = new UIPopupWC({ anchor, width: 150, closeOnEscape: false }) as any
       cleanups.push(popup)
 
       popup.show()
@@ -340,14 +340,14 @@ describe('PopupWC', () => {
 
   describe('State', () => {
     it('should return "closed" initially', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.state).toBe('closed')
     })
 
     it('should return "attached" after show', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
 
       popup.show()
@@ -358,7 +358,7 @@ describe('PopupWC', () => {
 
     it('should return "closed" after close', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
 
       popup.show()
@@ -374,7 +374,7 @@ describe('PopupWC', () => {
   describe('destroy()', () => {
     it('should clean up and prevent further show', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
 
       popup.show()
@@ -393,7 +393,7 @@ describe('PopupWC', () => {
 
     it('should clear all listeners on destroy', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
 
       const handler = vi.fn()
@@ -412,33 +412,33 @@ describe('PopupWC', () => {
   describe('readonly getters', () => {
     it('element returns internal window or self', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
       expect(popup.element).toBeInstanceOf(HTMLElement)
     })
 
-    it('window returns WindowWC after configure', () => {
+    it('window returns UIWindowWC after configure', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
       expect(popup.window).toBeTruthy()
     })
 
     it('state is closed by default', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.state).toBe('closed')
     })
 
     it('visible is false when closed', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.visible).toBe(false)
     })
 
     it('visible is true when shown', async () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor, width: 150 }) as any
+      const popup = new UIPopupWC({ anchor, width: 150 }) as any
       cleanups.push(popup)
       popup.show()
       await flush()
@@ -447,7 +447,7 @@ describe('PopupWC', () => {
     })
 
     it('simulateFocus getter/setter', () => {
-      const popup = new PopupWC() as any
+      const popup = new UIPopupWC() as any
       cleanups.push(popup)
       expect(popup.simulateFocus).toBe(false)
       popup.simulateFocus = true
@@ -456,7 +456,7 @@ describe('PopupWC', () => {
 
     it('overlord setter', () => {
       const anchor = createAnchor()
-      const popup = new PopupWC({ anchor }) as any
+      const popup = new UIPopupWC({ anchor }) as any
       cleanups.push(popup)
       const win = document.createElement('window-wc') as any
       document.body.appendChild(win)

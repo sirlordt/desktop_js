@@ -1,4 +1,4 @@
-import { MenuItemWC } from '../components/ui-menu-item-wc/ui-menu-item-wc'
+import { UIMenuItemWC } from '../components/ui-menu-item-wc/ui-menu-item-wc'
 import type { DemoRoute } from '../header'
 import type { MenuItemSize } from '../components/common/types'
 
@@ -91,11 +91,11 @@ export const menuItemsWCDemo: DemoRoute = {
       { text: 'Open File...', shortcut: 'Ctrl+O', leftElement: ic('folderOpen') },
       { text: 'Save', shortcut: 'Ctrl+S', leftElement: ic('save') },
       { text: 'Save As...', shortcut: 'Ctrl+Shift+S', leftElement: ic('download') },
-    ]) m1.appendChild(new MenuItemWC(o))
+    ]) m1.appendChild(new UIMenuItemWC(o))
     sep(m1)
-    m1.appendChild(new MenuItemWC({ text: 'Print...', shortcut: 'Ctrl+P', leftElement: ic('print') }))
+    m1.appendChild(new UIMenuItemWC({ text: 'Print...', shortcut: 'Ctrl+P', leftElement: ic('print') }))
     sep(m1)
-    m1.appendChild(new MenuItemWC({ text: 'Exit', shortcut: 'Alt+F4' }))
+    m1.appendChild(new UIMenuItemWC({ text: 'Exit', shortcut: 'Alt+F4' }))
 
     // ── Edit Menu ──
     const s2 = section('Edit Menu', root)
@@ -106,36 +106,36 @@ export const menuItemsWCDemo: DemoRoute = {
     for (const o of [
       { text: 'Undo', shortcut: 'Ctrl+Z', leftElement: ic('undo') },
       { text: 'Redo', shortcut: 'Ctrl+Y', leftElement: ic('redo') },
-    ]) m2a.appendChild(new MenuItemWC(o))
+    ]) m2a.appendChild(new UIMenuItemWC(o))
     sep(m2a)
     for (const o of [
       { text: 'Cut', shortcut: 'Ctrl+X', leftElement: ic('scissors') },
       { text: 'Copy', shortcut: 'Ctrl+C', leftElement: ic('copy') },
       { text: 'Paste', shortcut: 'Ctrl+V', leftElement: ic('clipboard') },
       { text: 'Delete', shortcut: 'Del', leftElement: ic('trash') },
-    ]) m2a.appendChild(new MenuItemWC(o))
+    ]) m2a.appendChild(new UIMenuItemWC(o))
     sep(m2a)
     for (const o of [
       { text: 'Find...', shortcut: 'Ctrl+F', leftElement: ic('search') },
       { text: 'Replace...', shortcut: 'Ctrl+H', leftElement: ic('refresh') },
-    ]) m2a.appendChild(new MenuItemWC(o))
+    ]) m2a.appendChild(new UIMenuItemWC(o))
 
     const m2b = menuBox(300); editRow.appendChild(m2b)
     for (const o of [
       { text: 'Zoom In', shortcut: 'Ctrl++', leftElement: ic('zoomIn') },
       { text: 'Zoom Out', shortcut: 'Ctrl+-', leftElement: ic('zoomOut') },
-    ]) m2b.appendChild(new MenuItemWC(o))
+    ]) m2b.appendChild(new UIMenuItemWC(o))
     sep(m2b)
     for (const o of [
       { text: 'Terminal', shortcut: 'Ctrl+`', leftElement: ic('terminal') },
       { text: 'Source Code', shortcut: 'Ctrl+U', leftElement: ic('code') },
       { text: 'Preview', shortcut: 'Ctrl+K V', leftElement: ic('eye') },
-    ]) m2b.appendChild(new MenuItemWC(o))
+    ]) m2b.appendChild(new UIMenuItemWC(o))
     sep(m2b)
     for (const o of [
       { text: 'Settings', shortcut: 'Ctrl+,', leftElement: ic('settings') },
       { text: 'Lock Screen', shortcut: 'Ctrl+L', leftElement: ic('lock') },
-    ]) m2b.appendChild(new MenuItemWC(o))
+    ]) m2b.appendChild(new UIMenuItemWC(o))
 
     // ── Icons + Submenu Arrow ──
     const s3 = section('Icons + Submenu Arrow', root)
@@ -146,7 +146,7 @@ export const menuItemsWCDemo: DemoRoute = {
       { text: 'Recent Files', leftElement: ic('fileText'), rightElement: makeArrowSvg() },
       { text: 'Open Folder', leftElement: ic('folder') },
       { text: 'Upload File', leftElement: ic('upload'), shortcut: 'Ctrl+U' },
-    ]) m3.appendChild(new MenuItemWC(o))
+    ]) m3.appendChild(new UIMenuItemWC(o))
 
     // ── Sizes ──
     const s4 = section('Sizes', root)
@@ -162,7 +162,7 @@ export const menuItemsWCDemo: DemoRoute = {
         { text: 'Cut', size, shortcut: 'Ctrl+X', leftElement: ic('scissors', icoSz) },
         { text: 'Copy', size, shortcut: 'Ctrl+C', leftElement: ic('copy', icoSz) },
         { text: 'Paste', size, shortcut: 'Ctrl+V', leftElement: ic('clipboard', icoSz) },
-      ]) m.appendChild(new MenuItemWC(o))
+      ]) m.appendChild(new UIMenuItemWC(o))
       sizesRow.appendChild(m)
     }
 
@@ -179,7 +179,7 @@ export const menuItemsWCDemo: DemoRoute = {
       { text: 'Minimap', pushable: true, pushed: true },
       { text: 'Breadcrumbs', pushable: true },
     ]) {
-      const item = new MenuItemWC(o)
+      const item = new UIMenuItemWC(o)
       m5.appendChild(item)
       item.onPushedChange((pushed) => { statusLabel.textContent = `${item.text}: ${pushed ? 'ON' : 'OFF'}` })
     }
@@ -192,7 +192,7 @@ export const menuItemsWCDemo: DemoRoute = {
       { text: 'Warnings', leftElement: makeDotSvg('#e5a50a'), rightElement: makeArrowSvg() },
       { text: 'Info', leftElement: makeDotSvg('#3584e4') },
       { text: 'Success', leftElement: makeDotSvg('#2ec27e') },
-    ]) m6.appendChild(new MenuItemWC(o))
+    ]) m6.appendChild(new UIMenuItemWC(o))
 
     // ── Disabled ──
     const s7 = section('Disabled Items', root)
@@ -203,7 +203,7 @@ export const menuItemsWCDemo: DemoRoute = {
       { text: 'Cut', shortcut: 'Ctrl+X', disabled: true },
       { text: 'Copy', shortcut: 'Ctrl+C' },
       { text: 'Paste', shortcut: 'Ctrl+V' },
-    ]) m7.appendChild(new MenuItemWC(o))
+    ]) m7.appendChild(new UIMenuItemWC(o))
 
     // ── Text Alignment ──
     const s8 = section('Text Alignment', root)
@@ -218,7 +218,7 @@ export const menuItemsWCDemo: DemoRoute = {
         { text: 'Option A', textAlign: align, leftElement: ic('file') },
         { text: 'Option B', textAlign: align, leftElement: ic('folder') },
         { text: 'Option C', textAlign: align, leftElement: ic('star') },
-      ]) m.appendChild(new MenuItemWC(o))
+      ]) m.appendChild(new UIMenuItemWC(o))
       alignRow.appendChild(m)
     }
 
@@ -230,7 +230,7 @@ export const menuItemsWCDemo: DemoRoute = {
       { text: 'This is a very long menu item text that should be truncated', leftElement: ic('fileText') },
       { text: 'Another extremely long text entry that definitely will not fit', leftElement: ic('search') },
       { text: 'Normal length', leftElement: ic('star') },
-    ]) m9.appendChild(new MenuItemWC(o))
+    ]) m9.appendChild(new UIMenuItemWC(o))
 
     // ── Center Element ──
     const s10 = section('Center Element (Label + Widget)', root)
@@ -238,11 +238,11 @@ export const menuItemsWCDemo: DemoRoute = {
     const zoomInput = document.createElement('input')
     zoomInput.type = 'number'; zoomInput.value = '100'; zoomInput.min = '25'; zoomInput.max = '400'; zoomInput.step = '25'
     zoomInput.style.cssText = 'width:50px;height:18px;font-size:11px;text-align:center;border:1px solid var(--border-color);background:var(--window-bg-color);color:inherit;border-radius:2px;'
-    m10.appendChild(new MenuItemWC({ text: 'Zoom:', leftElement: ic('zoomIn'), centerElement: zoomInput }))
+    m10.appendChild(new UIMenuItemWC({ text: 'Zoom:', leftElement: ic('zoomIn'), centerElement: zoomInput }))
 
     const selectEl = document.createElement('select')
     selectEl.style.cssText = 'height:18px;font-size:11px;border:1px solid var(--border-color);background:var(--window-bg-color);color:inherit;border-radius:2px;'
     for (const enc of ['Auto', 'UTF-8', 'ASCII', 'ISO-8859-1']) { const opt = document.createElement('option'); opt.textContent = enc; selectEl.appendChild(opt) }
-    m10.appendChild(new MenuItemWC({ text: 'Encoding:', leftElement: ic('settings'), centerElement: selectEl }))
+    m10.appendChild(new UIMenuItemWC({ text: 'Encoding:', leftElement: ic('settings'), centerElement: selectEl }))
   },
 }

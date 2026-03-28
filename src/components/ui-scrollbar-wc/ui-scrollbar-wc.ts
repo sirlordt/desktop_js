@@ -20,7 +20,7 @@ function applyTooltipStyles(el: HTMLDivElement): void {
   el.style.zIndex = '9999'
 }
 
-export class ScrollBarWC extends HTMLElement {
+export class UIScrollBarWC extends HTMLElement {
   private _kind: ScrollBarKind = 'vertical'
   private _size: ScrollBarSize = 'small'
 
@@ -844,4 +844,4 @@ export class ScrollBarWC extends HTMLElement {
 }
 
 // Register the custom element
-customElements.define('scrollbar-wc', ScrollBarWC)
+customElements.define('scrollbar-wc', UIScrollBarWC)

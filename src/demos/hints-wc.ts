@@ -1,9 +1,9 @@
-import '../components/ui-button/ui-button'
-import { HintWC } from '../components/ui-hint-wc/ui-hint-wc'
+import '../components/ui-button-wc/ui-button-wc'
+import { UIHintWC } from '../components/ui-hint-wc/ui-hint-wc'
 import type { HintAlignment } from '../components/common/types'
 import type { DemoRoute } from '../header'
 
-const allHints: HintWC[] = []
+const allHints: UIHintWC[] = []
 
 function destroyAllHints() {
   for (const h of allHints) h.destroy()
@@ -432,8 +432,8 @@ export const hintsWCDemo: DemoRoute = {
 // Helpers
 // =====================
 
-function makeHint(options: Parameters<HintWC['configure']>[0]): HintWC {
-  const h = new HintWC()
+function makeHint(options: Parameters<UIHintWC['configure']>[0]): UIHintWC {
+  const h = new UIHintWC()
   h.configure(options)
   return h
 }

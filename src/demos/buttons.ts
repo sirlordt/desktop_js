@@ -1,6 +1,6 @@
-import '../components/ui-button/ui-button'
-import { UIButton } from '../components/ui-button/ui-button'
-import { HintWC } from '../components/ui-hint-wc/ui-hint-wc'
+import '../components/ui-button-wc/ui-button-wc'
+import { UIButtonWC } from '../components/ui-button-wc/ui-button-wc'
+import { UIHintWC } from '../components/ui-hint-wc/ui-hint-wc'
 import type { DemoRoute } from '../header'
 
 export const buttonsDemo: DemoRoute = {
@@ -394,7 +394,7 @@ export const buttonsDemo: DemoRoute = {
     const hintApiRow = document.getElementById('hint-api-row')
     if (hintApiRow) {
       // Rich hint with icon + title + separator + details
-      const richBtn = document.createElement('ui-button') as UIButton
+      const richBtn = document.createElement('ui-button') as UIButtonWC
       richBtn.textContent = 'File Info'
       richBtn.setAttribute('variant', 'outline')
       hintApiRow.appendChild(richBtn)
@@ -418,7 +418,7 @@ export const buttonsDemo: DemoRoute = {
       })
 
       // Warning hint with icon + status lines
-      const warnBtn = document.createElement('ui-button') as UIButton
+      const warnBtn = document.createElement('ui-button') as UIButtonWC
       warnBtn.textContent = 'System Status'
       warnBtn.setAttribute('variant', 'warning')
       hintApiRow.appendChild(warnBtn)
@@ -442,7 +442,7 @@ export const buttonsDemo: DemoRoute = {
       })
 
       // Custom border hint
-      const borderBtn = document.createElement('ui-button') as UIButton
+      const borderBtn = document.createElement('ui-button') as UIButtonWC
       borderBtn.textContent = 'Custom Border'
       borderBtn.setAttribute('variant', 'info')
       hintApiRow.appendChild(borderBtn)
@@ -454,8 +454,8 @@ export const buttonsDemo: DemoRoute = {
         borderRadius: 8,
       })
 
-      // External HintWC (top aligned)
-      const extBtn = document.createElement('ui-button') as UIButton
+      // External UIHintWC (top aligned)
+      const extBtn = document.createElement('ui-button') as UIButtonWC
       extBtn.textContent = 'External Hint'
       extBtn.setAttribute('variant', 'success')
       hintApiRow.appendChild(extBtn)
@@ -471,7 +471,7 @@ export const buttonsDemo: DemoRoute = {
         <div style="font-size:11px;margin-bottom:3px;opacity:0.7;">Build: 1.2s</div>
         <div style="font-size:11px;opacity:0.7;">Tests: 42/42 green</div>
       `
-      const extHint = new HintWC()
+      const extHint = new UIHintWC()
       extHint.configure({
         anchor: extBtn,
         content: extContent,

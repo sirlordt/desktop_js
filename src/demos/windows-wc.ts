@@ -1,11 +1,11 @@
-import '../components/ui-button/ui-button'
-import { WindowManagerWC } from '../components/ui-window-manager-wc/ui-window-manager-wc'
-import { WindowWC } from '../components/ui-window-wc/ui-window-wc'
+import '../components/ui-button-wc/ui-button-wc'
+import { UIWindowManagerWC } from '../components/ui-window-manager-wc/ui-window-manager-wc'
+import { UIWindowWC } from '../components/ui-window-wc/ui-window-wc'
 import { UIToolButton } from '../components/common/ui-tool-button-core'
 import type { DemoRoute } from '../header'
 import type { TitleAlign } from '../components/common/types'
 
-let wm: WindowManagerWC | null = null
+let wm: UIWindowManagerWC | null = null
 
 export const windowsWCDemo: DemoRoute = {
   id: 'windows-wc',
@@ -40,7 +40,7 @@ export const windowsWCDemo: DemoRoute = {
     const status = document.getElementById('wwc-status')!
     let winCount = 0
 
-    wm = new WindowManagerWC({ bg: 'var(--sidebar-bg-color)' })
+    wm = new UIWindowManagerWC({ bg: 'var(--sidebar-bg-color)' })
     container.appendChild(wm)
     wm.style.width = '100%'
     wm.style.height = '100%'
@@ -77,7 +77,7 @@ export const windowsWCDemo: DemoRoute = {
       winCount++
       const color = colors[(winCount - 1) % colors.length]
 
-      const win = new WindowWC({
+      const win = new UIWindowWC({
         title: opts?.title ?? `Window ${winCount}`,
         left: 30 + ((winCount - 1) % 5) * 35,
         top: 30 + ((winCount - 1) % 5) * 30,
@@ -181,7 +181,7 @@ export const windowsWCDemo: DemoRoute = {
 
     document.getElementById('wwc-add-tool')!.addEventListener('click', () => {
       if (!wm) return
-      const mainWin = new WindowWC({
+      const mainWin = new UIWindowWC({
         title: `Main ${winCount + 1}`,
         left: 30 + (winCount % 5) * 35, top: 30 + (winCount % 5) * 30,
         width: 300, height: 220, icon: makeIcon('#3584e4'),
@@ -199,7 +199,7 @@ export const windowsWCDemo: DemoRoute = {
       addToolBtn.setAttribute('size', 'small'); addToolBtn.setAttribute('variant', 'outline')
       addToolBtn.setAttribute('data-focusable', ''); addToolBtn.textContent = 'Add Another Tool'
       addToolBtn.addEventListener('click', () => {
-        const tool = new WindowWC({
+        const tool = new UIWindowWC({
           title: `Tool ${mainWin.tools.length + 1}`,
           left: mainWin.left + mainWin.width + 5,
           top: mainWin.top + mainWin.tools.length * 30,
@@ -226,7 +226,7 @@ export const windowsWCDemo: DemoRoute = {
       wm.addWindow(mainWin)
 
       // Initial tool
-      const toolWin = new WindowWC({
+      const toolWin = new UIWindowWC({
         title: 'Tool 1', left: mainWin.left + mainWin.width + 5, top: mainWin.top,
         width: 180, height: 120, icon: makeIcon('#f97316'),
       })
@@ -251,7 +251,7 @@ export const windowsWCDemo: DemoRoute = {
 
     document.getElementById('wwc-add-config')!.addEventListener('click', () => {
       if (!wm) return
-      const existing = wm.getByTitle('Config Demo') as WindowWC | null
+      const existing = wm.getByTitle('Config Demo') as UIWindowWC | null
       if (existing) {
         wm.activateWindow(existing)
         if (existing.windowState !== 'minimized') {
@@ -262,7 +262,7 @@ export const windowsWCDemo: DemoRoute = {
       }
       winCount++
 
-      const win = new WindowWC({
+      const win = new UIWindowWC({
         id: 'config-demo', title: 'Config Demo',
         left: 60 + ((winCount - 1) % 5) * 35, top: 60 + ((winCount - 1) % 5) * 30,
         width: 280, height: 420,
@@ -373,7 +373,7 @@ export const windowsWCDemo: DemoRoute = {
     const createModal = () => {
       if (!wm) return
       modalCount++
-      const win = new WindowWC({
+      const win = new UIWindowWC({
         title: `Modal ${modalCount}`, modal: true,
         left: 150 + (modalCount - 1) * 20, top: 100 + (modalCount - 1) * 20,
         width: 280, height: 160, resizable: false, icon: makeIcon('#e01b24'),

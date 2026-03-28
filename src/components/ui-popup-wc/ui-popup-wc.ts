@@ -1,4 +1,4 @@
-import type { PopupState, PopupKind, UIPopupOptions } from '../common/types'
+import type { PopupState, PopupKind, UIPopupOptions, ScrollMode } from '../common/types'
 import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-focus-core'
 import { findBestPosition } from '../common/positioning'
 import { WindowWC } from '../ui-window-wc/ui-window-wc'
@@ -7,23 +7,34 @@ import { WindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
 type PopupEventName = 'show' | 'close' | 'detach' | 'attach'
 type PopupHandler = (...args: any[]) => void
 
-export class PopupWC {
-  private _anchor: HTMLElement
-  private _kind: PopupKind
-  private _alignment: string
-  private _margin: number
-  private _detachable: boolean
-  private _title: string
+const POPUP_ATTRS = [
+  'kind', 'alignment', 'margin', 'width', 'height', 'min-width', 'min-height',
+  'max-width', 'max-height', 'resizable', 'detachable', 'title',
+  'close-on-click-outside', 'close-on-escape', 'anchor-selector',
+  'open', 'scroll',
+] as const
+
+export class PopupWC extends HTMLElement {
+  private _anchor: HTMLElement | null = null
+  private _kind: PopupKind = 'menu'
+  private _alignment: string = 'BottomLeft'
+  private _margin: number = 4
+  private _detachable: boolean = false
+  private _title: string = ''
   private _state: PopupState = 'closed'
   private _destroyed = false
   private _children: HTMLElement[] = []
   private _listeners = new Map<PopupEventName, Set<PopupHandler>>()
-  private _window: WindowWC
-  private _width: number
-  private _height: number
+  private _window: WindowWC | null = null
+  private _width: number = 200
+  private _height: number = 250
+  private _resizable: boolean = false
+  private _scrollMode: ScrollMode | undefined = undefined
+  private _minWidth: number = 50
+  private _minHeight: number = 100
 
-  private _closeOnClickOutside: boolean
-  private _closeOnEscape: boolean
+  private _closeOnClickOutside: boolean = true
+  private _closeOnEscape: boolean = true
   private _clickOutsideHandler: ((e: MouseEvent) => void) | null = null
   private _escapeHandler: ((e: KeyboardEvent) => void) | null = null
   private _keyNavHandler: ((e: KeyboardEvent) => void) | null = null
@@ -34,7 +45,14 @@ export class PopupWC {
   private _focusedBeforeOpen: HTMLElement | null = null
 
   private _overlord: WindowWC | null = null
-  private _parentRef: HTMLElement | null
+  private _parentRef: HTMLElement | null = null
+
+  private _configured = false
+  private _childObserver: MutationObserver | null = null
+
+  static get observedAttributes() {
+    return [...POPUP_ATTRS]
+  }
 
   /** Traverse shadow roots to find the actually focused element */
   private static _deepActiveElement(): HTMLElement | null {
@@ -60,19 +78,112 @@ export class PopupWC {
     return false
   }
 
-  constructor(options: UIPopupOptions) {
+  constructor(options?: UIPopupOptions) {
+    super()
+    // The popup-wc element itself is invisible — it acts as a controller.
+    // The visual popup is a WindowWC that portals to body/window-manager.
+    this.style.display = 'none'
+
+    if (options) this.configure(options)
+  }
+
+  /**
+   * Configure the popup programmatically.
+   * Creates the internal WindowWC and sets up event handlers.
+   */
+  configure(options: UIPopupOptions): void {
     const o = options
-    this._anchor = o.anchor
-    this._kind = o.kind ?? 'menu'
-    this._alignment = o.alignment ?? 'BottomLeft'
-    this._margin = o.margin ?? 4
-    this._detachable = o.detachable ?? false
-    this._title = o.title ?? ''
-    this._width = typeof o.width === 'number' ? o.width : 200
-    this._height = typeof o.height === 'number' ? o.height : 250
-    this._closeOnClickOutside = o.closeOnClickOutside ?? true
-    this._closeOnEscape = o.closeOnEscape ?? true
-    this._parentRef = o.parentRef ?? null
+    this._anchor = o.anchor ?? this._anchor
+    this._kind = o.kind ?? this._kind
+    this._alignment = o.alignment ?? this._alignment
+    this._margin = o.margin ?? this._margin
+    this._detachable = o.detachable ?? this._detachable
+    this._title = o.title ?? this._title
+    this._width = typeof o.width === 'number' ? o.width : this._width
+    this._height = typeof o.height === 'number' ? o.height : this._height
+    this._closeOnClickOutside = o.closeOnClickOutside ?? this._closeOnClickOutside
+    this._closeOnEscape = o.closeOnEscape ?? this._closeOnEscape
+    this._parentRef = o.parentRef ?? this._parentRef
+    this._resizable = o.resizable ?? this._resizable
+    this._scrollMode = o.scroll ?? this._scrollMode
+    this._minWidth = o.minWidth ?? this._minWidth
+    this._minHeight = o.minHeight ?? this._minHeight
+
+    this._configured = true
+    this._ensureWindow()
+  }
+
+  connectedCallback(): void {
+    if (!this._configured) {
+      this._readAttributes()
+    }
+
+    // Mirror children from <popup-wc> to internal WindowWC
+    this._mirrorChildren()
+    if (!this._childObserver) {
+      this._childObserver = new MutationObserver(() => this._mirrorChildren())
+      this._childObserver.observe(this, { childList: true })
+    }
+  }
+
+  disconnectedCallback(): void {
+    if (this._childObserver) {
+      this._childObserver.disconnect()
+      this._childObserver = null
+    }
+    // Don't destroy — element may be re-attached
+  }
+
+  attributeChangedCallback(name: string, old: string | null, val: string | null): void {
+    if (old === val) return
+    switch (name) {
+      case 'kind': this._kind = (val as PopupKind) ?? 'menu'; break
+      case 'alignment': this._alignment = val ?? 'BottomLeft'; break
+      case 'margin': this._margin = val !== null ? parseFloat(val) : 4; break
+      case 'width': this._width = val !== null ? parseFloat(val) : 200; break
+      case 'height': this._height = val !== null ? parseFloat(val) : 250; break
+      case 'min-width': this._minWidth = val !== null ? parseFloat(val) : 50; break
+      case 'min-height': this._minHeight = val !== null ? parseFloat(val) : 100; break
+      case 'resizable': this._resizable = val !== null; break
+      case 'detachable': this._detachable = val !== null; break
+      case 'title': this._title = val ?? ''; if (this._window) this._window.title = val ?? ''; break
+      case 'close-on-click-outside': this._closeOnClickOutside = val !== null; break
+      case 'close-on-escape': this._closeOnEscape = val !== null; break
+      case 'scroll': this._scrollMode = (val as ScrollMode) ?? undefined; break
+      case 'anchor-selector':
+        if (val) {
+          const resolved = document.querySelector(val) as HTMLElement | null
+          if (resolved) this._anchor = resolved
+        }
+        break
+      case 'open':
+        if (val !== null) this.show()
+        else this.close()
+        break
+    }
+  }
+
+  private _readAttributes(): void {
+    for (const name of POPUP_ATTRS) {
+      const val = this.getAttribute(name)
+      if (val !== null) {
+        this.attributeChangedCallback(name, null, val)
+      }
+    }
+  }
+
+  /** Mirror light DOM children from <popup-wc> into the internal WindowWC's content */
+  private _mirrorChildren(): void {
+    if (!this._window) return
+    const content = this._window.contentElement
+    while (this.firstChild) {
+      content.appendChild(this.firstChild)
+    }
+  }
+
+  /** Create the internal WindowWC if it doesn't exist yet */
+  private _ensureWindow(): void {
+    if (this._window) return
 
     const showBar = this._detachable
     this._window = new WindowWC({
@@ -86,13 +197,13 @@ export class PopupWC {
       zIndex: 99999,
       left: 0, top: 0,
       width: this._width, height: this._height,
-      resizable: o.resizable ?? false,
+      resizable: this._resizable,
       closable: true,
       minimizable: false, maximizable: false, foldable: false,
       showShortcuts: false,
-      minWidth: o.minWidth ?? 50,
-      minHeight: o.minHeight ?? 100,
-      scroll: o.scroll ?? ((o.resizable && (o.kind ?? 'menu') === 'menu') ? 'both' : undefined),
+      minWidth: this._minWidth,
+      minHeight: this._minHeight,
+      scroll: this._scrollMode ?? ((this._resizable && this._kind === 'menu') ? 'both' : undefined),
       scrollBarSize: 'small',
     })
 
@@ -128,31 +239,36 @@ export class PopupWC {
       this._window.addEventListener('end-drag', () => {
         if (this._state === 'attached') {
           this._detach()
-          this._window.closable = true
+          this._window!.closable = true
         }
       })
+    }
+
+    // Move any existing imperative children into the window
+    for (const ch of this._children) {
+      this._window.contentElement.appendChild(ch)
     }
   }
 
   // ── Public API ──
 
-  get element(): HTMLElement { return this._window }
-  get window(): WindowWC { return this._window }
+  get element(): HTMLElement { return (this._window as HTMLElement) ?? (this as HTMLElement) }
+  get window(): WindowWC | null { return this._window }
   get state(): PopupState { return this._state }
   get visible(): boolean { return this._state !== 'closed' }
   get kind(): PopupKind { return this._kind }
 
-  get anchor(): HTMLElement { return this._anchor }
-  set anchor(el: HTMLElement) { this._anchor = el; if (this._state === 'attached') this._reposition() }
+  get anchor(): HTMLElement | null { return this._anchor }
+  set anchor(el: HTMLElement | null) { this._anchor = el; if (this._state === 'attached') this._reposition() }
 
   get title(): string { return this._title }
-  set title(value: string) { this._title = value; this._window.title = value }
+  set title(value: string) { this._title = value; if (this._window) this._window.title = value }
 
   private _simulateFocus = false
   get simulateFocus(): boolean { return this._simulateFocus }
   set simulateFocus(v: boolean) {
     this._simulateFocus = v
-    applySimulateFocus(this._window, v)
+    if (this._window) applySimulateFocus(this._window, v)
   }
 
   set overlord(win: WindowWC | null) { this._overlord = win }
@@ -161,13 +277,20 @@ export class PopupWC {
 
   show(): void {
     if (this._state !== 'closed' || this._destroyed) return
-    const el = this._window as HTMLElement
+    if (!this._anchor) return
+
+    // Auto-append to DOM if not connected (backward compat for imperative usage)
+    if (!this.isConnected) document.body.appendChild(this as unknown as Node)
+
+    this._ensureWindow()
+    const win = this._window!
+    const el = win as HTMLElement
     el.classList.remove('wm-anim', 'wm-anim-close', 'wm-anim-open-start')
     el.style.opacity = ''; el.style.pointerEvents = ''
     if (!el.parentNode) this._resolveParent().appendChild(el)
     this._state = 'attached'
 
-    this._window.resetLastFocused()
+    win.resetLastFocused()
     this._clearHighlight()
     this._activeIndex = -1
 
@@ -176,8 +299,8 @@ export class PopupWC {
     const anchorRect = this._anchor.getBoundingClientRect()
     const anchorW = Math.ceil(anchorRect.width)
     if (anchorW > 0) {
-      if (anchorW > this._window.minWidth) this._window.minWidth = anchorW
-      if (anchorW > this._window.width) this._window.width = anchorW
+      if (anchorW > win.minWidth) win.minWidth = anchorW
+      if (anchorW > win.width) win.width = anchorW
     }
 
     // Position above all managed windows
@@ -193,12 +316,11 @@ export class PopupWC {
 
     if (this._kind === 'menu') {
       // Menu mode: anchor keeps real focus, popup uses document-level keyboard nav
-      if (this._window.onFocused) this._window.onFocused()
-      // Tab closes popup without restoring focus (handled in _bindMenuNav)
+      if (win.onFocused) win.onFocused()
     } else {
       // Container mode: move real focus to popup for Tab cycling
       el.focus({ preventScroll: true })
-      if (this._window.onFocused) this._window.onFocused()
+      if (win.onFocused) win.onFocused()
     }
 
     if (this._closeOnClickOutside) {
@@ -206,7 +328,7 @@ export class PopupWC {
         this._clickOutsideHandler = (e: MouseEvent) => {
           if (this._state !== 'attached') return
           const path = e.composedPath()
-          if (path.includes(el) || path.includes(this._anchor)) return
+          if (path.includes(el) || path.includes(this._anchor!)) return
           this.close()
         }
         document.addEventListener('mousedown', this._clickOutsideHandler, true)
@@ -224,7 +346,7 @@ export class PopupWC {
     this._scrollHandler = ((e: Event) => {
       if (this._state !== 'attached') return
       const path = e.composedPath()
-      if (path.includes(this._window as HTMLElement)) return
+      if (path.includes(win as HTMLElement)) return
       this.close()
     }) as () => void
     document.addEventListener('scroll', this._scrollHandler, { capture: true, passive: true })
@@ -233,11 +355,11 @@ export class PopupWC {
     else this._bindContainerNav()
 
     requestAnimationFrame(() => {
-      if (this._window.scrollBox) {
-        const content = this._window.scrollBox.contentElement
-        this._window.scrollBox.contentWidth = content.scrollWidth
-        this._window.scrollBox.contentHeight = content.scrollHeight
-        this._window.scrollBox.refresh()
+      if (win.scrollBox) {
+        const content = win.scrollBox.contentElement
+        win.scrollBox.contentWidth = content.scrollWidth
+        win.scrollBox.contentHeight = content.scrollHeight
+        win.scrollBox.refresh()
       }
     })
 
@@ -247,6 +369,7 @@ export class PopupWC {
   close(): void {
     if (this._state === 'detached') { this._returnFromDetached(); return }
     if (this._state === 'closed') return
+    if (!this._window) return
     this._removeListeners()
 
     if (this._focusedBeforeOpen) {
@@ -272,10 +395,11 @@ export class PopupWC {
 
   addChild(el: HTMLElement): void {
     this._children.push(el)
-    this._window.contentElement.appendChild(el)
+    this._ensureWindow()
+    this._window!.contentElement.appendChild(el)
   }
 
-  removeChild(el: HTMLElement): void {
+  removePopupChild(el: HTMLElement): void {
     const idx = this._children.indexOf(el)
     if (idx >= 0) this._children.splice(idx, 1)
     if (el.parentNode) el.parentNode.removeChild(el)
@@ -302,6 +426,10 @@ export class PopupWC {
     this._removeListeners()
     this._listeners.clear()
     this._children.length = 0
+    if (this._childObserver) {
+      this._childObserver.disconnect()
+      this._childObserver = null
+    }
   }
 
   // ── Menu nav ──
@@ -310,7 +438,6 @@ export class PopupWC {
     this._keyNavHandler = (e: KeyboardEvent) => {
       if (this._state !== 'attached') return
       if (e.key === 'Tab') {
-        // Close popup without restoring focus — let Tab move naturally
         if (this._focusedBeforeOpen) {
           dispatchSimulateFocus(this._focusedBeforeOpen, false)
           this._focusedBeforeOpen = null
@@ -328,11 +455,13 @@ export class PopupWC {
   }
 
   private _bindDetachedMenuNav(): void {
+    if (!this._window) return
+    const win = this._window
     this._keyNavHandler = (e: KeyboardEvent) => {
       if (this._state !== 'detached') return
       const active = PopupWC._deepActiveElement()
       if (!active) return
-      if (!PopupWC._containsDeep(this._window, active) && !PopupWC._containsDeep(this._anchor, active)) return
+      if (!PopupWC._containsDeep(win, active) && !this._anchor || !PopupWC._containsDeep(this._anchor!, active)) return
       const items = this._getMenuItems()
       if (items.length === 0) return
       if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items) }
@@ -343,11 +472,12 @@ export class PopupWC {
   }
 
   private _bindAnchorFocusTracking(): void {
+    if (!this._anchor || !this._window) return
     this._anchorBlurHandler = () => { if (this._state !== 'detached') return; this._activeIndex = -1; this._clearHighlight() }
     this._anchorFocusHandler = () => {
       if (this._state !== 'detached') return
       this._activeIndex = -1; this._clearHighlight()
-      if (this._window.scrollBox) this._window.scrollBox.scrollContentTo(0, 0)
+      if (this._window?.scrollBox) this._window.scrollBox.scrollContentTo(0, 0)
     }
     this._anchor.addEventListener('blur', this._anchorBlurHandler)
     this._anchor.addEventListener('focus', this._anchorFocusHandler)
@@ -356,6 +486,7 @@ export class PopupWC {
   // ── Container nav ──
 
   private _bindContainerNav(): void {
+    if (!this._window) return
     this._setChildrenFocusable(true)
     const first = this._window.contentElement.querySelector<HTMLElement>('[data-focusable]')
     if (first) first.focus({ preventScroll: true })
@@ -365,6 +496,7 @@ export class PopupWC {
 
   private _resolveParent(): HTMLElement {
     if (this._parentRef) return this._parentRef
+    if (!this._anchor) return document.body
     let el: HTMLElement | null = this._anchor
     let deepestWindow: HTMLElement | null = null
     while (el) {
@@ -374,7 +506,6 @@ export class PopupWC {
       if (parent) {
         el = parent
       } else {
-        // Cross shadow boundary
         const root = el.getRootNode() as ShadowRoot | Document
         if (root instanceof ShadowRoot) {
           el = root.host as HTMLElement
@@ -389,6 +520,7 @@ export class PopupWC {
 
   /** Walk up from anchor (crossing shadow boundaries) to find a WindowManagerWC */
   private _findWindowManager(): WindowManagerWC | null {
+    if (!this._anchor) return null
     let el: HTMLElement | null = this._anchor
     while (el) {
       if (el instanceof WindowManagerWC) return el
@@ -410,6 +542,7 @@ export class PopupWC {
   // ── Positioning ──
 
   private _getAnchorZIndex(): number {
+    if (!this._anchor) return 99999
     let el: HTMLElement | null = this._anchor
     while (el) {
       const z = parseInt(el.style.zIndex) || parseInt(getComputedStyle(el).zIndex)
@@ -430,6 +563,7 @@ export class PopupWC {
   }
 
   private _setChildrenFocusable(enabled: boolean): void {
+    if (!this._window) return
     this._window.contentElement.querySelectorAll('[data-focusable]').forEach(el => {
       if (enabled) (el as HTMLElement).tabIndex = -1
       else (el as HTMLElement).removeAttribute('tabindex')
@@ -437,6 +571,7 @@ export class PopupWC {
   }
 
   private _reposition(): void {
+    if (!this._anchor || !this._window) return
     const anchorRect = this._anchor.getBoundingClientRect()
     const el = this._window as HTMLElement
     const w = el.offsetWidth || this._width
@@ -449,7 +584,7 @@ export class PopupWC {
   // ── Detach ──
 
   private _detach(): void {
-    if (!this._overlord) return
+    if (!this._overlord || !this._window) return
     this._removeListeners()
     this._state = 'detached'
 
@@ -494,6 +629,7 @@ export class PopupWC {
   }
 
   private _returnFromDetached(): void {
+    if (!this._window) return
     const el = this._window as HTMLElement
     this._removeListeners()
     if (this._overlord) this._overlord.removeTool(this._window)
@@ -531,13 +667,14 @@ export class PopupWC {
     if (this._escapeHandler) { document.removeEventListener('keydown', this._escapeHandler, true); this._escapeHandler = null }
     if (this._keyNavHandler) { document.removeEventListener('keydown', this._keyNavHandler, true); this._keyNavHandler = null }
     if (this._scrollHandler) { document.removeEventListener('scroll', this._scrollHandler, true); this._scrollHandler = null }
-    if (this._anchorBlurHandler) { this._anchor.removeEventListener('blur', this._anchorBlurHandler); this._anchorBlurHandler = null }
-    if (this._anchorFocusHandler) { this._anchor.removeEventListener('focus', this._anchorFocusHandler); this._anchorFocusHandler = null }
+    if (this._anchorBlurHandler && this._anchor) { this._anchor.removeEventListener('blur', this._anchorBlurHandler); this._anchorBlurHandler = null }
+    if (this._anchorFocusHandler && this._anchor) { this._anchor.removeEventListener('focus', this._anchorFocusHandler); this._anchorFocusHandler = null }
   }
 
   // ── Menu helpers ──
 
   private _getMenuItems(): HTMLElement[] {
+    if (!this._window) return []
     return Array.from(this._window.contentElement.querySelectorAll<HTMLElement>('menuitem-wc:not(.disabled)'))
   }
 
@@ -546,18 +683,28 @@ export class PopupWC {
     if (this._activeIndex >= 0 && this._activeIndex < items.length) {
       const item = items[this._activeIndex]
       item.classList.add('highlight')
-      if (this._window.scrollBox) this._window.scrollBox.scrollChildIntoView(item)
+      if (this._window?.scrollBox) this._window.scrollBox.scrollChildIntoView(item)
     }
   }
 
   private _clearHighlight(): void {
+    if (!this._window) return
     this._window.contentElement.querySelectorAll('menuitem-wc.highlight').forEach(el => {
       el.classList.remove('highlight')
     })
   }
 
   private _emit(event: PopupEventName, ...args: any[]): void {
+    // Vanilla JS listeners (backward compat)
     const handlers = this._listeners.get(event)
     if (handlers) for (const h of handlers) h(...args)
+
+    // CustomEvent for framework integration
+    this.dispatchEvent(new CustomEvent(`popup-${event}`, {
+      bubbles: true, composed: true,
+      detail: { state: this._state },
+    }))
   }
 }
+
+customElements.define('popup-wc', PopupWC)

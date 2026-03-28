@@ -75,14 +75,14 @@ export class ScrollBarWC extends HTMLElement {
   private _customHeight: number = 0
 
   // --- Connected ---
-  private _connected: boolean = false
   private _initialized: boolean = false
   private _configured: boolean = false
 
-  // --- Pending options (set before connectedCallback) ---
+  // --- Pending attribute changes (set before DOM is built) ---
   _pendingOptions: UIScrollBarOptions | null = null
   private _pendingShowStartZone: boolean | undefined = undefined
   private _pendingShowEndZone: boolean | undefined = undefined
+  private _pendingAttrs: Map<string, string | null> | null = null
 
   static get observedAttributes(): string[] {
     return [
@@ -141,8 +141,6 @@ export class ScrollBarWC extends HTMLElement {
   }
 
   connectedCallback(): void {
-    this._connected = true
-
     // If no configure() was called, read from HTML attributes
     if (!this._configured) {
       this._readAttributes()
@@ -151,6 +149,14 @@ export class ScrollBarWC extends HTMLElement {
     // Build shadow DOM if not already done by configure()
     this._ensureInitialized()
     this._applyClasses()
+
+    // Replay any attribute changes that arrived before DOM was built
+    if (this._pendingAttrs) {
+      for (const [name, val] of this._pendingAttrs) {
+        this._applyAttribute(name, val)
+      }
+      this._pendingAttrs = null
+    }
   }
 
   /** Build internal DOM exactly once */
@@ -180,8 +186,18 @@ export class ScrollBarWC extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, _old: string | null, val: string | null): void {
-    if (!this._connected) return
+    if (!this._initialized) {
+      // Queue attribute changes that arrive before DOM is built.
+      // They will be replayed after _ensureInitialized() in connectedCallback.
+      if (!this._pendingAttrs) this._pendingAttrs = new Map()
+      this._pendingAttrs.set(name, val)
+      return
+    }
+    this._applyAttribute(name, val)
+  }
 
+  /** Apply a single observed attribute to the live component. Requires DOM to be built. */
+  private _applyAttribute(name: string, val: string | null): void {
     switch (name) {
       case 'kind': this.kind = (val as ScrollBarKind) ?? 'vertical'; break
       case 'size': this.size = (val as ScrollBarSize) ?? 'small'; break
@@ -284,7 +300,6 @@ export class ScrollBarWC extends HTMLElement {
     }
 
     this._listeners.clear()
-    this._connected = false
   }
 
   get isDestroyed(): boolean { return this._destroyed }

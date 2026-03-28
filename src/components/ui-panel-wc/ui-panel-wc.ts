@@ -47,7 +47,7 @@ export class PanelWC extends HTMLElement {
   private _initialized: boolean = false
   private _configured: boolean = false
 
-  static get observedAttributes() {
+  static get observedAttributes(): string[] {
     return [...PANEL_ATTRS]
   }
 

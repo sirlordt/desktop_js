@@ -23,33 +23,116 @@ export class WindowManagerWC extends PanelWC {
   minimizeSlotWidth: number = 160
   minimizeSlotHeight: number = 28
 
-  private _cycleNext: WindowCycleShortcut
-  private _cyclePrev: WindowCycleShortcut
+  private _cycleNext: WindowCycleShortcut = { key: 'F6', altKey: true }
+  private _cyclePrev: WindowCycleShortcut = { key: 'F6', altKey: true, shiftKey: true }
 
   animated: boolean = true
   private _batchOp: boolean = false
+  private _managerInitialized: boolean = false
+  private _childObserver: MutationObserver | null = null
+
+  static get observedAttributes(): string[] {
+    return [...PanelWC.observedAttributes, 'animated', 'minimize-slot-width', 'minimize-slot-height']
+  }
 
   constructor(options?: UIWindowManagerOptions) {
     super()
+    if (options) this.configureManager(options)
+  }
+
+  /**
+   * Configure the window manager programmatically.
+   */
+  configureManager(options: UIWindowManagerOptions): void {
     this.configure({
-      width: options?.width,
-      height: options?.height,
-      bg: options?.bg ?? 'var(--window-bg-color)',
-      borderColor: options?.borderColor,
+      width: options.width,
+      height: options.height,
+      bg: options.bg ?? 'var(--window-bg-color)',
+      borderColor: options.borderColor,
       position: 'relative',
     })
 
     this.style.position = 'relative'
     this.style.overflow = 'hidden'
-    if (options?.width) this.style.width = `${options.width}px`
-    if (options?.height) this.style.height = `${options.height}px`
+    if (options.width) this.style.width = `${options.width}px`
+    if (options.height) this.style.height = `${options.height}px`
     this.tabIndex = -1
     this.style.outline = 'none'
-    if (options?.className) this.classList.add(...options.className.split(/\s+/))
+    if (options.className) this.classList.add(...options.className.split(/\s+/))
 
-    this._cycleNext = options?.cycleNextShortcut ?? { key: 'F6', altKey: true }
-    this._cyclePrev = options?.cyclePrevShortcut ?? { key: 'F6', altKey: true, shiftKey: true }
+    if (options.cycleNextShortcut) this._cycleNext = options.cycleNextShortcut
+    if (options.cyclePrevShortcut) this._cyclePrev = options.cyclePrevShortcut
+
+    this._ensureManagerInit()
+  }
+
+  override connectedCallback(): void {
+    super.connectedCallback()
+    this._ensureManagerInit()
+
+    // Set basic styles if not configured
+    if (this.style.position !== 'relative') {
+      this.style.position = 'relative'
+      this.style.overflow = 'hidden'
+      this.tabIndex = -1
+      this.style.outline = 'none'
+    }
+
+    // Auto-detect existing <window-wc> children
+    for (const child of Array.from(this.children)) {
+      if (child.tagName === 'WINDOW-WC' && !this._windows.includes(child as unknown as IWindowChild)) {
+        this.addWindow(child as unknown as IWindowChild)
+      }
+    }
+
+    // Observe future child additions/removals
+    if (!this._childObserver) {
+      this._childObserver = new MutationObserver(mutations => {
+        for (const m of mutations) {
+          for (const node of Array.from(m.addedNodes)) {
+            if (node instanceof HTMLElement && node.tagName === 'WINDOW-WC' &&
+                !this._windows.includes(node as unknown as IWindowChild)) {
+              this.addWindow(node as unknown as IWindowChild)
+            }
+          }
+          for (const node of Array.from(m.removedNodes)) {
+            if (node instanceof HTMLElement && node.tagName === 'WINDOW-WC') {
+              this.removeWindow(node as unknown as IWindowChild)
+            }
+          }
+        }
+      })
+      this._childObserver.observe(this, { childList: true })
+    }
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback()
+    if (this._childObserver) {
+      this._childObserver.disconnect()
+      this._childObserver = null
+    }
+  }
+
+  override attributeChangedCallback(name: string, _old: string | null, val: string | null): void {
+    switch (name) {
+      case 'animated': this.animated = val !== null; return
+      case 'minimize-slot-width': this.minimizeSlotWidth = val !== null ? parseFloat(val) : 160; return
+      case 'minimize-slot-height': this.minimizeSlotHeight = val !== null ? parseFloat(val) : 28; return
+    }
+    super.attributeChangedCallback(name, _old, val)
+  }
+
+  private _ensureManagerInit(): void {
+    if (this._managerInitialized) return
+    this._managerInitialized = true
     this._bindKeyboard()
+  }
+
+  /** Dual-dispatch: core.emit + CustomEvent for framework integration */
+  private _emitCE(name: string, detail?: any): void {
+    this.core.emit(name, detail)
+    this.dispatchEvent(new CustomEvent(name, { bubbles: true, composed: true, detail }))
   }
 
   // ── Size ──
@@ -132,7 +215,7 @@ export class WindowManagerWC extends PanelWC {
       const idx = zList.indexOf(child)
       if (idx !== -1) { zList.splice(idx, 1); zList.push(child); this._reassignZIndexes() }
       child.onFocused?.()
-      this.core.emit('window-focus', { child })
+      this._emitCE('window-focus', { child })
     }
   }
 
@@ -237,7 +320,7 @@ export class WindowManagerWC extends PanelWC {
       this._focused = child
       if (prev?.onBlurred) prev.onBlurred()
       child.onFocused?.()
-      this.core.emit('window-focus', { child })
+      this._emitCE('window-focus', { child })
     }
   }
 
@@ -256,7 +339,9 @@ export class WindowManagerWC extends PanelWC {
   private _emitBefore(event: string, child: IWindowChild): boolean {
     const detail = { child, cancelled: false }
     this.core.emit(event, detail)
-    return detail.cancelled
+    const ce = new CustomEvent(event, { bubbles: true, composed: true, cancelable: true, detail })
+    this.dispatchEvent(ce)
+    return detail.cancelled || ce.defaultPrevented
   }
 
   minimizeChild(child: IWindowChild): boolean {
@@ -286,7 +371,7 @@ export class WindowManagerWC extends PanelWC {
       child.element.style.height = `${this.minimizeSlotHeight}px`
     })
 
-    this.core.emit('window-minimize', { child })
+    this._emitCE('window-minimize', { child })
 
     if (this._focused === child && !this._batchOp) {
       this._focused = null
@@ -326,14 +411,14 @@ export class WindowManagerWC extends PanelWC {
     }
 
     this.bringToFront(child)
-    this.core.emit('window-restore', { child })
+    this._emitCE('window-restore', { child })
     return true
   }
 
   closeChild(child: IWindowChild): boolean {
     if (this._emitBefore('before-close', child)) return false
     child.onClosed?.()
-    this.core.emit('window-close', { child })
+    this._emitCE('window-close', { child })
 
     if (this.animated && !this._animating.has(child)) {
       const el = child.element
@@ -378,7 +463,7 @@ export class WindowManagerWC extends PanelWC {
     })
 
     this.bringToFront(child)
-    this.core.emit('window-maximize', { child })
+    this._emitCE('window-maximize', { child })
     return true
   }
 
@@ -396,7 +481,7 @@ export class WindowManagerWC extends PanelWC {
         child.element.style.width = `${rect.width}px`; child.element.style.height = `${rect.height}px`
       })
     }
-    this.core.emit('window-restore', { child })
+    this._emitCE('window-restore', { child })
     return true
   }
 
@@ -476,8 +561,8 @@ export class WindowManagerWC extends PanelWC {
     this._reassignZIndexes()
   }
 
-  notifyDrag(child: IWindowChild, left: number, top: number): void { this.core.emit('window-drag', { child, left, top }) }
-  notifyResize(child: IWindowChild, width: number, height: number): void { this.core.emit('window-resize', { child, width, height }) }
+  notifyDrag(child: IWindowChild, left: number, top: number): void { this._emitCE('window-drag', { child, left, top }) }
+  notifyResize(child: IWindowChild, width: number, height: number): void { this._emitCE('window-resize', { child, width, height }) }
 
   // ── Minimize grid ──
 

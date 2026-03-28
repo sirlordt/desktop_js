@@ -11,6 +11,13 @@ import cssText from './ui-scrollbox-wc.css?inline'
 
 type ScrollEventHandler = (x: number, y: number) => void
 
+const SCROLLBOX_ATTRS = [
+  'scroll', 'vertical-scroll', 'horizontal-scroll', 'scrollbar-size',
+  'scrollbar-hover', 'scrollbar-tooltip', 'scroll-step', 'wheel-factor',
+  'content-width', 'content-height', 'border-width', 'border-color',
+  'border-style', 'background-color', 'opacity', 'disabled',
+] as const
+
 export class ScrollBoxWC extends HTMLElement {
   // --- Config ---
   private _scroll: ScrollMode = 'both'
@@ -62,6 +69,15 @@ export class ScrollBoxWC extends HTMLElement {
 
   // --- Lifecycle ---
   private _initialized: boolean = false
+  private _configured: boolean = false
+  private _pendingAttrs: Map<string, string | null> | null = null
+
+  // --- Content slot for framework children ---
+  private _contentSlot: HTMLSlotElement | null = null
+
+  static get observedAttributes() {
+    return [...SCROLLBOX_ATTRS]
+  }
 
   // --- Pending styling (set via configure before connect) ---
   private _pendingBorderWidth: number = 1
@@ -109,11 +125,79 @@ export class ScrollBoxWC extends HTMLElement {
     this._pendingBackgroundColor = o.backgroundColor ?? this._pendingBackgroundColor
     if (o.opacity !== undefined) this._pendingOpacity = o.opacity
     if (o.disabled !== undefined) this._pendingDisabled = o.disabled
+    this._configured = true
     this._ensureInitialized()
   }
 
   connectedCallback(): void {
+    if (!this._configured) {
+      this._readAttributes()
+    }
     this._ensureInitialized()
+
+    // Replay any attribute changes that arrived before DOM was built
+    if (this._pendingAttrs) {
+      for (const [name, val] of this._pendingAttrs) {
+        this._applyAttribute(name, val)
+      }
+      this._pendingAttrs = null
+    }
+  }
+
+  attributeChangedCallback(name: string, old: string | null, val: string | null): void {
+    if (old === val) return
+    if (!this._initialized) {
+      // Queue for replay after init
+      if (!this._pendingAttrs) this._pendingAttrs = new Map()
+      this._pendingAttrs.set(name, val)
+      return
+    }
+    this._applyAttribute(name, val)
+  }
+
+  private _applyAttribute(name: string, val: string | null): void {
+    switch (name) {
+      case 'scroll': this._scroll = (val as ScrollMode) ?? 'both'; break
+      case 'vertical-scroll': this._verticalScroll = (val as VerticalScrollPosition) ?? 'right'; break
+      case 'horizontal-scroll': this._horizontalScroll = (val as HorizontalScrollPosition) ?? 'bottom'; break
+      case 'scrollbar-size': this._sbSize = (val as ScrollBarSize) ?? 'small'; break
+      case 'scrollbar-hover': this._sbHover = val !== null; break
+      case 'scrollbar-tooltip': this._sbTooltip = val !== null; break
+      case 'scroll-step': this.scrollStep = Number(val ?? 20); break
+      case 'wheel-factor': this.wheelFactor = Number(val ?? 1); break
+      case 'content-width': this.contentWidth = Number(val ?? 0); break
+      case 'content-height': this.contentHeight = Number(val ?? 0); break
+      case 'border-width':
+        this._pendingBorderWidth = val !== null ? parseFloat(val) : 1
+        if (this._initialized) this._applyHostStyles()
+        break
+      case 'border-color':
+        this._pendingBorderColor = val ?? 'var(--border-color)'
+        if (this._initialized) this._applyHostStyles()
+        break
+      case 'border-style':
+        this._pendingBorderStyle = val ?? 'solid'
+        if (this._initialized) this._applyHostStyles()
+        break
+      case 'background-color':
+        this._pendingBackgroundColor = val ?? 'var(--view-bg-color)'
+        if (this._initialized) this._applyHostStyles()
+        break
+      case 'opacity':
+        this._pendingOpacity = val !== null ? parseFloat(val) : 1
+        if (this._initialized) this._applyHostStyles()
+        break
+      case 'disabled': this.disabled = val !== null; break
+    }
+  }
+
+  private _readAttributes(): void {
+    for (const name of SCROLLBOX_ATTRS) {
+      const val = this.getAttribute(name)
+      if (val !== null) {
+        this._applyAttribute(name, val)
+      }
+    }
   }
 
   private _ensureInitialized(): void {
@@ -283,6 +367,21 @@ export class ScrollBoxWC extends HTMLElement {
     this._bottomRow = this._div('ui-scrollbox__bottom-row')
     this._contentClip = this._div('ui-scrollbox__content-clip')
     this._contentEl = this._div('ui-scrollbox__content')
+
+    // Default slot for framework content projection
+    this._contentSlot = document.createElement('slot')
+    this._contentEl.appendChild(this._contentSlot)
+
+    // Auto-recalculate content dimensions when slotted children change
+    this._contentSlot.addEventListener('slotchange', () => {
+      requestAnimationFrame(() => {
+        if (this._destroyed) return
+        this._contentWidth = this._contentEl.scrollWidth
+        this._contentHeight = this._contentEl.scrollHeight
+        this._updateScrollBarRanges()
+        this._refreshScrollBars()
+      })
+    })
 
     this._contentClip.appendChild(this._contentEl)
     this._shadow.appendChild(this._topRow)

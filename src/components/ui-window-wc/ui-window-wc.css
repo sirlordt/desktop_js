@@ -62,6 +62,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 8px;
+  box-sizing: border-box;
   background-color: var(--headerbar-bg-color);
   color: var(--headerbar-fg-color);
   user-select: none;

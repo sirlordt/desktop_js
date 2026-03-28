@@ -2,23 +2,32 @@ import { UIToolButton } from '../common/ui-tool-button-core'
 import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus-core'
 import { HintWC } from '../ui-hint-wc/ui-hint-wc'
 import { ScrollBoxWC } from '../ui-scrollbox-wc/ui-scrollbox-wc'
-import type { IWindowChild, WindowState, WindowKind, UIPosition, UIWindowOptions, ScrollMode, TitleAlign } from '../common/types'
+import type { IWindowChild, WindowState, WindowKind, UIPosition, UIWindowOptions, ScrollMode, TitleAlign, ScrollBarSize } from '../common/types'
 import type { WindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
 import cssText from './ui-window-wc.css?inline'
 
 let windowCounter = 0
 
+const WINDOW_ATTRS = [
+  'title', 'window-id', 'kind', 'positioning', 'left', 'top', 'width', 'height',
+  'min-width', 'min-height', 'max-width', 'max-height', 'resizable', 'movable',
+  'closable', 'minimizable', 'maximizable', 'foldable', 'modal', 'topmost',
+  'show-title', 'title-align', 'scroll', 'scrollbar-size', 'z-index',
+  'show-hints', 'show-shortcuts', 'allow-move-off-parent', 'titlebar-style',
+  'titlebar-height', 'auto-unfold',
+] as const
+
 export class WindowWC extends HTMLElement implements IWindowChild {
-  readonly windowId: string
+  windowId: string = ''
   contentElement!: HTMLDivElement
-  readonly titleBarElement: HTMLDivElement
+  titleBarElement!: HTMLDivElement
   private _scrollBox: ScrollBoxWC | null = null
   private _bodyEl!: HTMLDivElement
 
   windowState: WindowState = 'normal'
-  readonly isFloating: boolean = true
-  readonly modal: boolean = false
-  readonly topmost: boolean = false
+  isFloating: boolean = true
+  modal: boolean = false
+  topmost: boolean = false
 
   manager: WindowManagerWC | null = null
 
@@ -26,26 +35,43 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   private _overlord: WindowWC | null = null
 
   private _shadow: ShadowRoot
-  private _title: string
+  private _title: string = 'Window'
   private _titleEl!: HTMLSpanElement
   private _buttonsEl!: HTMLDivElement
-  private _leftSlot!: HTMLDivElement
-  private _rightSlot!: HTMLDivElement
-  private _kind: WindowKind
-  private _positioning: UIPosition
-  private _resizable: boolean
-  private _movable: boolean
-  private _showTitle: boolean
-  private _titleAlign: TitleAlign
-  private _minWidth: number
-  private _minHeight: number
-  private _maxWidth: number
-  private _maxHeight: number
-  private _titleBarHeight: number
+  private _leftSlotEl!: HTMLDivElement
+  private _rightSlotEl!: HTMLDivElement
+  private _kind: WindowKind = 'normal'
+  private _positioning: UIPosition = 'absolute'
+  private _resizable: boolean = true
+  private _movable: boolean = true
+  private _showTitle: boolean = true
+  private _titleAlign: TitleAlign = 'left'
+  private _minWidth: number = 150
+  private _minHeight: number = 80
+  private _maxWidth: number = Infinity
+  private _maxHeight: number = Infinity
+  private _titleBarHeight: number = 28
+  private _titleBarStyle: string = 'normal'
   private _cleanups: Array<() => void> = []
   private _destroyed: boolean = false
   private _resizeHandles: HTMLDivElement[] = []
-  private _allowMoveOffParent: boolean
+  private _allowMoveOffParent: boolean = true
+  private _closable: boolean = true
+  private _minimizable: boolean = true
+  private _maximizable: boolean = true
+  private _foldableOption: boolean = false
+
+  // Build state
+  private _built: boolean = false
+  private _configured: boolean = false
+  private _pendingAttrs: Map<string, string | null> | null = null
+
+  // Content slot for framework children
+  private _contentSlot: HTMLSlotElement | null = null
+
+  // Scroll config (stored for deferred build)
+  private _scrollMode: ScrollMode | undefined = undefined
+  private _scrollBarSize: ScrollBarSize = 'small'
 
   // Drag state
   private _dragging: boolean = false
@@ -59,7 +85,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   private _closeBtn: UIToolButton | null = null
   private _minBtn: UIToolButton | null = null
   private _maxBtn: UIToolButton | null = null
-  private _btnSize: number
+  private _btnSize: number = 20
   private _titleHint: HintWC | null = null
   private _foldHint: HintWC | null = null
   private _minHint: HintWC | null = null
@@ -71,6 +97,10 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   private _foldVisible: boolean = false
   private _foldRestoreHeight: number = 0
 
+  static get observedAttributes() {
+    return [...WINDOW_ATTRS]
+  }
+
   constructor(options?: UIWindowOptions) {
     super()
     this._shadow = this.attachShadow({ mode: 'open' })
@@ -79,28 +109,147 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     style.textContent = cssText
     this._shadow.appendChild(style)
 
-    const o = options ?? {}
-    this._kind = o.kind ?? 'normal'
-    const isTool = this._kind === 'tool'
-    const tbStyle = o.titleBarStyle ?? (isTool ? 'tool' : 'normal')
-    const isMiniDrag = tbStyle === 'mini-drag'
-    this.windowId = o.id ?? `window-${++windowCounter}`
-    this._title = o.title ?? 'Window'
-    this._resizable = o.resizable ?? true
-    this._movable = o.movable ?? true
-    this.autoUnfold = o.autoUnfold ?? false
-    ;(this as any).modal = o.modal ?? false
-    ;(this as any).topmost = o.topmost ?? false
-    this._showTitle = o.showTitle ?? true
-    this._titleAlign = o.titleAlign ?? 'left'
-    this._minWidth = o.minWidth ?? 150
-    this._minHeight = o.minHeight ?? 80
-    this._maxWidth = o.maxWidth ?? Infinity
-    this._maxHeight = o.maxHeight ?? Infinity
-    this._titleBarHeight = o.titleBarHeight ?? (isMiniDrag ? 14 : tbStyle === 'tool' ? 21 : 28)
+    if (options) this.configure(options)
+  }
+
+  /**
+   * Configure programmatically. Can be called before or after connecting.
+   * Eagerly builds the shadow DOM so internal elements are available immediately.
+   */
+  configure(options: UIWindowOptions): void {
+    const o = options
+    this._kind = o.kind ?? this._kind
+    this._titleBarStyle = o.titleBarStyle ?? (this._kind === 'tool' ? 'tool' : 'normal')
+    this.windowId = o.id ?? this.windowId
+    this._title = o.title ?? this._title
+    this._resizable = o.resizable ?? this._resizable
+    this._movable = o.movable ?? this._movable
+    this.autoUnfold = o.autoUnfold ?? this.autoUnfold
+    this.modal = o.modal ?? this.modal
+    this.topmost = o.topmost ?? this.topmost
+    this._showTitle = o.showTitle ?? this._showTitle
+    this._titleAlign = o.titleAlign ?? this._titleAlign
+    this._minWidth = o.minWidth ?? this._minWidth
+    this._minHeight = o.minHeight ?? this._minHeight
+    this._maxWidth = o.maxWidth ?? this._maxWidth
+    this._maxHeight = o.maxHeight ?? this._maxHeight
+    this._titleBarHeight = o.titleBarHeight ?? (this._titleBarStyle === 'mini-drag' ? 14 : this._titleBarStyle === 'tool' ? 21 : 28)
     this._btnSize = Math.max(16, this._titleBarHeight - 8)
-    this._allowMoveOffParent = o.allowMoveOffParent ?? true
-    this._positioning = o.positioning ?? 'absolute'
+    this._allowMoveOffParent = o.allowMoveOffParent ?? this._allowMoveOffParent
+    this._positioning = o.positioning ?? this._positioning
+    this._showHints = o.showHints !== false
+    this._showShortcuts = o.showShortcuts !== false
+    this._closable = o.closable !== false
+    this._minimizable = o.minimizable !== false
+    this._maximizable = o.maximizable !== false
+    this._foldableOption = !!o.foldable
+    this._scrollMode = o.scroll
+    this._scrollBarSize = o.scrollBarSize ?? this._scrollBarSize
+
+    // Store options for elements that need them during build
+    this._buildOptions = o
+
+    this._configured = true
+    this._ensureBuilt()
+  }
+
+  /** Options stored temporarily for _ensureBuilt() to reference */
+  private _buildOptions: UIWindowOptions | null = null
+
+  connectedCallback(): void {
+    this._ensureBuilt()
+    if (!this._configured) this._readAttributes()
+
+    // Replay any attribute changes that arrived before DOM was built
+    if (this._pendingAttrs) {
+      for (const [name, val] of this._pendingAttrs) {
+        this._applyAttribute(name, val)
+      }
+      this._pendingAttrs = null
+    }
+  }
+
+  disconnectedCallback(): void {
+    // Don't destroy — element may be re-attached
+  }
+
+  attributeChangedCallback(name: string, old: string | null, val: string | null): void {
+    if (old === val) return
+    if (!this._built) {
+      if (!this._pendingAttrs) this._pendingAttrs = new Map()
+      this._pendingAttrs.set(name, val)
+      return
+    }
+    this._applyAttribute(name, val)
+  }
+
+  private _applyAttribute(name: string, val: string | null): void {
+    switch (name) {
+      case 'title': this.title = val ?? 'Window'; break
+      case 'window-id': this.windowId = val ?? ''; break
+      case 'kind': this._kind = (val as WindowKind) ?? 'normal'; break
+      case 'positioning': this.positioning = (val as UIPosition) ?? 'absolute'; break
+      case 'left': this.left = val !== null ? parseFloat(val) : 50; break
+      case 'top': this.top = val !== null ? parseFloat(val) : 50; break
+      case 'width': this.width = val !== null ? parseFloat(val) : 300; break
+      case 'height': this.height = val !== null ? parseFloat(val) : 200; break
+      case 'min-width': this.minWidth = val !== null ? parseFloat(val) : 150; break
+      case 'min-height': this.minHeight = val !== null ? parseFloat(val) : 80; break
+      case 'max-width': this.maxWidth = val !== null ? parseFloat(val) : Infinity; break
+      case 'max-height': this.maxHeight = val !== null ? parseFloat(val) : Infinity; break
+      case 'resizable': this.resizable = val !== null; break
+      case 'movable': this.movable = val !== null; break
+      case 'closable': this.closable = val !== null; break
+      case 'minimizable': this.minimizable = val !== null; break
+      case 'maximizable': this.maximizable = val !== null; break
+      case 'foldable': this.foldable = val !== null; break
+      case 'modal': this.modal = val !== null; break
+      case 'topmost': this.topmost = val !== null; break
+      case 'show-title': this.showTitle = val !== null; break
+      case 'title-align': this.titleAlign = (val as TitleAlign) ?? 'left'; break
+      case 'z-index': if (val !== null) this.zIndex = parseInt(val); break
+      case 'show-hints': this.showHints = val !== null; break
+      case 'show-shortcuts': this.showShortcuts = val !== null; break
+      case 'allow-move-off-parent': this.allowMoveOffParent = val !== null; break
+      case 'auto-unfold': this.autoUnfold = val !== null; break
+      case 'titlebar-style':
+        this._titleBarStyle = val ?? 'normal'
+        break
+      case 'titlebar-height':
+        if (val !== null) {
+          this._titleBarHeight = parseFloat(val)
+          if (this._built) this.titleBarElement.style.height = `${this._titleBarHeight}px`
+        }
+        break
+      case 'scroll':
+        this._scrollMode = val as ScrollMode ?? undefined
+        break
+      case 'scrollbar-size':
+        this._scrollBarSize = (val as ScrollBarSize) ?? 'small'
+        break
+    }
+  }
+
+  private _readAttributes(): void {
+    for (const name of WINDOW_ATTRS) {
+      const val = this.getAttribute(name)
+      if (val !== null) {
+        this._applyAttribute(name, val)
+      }
+    }
+  }
+
+  /** Build internal DOM exactly once */
+  private _ensureBuilt(): void {
+    if (this._built) return
+    this._built = true
+
+    if (!this.windowId) this.windowId = `window-${++windowCounter}`
+
+    const o = this._buildOptions ?? {}
+    const isTool = this._kind === 'tool'
+    const tbStyle = this._titleBarStyle
+    const isMiniDrag = tbStyle === 'mini-drag'
 
     // Host element styling
     this.tabIndex = -1
@@ -123,11 +272,11 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     this.titleBarElement.style.height = `${this._titleBarHeight}px`
 
     // Left slot
-    this._leftSlot = document.createElement('div')
-    this._leftSlot.className = 'left-slot'
+    this._leftSlotEl = document.createElement('div')
+    this._leftSlotEl.className = 'left-slot'
 
     if (o.leftElements) {
-      for (const el of o.leftElements) this._leftSlot.appendChild(el)
+      for (const el of o.leftElements) this._leftSlotEl.appendChild(el)
     }
 
     if (o.icon) {
@@ -135,10 +284,10 @@ export class WindowWC extends HTMLElement implements IWindowChild {
       iconEl.className = 'icon'
       if (typeof o.icon === 'string') iconEl.innerHTML = o.icon
       else iconEl.appendChild(o.icon)
-      this._leftSlot.appendChild(iconEl)
+      this._leftSlotEl.appendChild(iconEl)
     }
 
-    this.titleBarElement.appendChild(this._leftSlot)
+    this.titleBarElement.appendChild(this._leftSlotEl)
 
     // Title
     this._titleEl = document.createElement('span')
@@ -161,39 +310,38 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     })
 
     // Right slot
-    this._rightSlot = document.createElement('div')
-    this._rightSlot.className = 'right-slot'
+    this._rightSlotEl = document.createElement('div')
+    this._rightSlotEl.className = 'right-slot'
     if (o.rightElements) {
-      for (const el of o.rightElements) this._rightSlot.appendChild(el)
+      for (const el of o.rightElements) this._rightSlotEl.appendChild(el)
     }
-    this.titleBarElement.appendChild(this._rightSlot)
+    this.titleBarElement.appendChild(this._rightSlotEl)
 
     // Buttons
     this._buttonsEl = document.createElement('div')
     this._buttonsEl.className = 'buttons'
 
-    if (o.foldable !== false) {
-      this._foldBtn = new UIToolButton({ icon: 'chevron-up', size: this._btnSize, className: 'fold-btn' })
-      this._foldBtn.onClick(() => this._toggleFold())
-      this._foldVisible = !!o.foldable
-      if (!o.foldable) this._foldBtn.element.style.display = 'none'
-      this._buttonsEl.appendChild(this._foldBtn.element)
-    }
+    // Fold button (always created, visibility controlled)
+    this._foldBtn = new UIToolButton({ icon: 'chevron-up', size: this._btnSize, className: 'fold-btn' })
+    this._foldBtn.onClick(() => this._toggleFold())
+    this._foldVisible = this._foldableOption
+    if (!this._foldableOption) this._foldBtn.element.style.display = 'none'
+    this._buttonsEl.appendChild(this._foldBtn.element)
 
     const noMinMax = isTool || this.modal
-    if (!noMinMax && o.minimizable !== false) {
+    if (!noMinMax && this._minimizable) {
       this._minBtn = new UIToolButton({ icon: 'window-minimize', size: this._btnSize, className: 'min-btn' })
       this._minBtn.onClick(() => this._requestMinimize())
       this._buttonsEl.appendChild(this._minBtn.element)
     }
 
-    if (!noMinMax && o.maximizable !== false) {
+    if (!noMinMax && this._maximizable) {
       this._maxBtn = new UIToolButton({ icon: 'window-maximize', size: this._btnSize, className: 'max-btn' })
       this._maxBtn.onClick(() => this._requestMaximize())
       this._buttonsEl.appendChild(this._maxBtn.element)
     }
 
-    if (o.closable !== false) {
+    if (this._closable) {
       this._closeBtn = new UIToolButton({ icon: 'close', size: this._btnSize, className: 'close-btn' })
       this._closeBtn.onClick(() => this._requestClose())
       this._buttonsEl.appendChild(this._closeBtn.element)
@@ -202,8 +350,6 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     this.titleBarElement.appendChild(this._buttonsEl)
 
     // Hints
-    this._showHints = o.showHints !== false
-    this._showShortcuts = o.showShortcuts !== false
     if (this._showHints) {
       const makeHint = (anchor: HTMLElement, text: string): HintWC => {
         const h = new HintWC()
@@ -220,23 +366,30 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     this._bodyEl = document.createElement('div')
     this._bodyEl.className = 'body'
 
-    const scroll: ScrollMode | undefined = o.scroll
+    // Content slot for framework children
+    this._contentSlot = document.createElement('slot')
+
+    const scroll = this._scrollMode
     if (scroll && scroll !== 'none') {
       this._scrollBox = document.createElement('scrollbox-wc') as unknown as ScrollBoxWC
       this._scrollBox.configure({
         scroll,
-        scrollBarSize: o.scrollBarSize ?? 'small',
+        scrollBarSize: this._scrollBarSize,
         borderWidth: 0,
         backgroundColor: 'inherit',
       })
       this._scrollBox.style.width = '100%'
       this._scrollBox.style.height = '100%'
+      // Place window-wc's slot as light DOM child of scrollbox
+      // so framework children flow through both shadow boundaries
+      this._scrollBox.appendChild(this._contentSlot)
       this._bodyEl.appendChild(this._scrollBox)
       this._bodyEl.style.overflow = 'hidden'
-      ;(this as any).contentElement = this._scrollBox.contentElement
+      this.contentElement = this._scrollBox.contentElement
     } else {
       this._bodyEl.style.overflow = 'hidden'
-      ;(this as any).contentElement = this._bodyEl
+      this._bodyEl.appendChild(this._contentSlot)
+      this.contentElement = this._bodyEl
     }
 
     this._shadow.appendChild(this.titleBarElement)
@@ -260,6 +413,9 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     const themeObs = new MutationObserver(() => this._syncTheme())
     themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
     this._cleanups.push(() => themeObs.disconnect())
+
+    // Release build options reference
+    this._buildOptions = null
   }
 
   // ── Properties ──
@@ -274,6 +430,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
   }
 
   get kind(): WindowKind { return this._kind }
+  set kind(v: WindowKind) { this._kind = v }
 
   get zIndex(): number { return parseInt(this.style.zIndex) || 0 }
   set zIndex(v: number) { this.style.zIndex = `${v}` }
@@ -396,10 +553,10 @@ export class WindowWC extends HTMLElement implements IWindowChild {
       this._scrollBox.style.height = '100%'
       this._bodyEl.appendChild(this._scrollBox)
       this._bodyEl.style.overflow = 'hidden'
-      ;(this as any).contentElement = this._scrollBox.contentElement
+      this.contentElement = this._scrollBox.contentElement
     } else {
       this._bodyEl.style.overflow = 'hidden'
-      ;(this as any).contentElement = this._bodyEl
+      this.contentElement = this._bodyEl
     }
 
     for (const child of children) this.contentElement.appendChild(child)
@@ -432,7 +589,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     if (win._overlord || win._tools.length > 0 || win === this || this._overlord || this._tools.includes(win)) return false
     this._tools.push(win)
     win._overlord = this
-    ;(win as any)._kind = 'tool'
+    win._kind = 'tool'
     win.classList.add('tool')
     if (win._minBtn) win._minBtn.element.style.display = 'none'
     if (win._maxBtn) win._maxBtn.element.style.display = 'none'
@@ -455,7 +612,7 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     win._overlord = null
     const toolHandler = (win as any).__wm_tool_mousedown
     if (toolHandler) { win.removeEventListener('mousedown', toolHandler, true); delete (win as any).__wm_tool_mousedown }
-    ;(win as any)._kind = 'normal'
+    win._kind = 'normal'
     win.classList.remove('tool')
     if (win._minBtn) win._minBtn.element.style.display = ''
     if (win._maxBtn) win._maxBtn.element.style.display = ''
@@ -467,8 +624,8 @@ export class WindowWC extends HTMLElement implements IWindowChild {
     return true
   }
 
-  addLeftElement(el: HTMLElement): void { this._leftSlot.appendChild(el) }
-  addRightElement(el: HTMLElement): void { this._rightSlot.appendChild(el) }
+  addLeftElement(el: HTMLElement): void { this._leftSlotEl.appendChild(el) }
+  addRightElement(el: HTMLElement): void { this._rightSlotEl.appendChild(el) }
 
   get folded(): boolean { return this._folded }
   get foldable(): boolean { return this._foldVisible }

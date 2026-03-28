@@ -3,6 +3,11 @@ import { applySimulateFocus } from '../common/simulate-focus-core'
 import { HintWC } from '../ui-hint-wc/ui-hint-wc'
 import cssText from './ui-menu-item-wc.css?inline'
 
+const MENUITEM_ATTRS = [
+  'text', 'shortcut', 'size', 'text-align', 'pushable', 'pushed',
+  'disabled', 'request-parent-close', 'margin', 'icon-gap',
+] as const
+
 export class MenuItemWC extends HTMLElement {
   private _shadow: ShadowRoot
   private _leftEl!: HTMLDivElement
@@ -10,6 +15,11 @@ export class MenuItemWC extends HTMLElement {
   private _textEl!: HTMLSpanElement
   private _shortcutEl: HTMLSpanElement | null = null
   private _rightEl!: HTMLDivElement
+
+  // Slots for framework content projection
+  private _leftSlot!: HTMLSlotElement
+  private _rightSlot!: HTMLSlotElement
+  private _centerSlot!: HTMLSlotElement
 
   private _text: string = ''
   private _shortcut: string | null = null
@@ -28,9 +38,14 @@ export class MenuItemWC extends HTMLElement {
   private _pushedChangeHandlers: Set<(pushed: boolean) => void> = new Set()
   private _cleanups: Array<() => void> = []
   private _destroyed = false
+  private _configured = false
 
   private _hint: HintWC | null = null
   private _resizeObserver: ResizeObserver | null = null
+
+  static get observedAttributes() {
+    return [...MENUITEM_ATTRS]
+  }
 
   constructor(options?: UIMenuItemOptions) {
     super()
@@ -40,7 +55,10 @@ export class MenuItemWC extends HTMLElement {
     style.textContent = cssText
     this._shadow.appendChild(style)
 
-    if (options) this._applyOptions(options)
+    if (options) {
+      this._applyOptions(options)
+      this._configured = true
+    }
     this._buildDOM()
     this._syncTheme()
 
@@ -77,12 +95,25 @@ export class MenuItemWC extends HTMLElement {
     this.setAttribute('data-focusable', '')
     this.tabIndex = -1
 
-    // Left slot
+    // Left area
     this._leftEl = document.createElement('div')
     this._leftEl.className = 'left'
+    this._leftSlot = document.createElement('slot')
+    this._leftSlot.name = 'left'
+    this._leftEl.appendChild(this._leftSlot)
     this._shadow.appendChild(this._leftEl)
 
-    // Center slot
+    // Detect slotted left content from frameworks
+    this._leftSlot.addEventListener('slotchange', () => {
+      const assigned = this._leftSlot.assignedElements()
+      if (assigned.length > 0 && !this._leftElement) {
+        this.classList.add('has-left')
+      } else if (assigned.length === 0 && !this._leftElement) {
+        this.classList.remove('has-left')
+      }
+    })
+
+    // Center area
     this._centerEl = document.createElement('div')
     this._centerEl.className = 'center'
     this._textEl = document.createElement('span')
@@ -95,12 +126,30 @@ export class MenuItemWC extends HTMLElement {
       this._shortcutEl.textContent = this._shortcut
       this._centerEl.appendChild(this._shortcutEl)
     }
+    this._centerSlot = document.createElement('slot')
+    this._centerSlot.name = 'center'
+    this._centerEl.appendChild(this._centerSlot)
     this._shadow.appendChild(this._centerEl)
 
-    // Right slot
+    // Right area
     this._rightEl = document.createElement('div')
     this._rightEl.className = 'right'
+    this._rightSlot = document.createElement('slot')
+    this._rightSlot.name = 'right'
+    this._rightEl.appendChild(this._rightSlot)
     this._shadow.appendChild(this._rightEl)
+
+    // Detect slotted right content from frameworks
+    this._rightSlot.addEventListener('slotchange', () => {
+      const assigned = this._rightSlot.assignedElements()
+      if (assigned.length > 0) {
+        this._rightEl.classList.add('has-content')
+        this.classList.add('has-right')
+      } else if (!this._rightEl.querySelector(':not(slot)')) {
+        this._rightEl.classList.remove('has-content')
+        this.classList.remove('has-right')
+      }
+    })
 
     this._updateLeftSlot()
     this._bindEvents()
@@ -108,8 +157,49 @@ export class MenuItemWC extends HTMLElement {
   }
 
   connectedCallback(): void {
-    // Apply right/center elements that were set via options
-    // (they need to be in DOM for proper rendering)
+    // If not configured programmatically, read from attributes
+    if (!this._configured) {
+      this._readAttributes()
+    }
+  }
+
+  disconnectedCallback(): void {
+    // Cleanup observers but don't destroy — element may be re-attached
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect()
+      this._resizeObserver = null
+    }
+  }
+
+  attributeChangedCallback(name: string, old: string | null, val: string | null): void {
+    if (old === val) return
+    switch (name) {
+      case 'text': this.text = val ?? ''; break
+      case 'shortcut': this.shortcut = val; break
+      case 'size': this.size = (val as MenuItemSize) ?? 'medium'; break
+      case 'text-align': this.textAlign = (val as MenuItemTextAlign) ?? 'left'; break
+      case 'pushable': this.pushable = val !== null; break
+      case 'pushed':
+        if (this._pushable) {
+          this._pushed = val !== null
+          this.classList.toggle('pushed', this._pushed)
+          this._updateLeftSlot()
+        }
+        break
+      case 'disabled': this.disabled = val !== null; break
+      case 'request-parent-close': this.requestParentClose = val !== null; break
+      case 'margin': if (val) this.margin = parseFloat(val); break
+      case 'icon-gap': if (val) this.iconGap = parseFloat(val); break
+    }
+  }
+
+  private _readAttributes(): void {
+    for (const name of MENUITEM_ATTRS) {
+      const val = this.getAttribute(name)
+      if (val !== null) {
+        this.attributeChangedCallback(name, null, val)
+      }
+    }
   }
 
   // ── Public API ──

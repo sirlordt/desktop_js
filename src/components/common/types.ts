@@ -177,6 +177,10 @@ export interface UIHintOptions {
   borderWidth?: number
   disabled?: boolean
   name?: string
+  /** Container element for the popup DOM. Defaults to document.body.
+   *  Use this to keep the hint inside a framework-managed container
+   *  (e.g. React Portal target, Vue Teleport target). */
+  container?: HTMLElement
 }
 
 // ── ScrollBar types ──
@@ -359,6 +363,9 @@ export interface UIWindowManagerOptions {
   className?: string
   cycleNextShortcut?: WindowCycleShortcut
   cyclePrevShortcut?: WindowCycleShortcut
+  /** Disable MutationObserver auto-detection of <window-wc> children.
+   *  Use addWindow()/removeWindow() explicitly in framework environments. */
+  manualChildManagement?: boolean
 }
 
 export interface UIWindowOptions {

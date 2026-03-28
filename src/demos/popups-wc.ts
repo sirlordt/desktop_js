@@ -12,6 +12,49 @@ function makeBtn(text: string, variant = 'outline'): HTMLElement {
   return btn
 }
 
+/** Create an inline SVG icon from a path string (16x16 viewBox, stroke-based) */
+function makeIcon(d: string, size = 14): HTMLElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('width', `${size}`)
+  svg.setAttribute('height', `${size}`)
+  svg.setAttribute('viewBox', '0 0 24 24')
+  svg.setAttribute('fill', 'none')
+  svg.setAttribute('stroke', 'currentColor')
+  svg.setAttribute('stroke-width', '2')
+  svg.setAttribute('stroke-linecap', 'round')
+  svg.setAttribute('stroke-linejoin', 'round')
+  for (const p of d.split('|')) {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('d', p.trim())
+    svg.appendChild(path)
+  }
+  return svg as unknown as HTMLElement
+}
+
+// Icon paths (Lucide-style, 24x24 viewBox)
+const ICONS = {
+  file:       'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z|M14 2v6h6',
+  folderOpen: 'M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z',
+  save:       'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z|M17 21v-8H7v8|M7 3v5h8',
+  x:          'M18 6L6 18|M6 6l12 12',
+  cursor:     'M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z',
+  move:       'M5 9l-3 3 3 3|M9 5l3-3 3 3|M15 19l-3 3-3-3|M19 9l3 3-3 3|M2 12h20|M12 2v20',
+  rotateCw:   'M21 2v6h-6|M21 13a9 9 0 1 1-3-7.7L21 8',
+  maximize:   'M15 3h6v6|M9 21H3v-6|M21 3l-7 7|M3 21l7-7',
+  brush:      'M9.06 11.9l8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08|M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z',
+  eraser:     'M7 21h10|M5.5 13.5L12 7l5 5-6.5 6.5a2.12 2.12 0 0 1-3 0L5.5 16.5a2.12 2.12 0 0 1 0-3z',
+  paintBucket:'M19 11l-8-8-8.6 8.6a2 2 0 0 0 0 2.8l5.2 5.2a2 2 0 0 0 2.8 0L19 11z|M5 2l5 5|M2 13h15',
+  type:       'M4 7V4h16v3|M9 20h6|M12 4v16',
+  wand:       'M15 4V2|M15 16v-2|M8 9h2|M20 9h2|M17.8 11.8L19 13|M17.8 6.2L19 5|M11.2 6.2L10 5|M11.2 11.8L10 13|M21 21l-5.5-5.5',
+  layers:     'M12 2L2 7l10 5 10-5-10-5z|M2 17l10 5 10-5|M2 12l10 5 10-5',
+  image:      'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z|M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z|M21 15l-5-5L5 21',
+  eye:        'M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z|M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  eyeOff:     'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94|M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19|M1 1l22 22',
+  sparkles:   'M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z|M5 19l1 3 1-3 3-1-3-1-1-3-1 3-3 1 3 1z',
+  grid:       'M3 3h7v7H3z|M14 3h7v7h-7z|M14 14h7v7h-7z|M3 14h7v7H3z',
+  compass:    'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z|M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z',
+} as const
+
 export const popupsWCDemo: DemoRoute = {
   id: 'popups-wc',
   label: 'Popups WC',
@@ -33,8 +76,15 @@ export const popupsWCDemo: DemoRoute = {
     const btn1 = makeBtn('Open Popup'); sec1.appendChild(btn1); root.appendChild(sec1)
 
     const popup1 = new UIPopupWC({ anchor: btn1, alignment: 'BottomLeft', width: 220, height: 200 })
-    ;['New File', 'Open...', 'Save', 'Close'].forEach(text => {
-      popup1.addChild(new UIMenuItemWC({ text, shortcut: 'Ctrl+' + text[0] }))
+    const fileItems: [string, string, string][] = [
+      ['New File', 'Ctrl+N', ICONS.file],
+      ['Open...', 'Ctrl+O', ICONS.folderOpen],
+      ['Save', 'Ctrl+S', ICONS.save],
+      ['Close', 'Ctrl+W', ICONS.x],
+    ]
+    fileItems.forEach(([text, shortcut, icon]) => {
+      const item = new UIMenuItemWC({ text, shortcut, leftElement: makeIcon(icon) })
+      popup1.addChild(item)
     })
     btn1.addEventListener('click', () => popup1.toggle())
 
@@ -45,10 +95,13 @@ export const popupsWCDemo: DemoRoute = {
     const edgeRow = document.createElement('div'); edgeRow.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;'
     sec2.appendChild(edgeRow)
 
+    const edgeIcons = [ICONS.cursor, ICONS.eye, ICONS.sparkles]
     for (const [label, align] of [['Left Edge', 'LeftTop'], ['Center', 'BottomCenter'], ['Right Edge', 'RightTop']] as const) {
       const btn = makeBtn(label); edgeRow.appendChild(btn)
       const popup = new UIPopupWC({ anchor: btn, alignment: align, width: 200, height: 180 })
-      ;['Option A', 'Option B', 'Option C'].forEach(t => popup.addChild(new UIMenuItemWC({ text: t })))
+      ;['Option A', 'Option B', 'Option C'].forEach((t, i) => {
+        popup.addChild(new UIMenuItemWC({ text: t, leftElement: makeIcon(edgeIcons[i]) }))
+      })
       btn.addEventListener('click', () => popup.toggle())
     }
 
@@ -74,7 +127,8 @@ export const popupsWCDemo: DemoRoute = {
     root.appendChild(sec4)
     const btn4 = makeBtn('Open Resizable'); sec4.appendChild(btn4)
     const popup4 = new UIPopupWC({ anchor: btn4, alignment: 'BottomLeft', width: 250, height: 200, resizable: true, minWidth: 150, minHeight: 100 })
-    for (let i = 1; i <= 6; i++) popup4.addChild(new UIMenuItemWC({ text: `Resizable Item ${i}` }))
+    const resizableIcons = [ICONS.file, ICONS.folderOpen, ICONS.save, ICONS.image, ICONS.layers, ICONS.grid]
+    for (let i = 1; i <= 6; i++) popup4.addChild(new UIMenuItemWC({ text: `Resizable Item ${i}`, leftElement: makeIcon(resizableIcons[i - 1]) }))
     btn4.addEventListener('click', () => popup4.toggle())
 
     // ── 5. Mini-Drag ──
@@ -83,7 +137,11 @@ export const popupsWCDemo: DemoRoute = {
     root.appendChild(sec5)
     const btn5 = makeBtn('Open Mini-Drag'); sec5.appendChild(btn5)
     const popup5 = new UIPopupWC({ anchor: btn5, alignment: 'BottomLeft', width: 200, height: 180, title: 'Tools', resizable: true })
-    ;['Select', 'Move', 'Rotate', 'Scale', 'Brush', 'Eraser'].forEach(text => popup5.addChild(new UIMenuItemWC({ text })))
+    const miniDragItems: [string, string][] = [
+      ['Select', ICONS.cursor], ['Move', ICONS.move], ['Rotate', ICONS.rotateCw],
+      ['Scale', ICONS.maximize], ['Brush', ICONS.brush], ['Eraser', ICONS.eraser],
+    ]
+    miniDragItems.forEach(([text, icon]) => popup5.addChild(new UIMenuItemWC({ text, leftElement: makeIcon(icon) })))
     btn5.addEventListener('click', () => popup5.toggle())
 
     // ── 6. Detachable ──
@@ -105,10 +163,15 @@ export const popupsWCDemo: DemoRoute = {
     })
     popupDetach.overlord = emptyWin
 
-    const tools: [string, string][] = [['Select', 'Ctrl+A'], ['Move', 'Ctrl+M'], ['Rotate', 'Ctrl+R'], ['Scale', 'Alt+S'],
-      ['Brush', 'Ctrl+B'], ['Eraser', 'Alt+E'], ['Fill', 'Ctrl+G'], ['Text', 'Ctrl+T'], ['Content-Aware Fill', 'Ctrl+Shift+F']]
-    tools.forEach(([text, key]) => {
-      const item = new UIMenuItemWC({ text, shortcut: key })
+    const tools: [string, string, string][] = [
+      ['Select', 'Ctrl+A', ICONS.cursor], ['Move', 'Ctrl+M', ICONS.move],
+      ['Rotate', 'Ctrl+R', ICONS.rotateCw], ['Scale', 'Alt+S', ICONS.maximize],
+      ['Brush', 'Ctrl+B', ICONS.brush], ['Eraser', 'Alt+E', ICONS.eraser],
+      ['Fill', 'Ctrl+G', ICONS.paintBucket], ['Text', 'Ctrl+T', ICONS.type],
+      ['Content-Aware Fill', 'Ctrl+Shift+F', ICONS.wand],
+    ]
+    tools.forEach(([text, key, icon]) => {
+      const item = new UIMenuItemWC({ text, shortcut: key, leftElement: makeIcon(icon) })
       popupDetach.addChild(item)
       item.onClick(() => { statusLabel.textContent = `Tool: ${text}` })
     })
@@ -150,8 +213,13 @@ export const popupsWCDemo: DemoRoute = {
       title: 'Layers', detachable: true, resizable: true,
     })
     popupDetach2.overlord = emptyWin
-    ;[['Background', 'F1'], ['Foreground', 'F2'], ['Overlay', 'F3'], ['Mask', 'F4'], ['Shadow', 'F5'], ['Glow', 'F6']].forEach(([text, key]) => {
-      const item = new UIMenuItemWC({ text, shortcut: key })
+    const layerItems: [string, string, string][] = [
+      ['Background', 'F1', ICONS.image], ['Foreground', 'F2', ICONS.layers],
+      ['Overlay', 'F3', ICONS.sparkles], ['Mask', 'F4', ICONS.eyeOff],
+      ['Shadow', 'F5', ICONS.eye], ['Glow', 'F6', ICONS.compass],
+    ]
+    layerItems.forEach(([text, key, icon]) => {
+      const item = new UIMenuItemWC({ text, shortcut: key, leftElement: makeIcon(icon) })
       popupDetach2.addChild(item)
       item.onClick(() => { statusLabel.textContent = `Layer: ${text}` })
     })
@@ -219,8 +287,8 @@ export const popupsWCDemo: DemoRoute = {
       title: 'Tool Palette', detachable: true, resizable: true,
     })
     sPopupDetach.overlord = standaloneWin
-    tools.forEach(([text, key]) => {
-      const item = new UIMenuItemWC({ text, shortcut: key })
+    tools.forEach(([text, key, icon]) => {
+      const item = new UIMenuItemWC({ text, shortcut: key, leftElement: makeIcon(icon) })
       sPopupDetach.addChild(item)
       item.onClick(() => { standaloneStatus.textContent = `Tool: ${text}` })
     })
@@ -257,8 +325,8 @@ export const popupsWCDemo: DemoRoute = {
       title: 'Layers', detachable: true, resizable: true,
     })
     sPopupLayers.overlord = standaloneWin
-    ;[['Background', 'F1'], ['Foreground', 'F2'], ['Overlay', 'F3'], ['Mask', 'F4'], ['Shadow', 'F5'], ['Glow', 'F6']].forEach(([text, key]) => {
-      const item = new UIMenuItemWC({ text, shortcut: key })
+    layerItems.forEach(([text, key, icon]) => {
+      const item = new UIMenuItemWC({ text, shortcut: key, leftElement: makeIcon(icon) })
       sPopupLayers.addChild(item)
       item.onClick(() => { standaloneStatus.textContent = `Layer: ${text}` })
     })

@@ -330,10 +330,12 @@ export class UIToolButton {
   }
 
   private _bindEvents(): void {
+    // Prevent all tool buttons from stealing focus on mousedown
+    this._on(this._el, 'mousedown', (e) => { e.preventDefault() })
+
     if (this._repeat) {
       this._on(this._el, 'mousedown', (e) => {
         if (this._disabled) return
-        e.preventDefault()
         this._fireClick()
         this._repeatTimer = window.setTimeout(() => {
           this._repeatIntervalTimer = window.setInterval(() => {

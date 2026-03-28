@@ -270,24 +270,23 @@ export class UIPopupWC extends HTMLElement {
 
     // Auto-close on request-parent-close from UIMenuItemWC
     this._window.addEventListener('request-parent-close', () => {
-      if (this._state === 'attached') {
-        // Collect all attached ancestors, then close all at once (no staggered rAF)
-        requestAnimationFrame(() => {
-          const chain: UIPopupWC[] = []
-          let current: UIPopupWC = this
-          while (current._state === 'attached') {
-            chain.push(current)
-            const parentItem: UIMenuItemWC | null = current._parentMenuItem
-            if (!parentItem || !parentItem.requestParentClose) break
-            // Walk up: find the popup that contains the parent menu item
-            const owner = UIPopupWC._findOwnerPopup(parentItem)
-            if (!owner) break
-            current = owner
-          }
-          // Close all levels in one tick (innermost first)
-          for (const p of chain) p.close()
-        })
-      }
+      if (this._state === 'closed') return
+      // Walk the entire ancestor chain collecting attached popups to close.
+      // Detached popups are skipped (they stay open) but the walk continues
+      // through them so intermediate attached levels are also closed.
+      requestAnimationFrame(() => {
+        const chain: UIPopupWC[] = []
+        let current: UIPopupWC = this
+        while (current._state === 'attached' || current._state === 'detached') {
+          if (current._state === 'attached') chain.push(current)
+          const parentItem: UIMenuItemWC | null = current._parentMenuItem
+          if (!parentItem || !parentItem.requestParentClose) break
+          const owner = UIPopupWC._findOwnerPopup(parentItem)
+          if (!owner) break
+          current = owner
+        }
+        for (const p of chain) p.close()
+      })
     })
 
     // Mouse highlight for menu kind
@@ -894,14 +893,35 @@ export class UIPopupWC extends HTMLElement {
     document.addEventListener('keydown', this._keyNavHandler, true)
   }
 
+  /** Walk this popup and all descendant detached sub-menus, calling fn on each */
+  private _forEachDetachedDescendant(fn: (p: UIPopupWC) => void): void {
+    fn(this)
+    const items = this._getMenuItems()
+    for (const item of items) {
+      const mi = item as any
+      if (mi.hasSubMenu && mi.subMenu?.state === 'detached') {
+        (mi.subMenu as UIPopupWC)._forEachDetachedDescendant(fn)
+      }
+    }
+  }
+
   private _bindAnchorFocusTracking(): void {
     if (!this._anchor || !this._window) return
-    this._anchorBlurHandler = () => { if (this._state !== 'detached') return; this._activeIndex = -1; this._clearHighlight() }
+    this._anchorBlurHandler = () => {
+      if (this._state !== 'detached') return
+      this._forEachDetachedDescendant(p => {
+        p._activeIndex = -1; p._clearHighlight()
+      })
+      this._activeSubMenu = null
+    }
     this._anchorFocusHandler = () => {
       if (this._state !== 'detached') return
-      this._activeIndex = -1; this._clearHighlight()
-      if (this._window?.scrollBox) this._window.scrollBox.scrollContentTo(0, 0)
-      this._bringToolToFront()
+      this._forEachDetachedDescendant(p => {
+        p._activeIndex = -1; p._clearHighlight()
+        if (p._window?.scrollBox) p._window.scrollBox.scrollContentTo(0, 0)
+        p._bringToolToFront()
+      })
+      this._activeSubMenu = null
     }
     this._anchor.addEventListener('blur', this._anchorBlurHandler)
     this._anchor.addEventListener('focus', this._anchorFocusHandler)
@@ -1102,6 +1122,9 @@ export class UIPopupWC extends HTMLElement {
 
     if (this._kind === 'menu') {
       this._activeIndex = -1; this._clearHighlight()
+      // Re-focus anchor so detached keyboard nav continues to work
+      // (dragging the title bar moves focus to the window element)
+      if (this._anchor) this._anchor.focus({ preventScroll: true })
       this._bindDetachedMenuNav(); this._bindAnchorFocusTracking()
     } else {
       this._setChildrenFocusable(true)
@@ -1141,6 +1164,9 @@ export class UIPopupWC extends HTMLElement {
       if (this._focusedBeforeOpen.isConnected) this._focusedBeforeOpen.focus({ preventScroll: true })
       dispatchSimulateFocus(this._focusedBeforeOpen, false)
       this._focusedBeforeOpen = null
+    } else if (this._anchor?.isConnected) {
+      // _focusedBeforeOpen was cleared during detach — restore focus to anchor
+      this._anchor.focus({ preventScroll: true })
     }
 
     this._emit('attach'); this._emit('close')

@@ -1222,6 +1222,79 @@ describe('sub-menus', () => {
       expect(l1BrushType.classList.contains('highlight')).toBe(false)
     })
 
+    it('request-parent-close propagates through detached levels closing attached ones', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      // Build chain: root (will detach) → Drawing (will stay attached) → Brush Type (will detach)
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+
+      const level1 = createPopup({ detachable: true, title: 'Drawing' })
+      const l1Pencil = createItem('Pencil')
+      const l1BrushType = createItem('Brush Type')
+      level1.addChild(l1Pencil)
+      level1.addChild(l1BrushType)
+      itemDrawing.subMenu = level1
+
+      const level2 = createPopup({ detachable: true, title: 'Brush Type' })
+      let roundClicked = false
+      const l2Round = createItem('Round')
+      l2Round.onClick(() => { roundClicked = true })
+      const l2Flat = createItem('Flat')
+      level2.addChild(l2Round)
+      level2.addChild(l2Flat)
+      l1BrushType.subMenu = level2
+
+      root.show()
+      await flush(50)
+
+      // Detach root (Tools)
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      anchor.focus()
+      await flush()
+
+      // Open Drawing sub-menu (attached) via keyboard
+      pressKey('ArrowDown')   // Select All
+      pressKey('ArrowDown')   // Drawing
+      pressKey('ArrowRight')  // open level1
+      await flush(50)
+      expect(level1.state).toBe('attached')
+
+      // Open Brush Type sub-menu, then detach it
+      pressKey('ArrowDown')   // Brush Type in Drawing
+      pressKey('ArrowRight')  // open level2
+      await flush(50)
+      expect(level2.state).toBe('attached')
+
+      level2.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(level2.state).toBe('detached')
+
+      // State: root=detached, Drawing=attached, Brush Type=detached
+      // Navigate in detached Brush Type and press Enter
+      pressKey('ArrowDown')   // highlight Round
+      await flush()
+      expect(l2Round.classList.contains('highlight')).toBe(true)
+
+      pressKey('Enter')
+      await flush(150)
+
+      // Round should have been clicked
+      expect(roundClicked).toBe(true)
+      // Drawing (attached) should be closed by cascade
+      expect(level1.state).toBe('closed')
+      // Root and Brush Type (both detached) stay open
+      expect(root.state).toBe('detached')
+      expect(level2.state).toBe('detached')
+    })
+
     it('Enter opens sub-menu when root popup is detached and item has sub-menu', async () => {
       anchor = createAnchor()
       anchor.focus()
@@ -1257,6 +1330,123 @@ describe('sub-menus', () => {
 
       expect(sub.visible).toBe(true)
       expect(subItem0.classList.contains('highlight')).toBe(true)
+    })
+  })
+
+  // ═══════════════════════════════════════
+  // 7c-3. Anchor blur/focus clears/restores highlight across all detached levels
+  // ═══════════════════════════════════════
+
+  describe('anchor blur/focus propagates to all detached levels', () => {
+    it('anchor blur clears highlight in all detached sub-menus', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemDrawing)
+
+      const level1 = createPopup({ detachable: true, title: 'Drawing' })
+      const l1BrushType = createItem('Brush Type')
+      const l1Eraser = createItem('Eraser')
+      level1.addChild(l1BrushType)
+      level1.addChild(l1Eraser)
+      itemDrawing.subMenu = level1
+
+      const level2 = createPopup({ detachable: true, title: 'Brush Type' })
+      const l2Round = createItem('Round')
+      const l2Flat = createItem('Flat')
+      level2.addChild(l2Round)
+      level2.addChild(l2Flat)
+      l1BrushType.subMenu = level2
+
+      root.show()
+      await flush(50)
+
+      // Detach all three levels
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      anchor.focus()
+      await flush()
+
+      // Open level1 via keyboard, then detach it
+      pressKey('ArrowDown')   // Drawing
+      pressKey('ArrowRight')  // open level1
+      await flush(50)
+      level1.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      anchor.focus()
+      await flush()
+
+      // Navigate into level1, open level2, detach it
+      pressKey('ArrowDown')   // Brush Type in level1
+      pressKey('ArrowRight')  // open level2
+      await flush(50)
+      level2.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      anchor.focus()
+      await flush()
+
+      // Navigate to highlight items at each level
+      pressKey('ArrowDown')   // highlight Drawing in root
+      await flush()
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      pressKey('ArrowRight')  // delegate to level1 (detached)
+      await flush()
+      expect(l1BrushType.classList.contains('highlight')).toBe(true)
+
+      pressKey('ArrowRight')  // delegate to level2 (detached)
+      await flush()
+      expect(l2Round.classList.contains('highlight')).toBe(true)
+
+      // Now blur the anchor — ALL levels should clear highlights
+      anchor.blur()
+      await flush()
+
+      expect(itemDrawing.classList.contains('highlight')).toBe(false)
+      expect(l1BrushType.classList.contains('highlight')).toBe(false)
+      expect(l2Round.classList.contains('highlight')).toBe(false)
+    })
+
+    it('anchor focus resets scroll in all detached sub-menus', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemDrawing)
+
+      const level1 = createPopup({ detachable: true, title: 'Drawing' })
+      const l1Item = createItem('Pencil')
+      level1.addChild(l1Item)
+      itemDrawing.subMenu = level1
+
+      root.show()
+      await flush(50)
+
+      // Detach root
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      anchor.focus()
+      await flush()
+
+      // Open and detach level1
+      pressKey('ArrowDown')
+      pressKey('ArrowRight')
+      await flush(50)
+      level1.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+
+      // Blur and re-focus → all levels should reset
+      anchor.blur()
+      await flush()
+      anchor.focus()
+      await flush()
+
+      // After focus, highlights should be cleared and activeIndex reset
+      expect(itemDrawing.classList.contains('highlight')).toBe(false)
+      expect(l1Item.classList.contains('highlight')).toBe(false)
     })
   })
 

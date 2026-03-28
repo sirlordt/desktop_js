@@ -297,6 +297,22 @@ export class UIHintWC extends HTMLElement {
     if (this._disabled || this._destroyed || !this._el) return
     this._clearTimers()
 
+    // Resolve z-index from anchor's stacking context
+    if (this._anchor) {
+      let maxZ = 0
+      let el: HTMLElement | null = this._anchor
+      while (el) {
+        const z = parseInt(el.style.zIndex) || 0
+        if (z > maxZ) maxZ = z
+        const parent: HTMLElement | null = el.parentElement
+        if (parent) { el = parent } else {
+          const root = el.getRootNode() as ShadowRoot | Document
+          el = root instanceof ShadowRoot ? root.host as HTMLElement : null
+        }
+      }
+      this._el.style.zIndex = `${maxZ + 1}`
+    }
+
     this._el.style.display = ''
     this._el.style.visibility = 'hidden'
     this._el.style.opacity = '0'

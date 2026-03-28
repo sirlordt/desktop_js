@@ -710,7 +710,334 @@ describe('sub-menus', () => {
   })
 
   // ═══════════════════════════════════════
-  // 7c. Titlebar focus preservation
+  // 7c. Keyboard nav to detached sub-menu
+  // ═══════════════════════════════════════
+
+  describe('keyboard navigation to detached sub-menu', () => {
+    it('ArrowRight on item with detached sub-menu highlights first item in tool window', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      const itemFlatten = createItem('Flatten')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+      root.addChild(itemFlatten)
+
+      const sub = createPopup({ detachable: true, title: 'Drawing' })
+      const subItem0 = createItem('Pencil')
+      const subItem1 = createItem('Eraser')
+      const subItem2 = createItem('Fill')
+      sub.addChild(subItem0)
+      sub.addChild(subItem1)
+      sub.addChild(subItem2)
+      itemDrawing.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Open sub-menu via keyboard
+      pressKey('ArrowDown')  // highlight Select All
+      pressKey('ArrowDown')  // highlight Drawing
+      pressKey('ArrowRight') // open sub-menu
+      await flush(50)
+      expect(sub.state).toBe('attached')
+
+      // Detach the sub-menu
+      sub.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(sub.state).toBe('detached')
+
+      // Navigate back to root: ArrowLeft clears sub-menu delegation,
+      // but Drawing stays highlighted in root (activeIndex unchanged)
+      pressKey('ArrowLeft')
+      await flush()
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      // ArrowRight on Drawing (still highlighted) → redirect nav to detached sub-menu
+      pressKey('ArrowRight')
+      await flush()
+
+      // The detached sub-menu should have its first item highlighted
+      expect(subItem0.classList.contains('highlight')).toBe(true)
+
+      // ArrowDown should navigate within the detached sub-menu
+      pressKey('ArrowDown')
+      await flush()
+      expect(subItem0.classList.contains('highlight')).toBe(false)
+      expect(subItem1.classList.contains('highlight')).toBe(true)
+
+      // ArrowLeft should return to root popup
+      pressKey('ArrowLeft')
+      await flush()
+      expect(subItem1.classList.contains('highlight')).toBe(false)
+      // Drawing should still be highlighted in root
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+    })
+
+    it('ArrowRight navigates to sub-menu detached via mouse hover', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+
+      const sub = createPopup({ detachable: true, title: 'Drawing' })
+      const subItem0 = createItem('Pencil')
+      const subItem1 = createItem('Eraser')
+      sub.addChild(subItem0)
+      sub.addChild(subItem1)
+      itemDrawing.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Open sub-menu via mouse hover (simulated by calling openSubMenu directly)
+      itemDrawing.openSubMenu()
+      await flush(50)
+      expect(sub.state).toBe('attached')
+
+      // Detach the sub-menu via drag
+      sub.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(sub.state).toBe('detached')
+
+      // Now navigate via keyboard: highlight Drawing, press ArrowRight
+      pressKey('ArrowDown')  // highlight Select All
+      pressKey('ArrowDown')  // highlight Drawing
+      pressKey('ArrowRight') // should redirect to detached sub-menu
+      await flush()
+
+      expect(subItem0.classList.contains('highlight')).toBe(true)
+
+      // Navigate and return
+      pressKey('ArrowDown')
+      expect(subItem1.classList.contains('highlight')).toBe(true)
+      pressKey('ArrowLeft')
+      await flush()
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+    })
+  })
+
+  // ═══════════════════════════════════════
+  // 7c-2. Detached ROOT popup: ArrowRight/Enter open sub-menus
+  // ═══════════════════════════════════════
+
+  describe('detached root popup sub-menu keyboard nav', () => {
+    it('ArrowRight opens sub-menu when root popup is detached', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      const itemFlatten = createItem('Flatten')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+      root.addChild(itemFlatten)
+
+      const sub = createPopup({ detachable: true, title: 'Drawing' })
+      const subItem0 = createItem('Pencil')
+      const subItem1 = createItem('Eraser')
+      sub.addChild(subItem0)
+      sub.addChild(subItem1)
+      itemDrawing.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Detach the ROOT popup itself
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      // Focus anchor so detached nav activates
+      anchor.focus()
+      await flush()
+
+      // Navigate down to Drawing
+      pressKey('ArrowDown')  // highlight Select All
+      pressKey('ArrowDown')  // highlight Drawing
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      // ArrowRight should open the sub-menu (attached) or navigate to detached
+      pressKey('ArrowRight')
+      await flush(50)
+
+      // Sub-menu should be visible and first item highlighted
+      expect(sub.visible).toBe(true)
+      expect(subItem0.classList.contains('highlight')).toBe(true)
+    })
+
+    it('ArrowDown navigates within opened sub-menu, not parent', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      const itemFlatten = createItem('Flatten')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+      root.addChild(itemFlatten)
+
+      const sub = createPopup({ detachable: true, title: 'Drawing' })
+      const subItem0 = createItem('Pencil')
+      const subItem1 = createItem('Eraser')
+      const subItem2 = createItem('Fill')
+      sub.addChild(subItem0)
+      sub.addChild(subItem1)
+      sub.addChild(subItem2)
+      itemDrawing.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Detach the ROOT popup
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      anchor.focus()
+      await flush()
+
+      // Navigate to Drawing and open sub-menu
+      pressKey('ArrowDown')  // highlight Select All
+      pressKey('ArrowDown')  // highlight Drawing
+      pressKey('ArrowRight') // open sub-menu → Pencil highlighted
+      await flush(50)
+      expect(subItem0.classList.contains('highlight')).toBe(true)
+
+      // ArrowDown should move within sub-menu, NOT parent
+      pressKey('ArrowDown')
+      await flush()
+      expect(subItem1.classList.contains('highlight')).toBe(true)
+      // Parent's highlight should still be on Drawing (unchanged)
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+      expect(itemFlatten.classList.contains('highlight')).toBe(false)
+
+      // ArrowDown again
+      pressKey('ArrowDown')
+      await flush()
+      expect(subItem2.classList.contains('highlight')).toBe(true)
+
+      // ArrowUp should go back within sub-menu
+      pressKey('ArrowUp')
+      await flush()
+      expect(subItem1.classList.contains('highlight')).toBe(true)
+
+      // ArrowLeft should return control to parent
+      pressKey('ArrowLeft')
+      await flush()
+      expect(subItem1.classList.contains('highlight')).toBe(false)
+      expect(itemDrawing.classList.contains('highlight')).toBe(true)
+
+      // ArrowDown should now move within parent again
+      pressKey('ArrowDown')
+      await flush()
+      expect(itemFlatten.classList.contains('highlight')).toBe(true)
+    })
+
+    it('delegated nav works for 3-level deep sub-menus in detached root', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemDrawing)
+
+      const level1 = createPopup({ detachable: true, title: 'Drawing' })
+      const l1Item0 = createItem('Brush Type')
+      const l1Item1 = createItem('Eraser')
+      level1.addChild(l1Item0)
+      level1.addChild(l1Item1)
+      itemDrawing.subMenu = level1
+
+      const level2 = createPopup({ detachable: true, title: 'Brush Type' })
+      const l2Item0 = createItem('Round')
+      const l2Item1 = createItem('Flat')
+      level2.addChild(l2Item0)
+      level2.addChild(l2Item1)
+      l1Item0.subMenu = level2
+
+      root.show()
+      await flush(50)
+
+      // Detach root
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      anchor.focus()
+      await flush()
+
+      // Navigate: root → Drawing → ArrowRight → Brush Type → ArrowRight → Round
+      pressKey('ArrowDown')   // highlight Drawing
+      pressKey('ArrowRight')  // open level1, highlight Brush Type
+      await flush(50)
+      expect(l1Item0.classList.contains('highlight')).toBe(true)
+
+      pressKey('ArrowRight')  // open level2, highlight Round
+      await flush(50)
+      expect(l2Item0.classList.contains('highlight')).toBe(true)
+
+      // ArrowDown in deepest level
+      pressKey('ArrowDown')
+      await flush()
+      expect(l2Item1.classList.contains('highlight')).toBe(true)
+
+      // Escape should close deepest level and return to level1
+      pressKey('Escape')
+      await flush()
+      expect(l1Item0.classList.contains('highlight')).toBe(true)
+      expect(l2Item1.classList.contains('highlight')).toBe(false)
+    })
+
+    it('Enter opens sub-menu when root popup is detached and item has sub-menu', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      const itemSelect = createItem('Select All')
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemSelect)
+      root.addChild(itemDrawing)
+
+      const sub = createPopup({ detachable: true, title: 'Drawing' })
+      const subItem0 = createItem('Pencil')
+      sub.addChild(subItem0)
+      itemDrawing.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Detach the ROOT popup
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      anchor.focus()
+      await flush()
+
+      pressKey('ArrowDown')  // highlight Select All
+      pressKey('ArrowDown')  // highlight Drawing
+
+      // Enter on Drawing should open sub-menu, not just click
+      pressKey('Enter')
+      await flush(50)
+
+      expect(sub.visible).toBe(true)
+      expect(subItem0.classList.contains('highlight')).toBe(true)
+    })
+  })
+
+  // ═══════════════════════════════════════
+  // 7d. Titlebar focus preservation
   // ═══════════════════════════════════════
 
   describe('titlebar focus preservation', () => {

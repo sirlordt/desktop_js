@@ -468,6 +468,9 @@ export class UIPopupWC extends HTMLElement {
       this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
       if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
       if (win.onFocused) win.onFocused()
+      // Protect root menu popup's titlebar from being stripped by sub-menu
+      // window's standalone mousedown → onFocused() sibling cleanup.
+      win.simulateFocus = true
     } else if (this._kind === 'container' && this._parentMenuItem) {
       // Container sub-menu: do NOT steal focus — already handled above
     } else {
@@ -615,6 +618,7 @@ export class UIPopupWC extends HTMLElement {
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
           e.preventDefault(); e.stopPropagation()
           deepest._navigateUpDown(e.key === 'ArrowDown' ? 1 : -1)
+          if (deepest._state === 'detached') deepest._bringToolToFront()
           return
         }
         if (e.key === 'ArrowRight') {
@@ -744,6 +748,7 @@ export class UIPopupWC extends HTMLElement {
       this._activeSubMenu = subPopup
       subPopup._activeIndex = -1
       subPopup._navigateUpDown(1) // highlight first item
+      subPopup._bringToolToFront()
     } else {
       // Open the sub-menu
       item.openSubMenu()
@@ -808,11 +813,68 @@ export class UIPopupWC extends HTMLElement {
       const active = UIPopupWC._deepActiveElement()
       if (!active) return
       if (!UIPopupWC._containsDeep(win, active) && !this._anchor || !UIPopupWC._containsDeep(this._anchor!, active)) return
+
+      // Delegate to active sub-menu chain (same logic as attached mode)
+      if (this._activeSubMenu) {
+        const { deepest, parent } = UIPopupWC._findDeepestActive(this)
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault(); e.stopPropagation()
+          deepest._navigateUpDown(e.key === 'ArrowDown' ? 1 : -1)
+          if (deepest._state === 'detached') deepest._bringToolToFront()
+          return
+        }
+        if (e.key === 'ArrowRight') {
+          const subItem = deepest._getHighlightedItem()
+          if (subItem && (subItem as any).hasSubMenu) {
+            e.preventDefault(); e.stopPropagation()
+            deepest._openSubMenuOfHighlighted()
+          }
+          return
+        }
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault(); e.stopPropagation()
+          deepest._clearHighlight()
+          deepest._activeIndex = -1
+          const deepestParentItem = deepest._parentMenuItem
+          if (deepestParentItem && deepest._state === 'attached') {
+            deepestParentItem.closeSubMenuIfAttached()
+          }
+          parent._activeSubMenu = null
+          return
+        }
+        if (e.key === 'Enter') {
+          e.preventDefault(); e.stopPropagation()
+          const subItem = deepest._getHighlightedItem()
+          if (subItem) {
+            if ((subItem as any).hasSubMenu) deepest._openSubMenuOfHighlighted()
+            else subItem.click()
+          }
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault(); e.stopPropagation()
+          deepest._clearHighlight()
+          deepest._activeIndex = -1
+          if (deepest._parentMenuItem && deepest._state === 'attached') {
+            deepest._parentMenuItem.closeSubMenuIfAttached()
+          }
+          parent._activeSubMenu = null
+          return
+        }
+      }
+
       const items = this._getMenuItems()
       if (items.length === 0) return
-      if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items); this._bringToolToFront() }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1; this._highlightMenuItem(items); this._bringToolToFront() }
-      else if (e.key === 'Enter' && this._activeIndex >= 0) { e.preventDefault(); e.stopPropagation(); items[this._activeIndex].click() }
+      if (e.key === 'ArrowDown') { e.preventDefault(); e.stopPropagation(); this._closeSiblingSubMenus(); this._activeIndex = (this._activeIndex + 1) % items.length; this._highlightMenuItem(items); this._bringToolToFront() }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); e.stopPropagation(); this._closeSiblingSubMenus(); this._activeIndex = this._activeIndex <= 0 ? items.length - 1 : this._activeIndex - 1; this._highlightMenuItem(items); this._bringToolToFront() }
+      else if (e.key === 'ArrowRight' && this._activeIndex >= 0) { e.preventDefault(); e.stopPropagation(); this._openSubMenuOfHighlighted() }
+      else if (e.key === 'Enter' && this._activeIndex >= 0) {
+        e.preventDefault(); e.stopPropagation()
+        const item = items[this._activeIndex] as any
+        if (item.hasSubMenu) this._openSubMenuOfHighlighted()
+        else item.click()
+      }
     }
     document.addEventListener('keydown', this._keyNavHandler, true)
   }
@@ -1006,16 +1068,21 @@ export class UIPopupWC extends HTMLElement {
         el.style.top = `${fixedTop - r.top}px`
       }
 
-      if (this._overlord.manager) this._overlord.manager.bringToFront(this._overlord)
-      if (this._overlord.onFocused) this._overlord.onFocused()
     }
     // else: standalone detach — keep position:fixed, stay in current parent
 
     this._window.onClosed = () => this._returnFromDetached()
 
+    // Clear simulate-focus BEFORE restoring overlord focus, so that
+    // overlord.onFocused() can re-add 'focused' to tools that simulateFocus=false stripped.
     if (this._focusedBeforeOpen) {
       dispatchSimulateFocus(this._focusedBeforeOpen, false)
       this._focusedBeforeOpen = null
+    }
+
+    if (this._overlord) {
+      if (this._overlord.manager) this._overlord.manager.bringToFront(this._overlord)
+      if (this._overlord.onFocused) this._overlord.onFocused()
     }
 
     if (this._kind === 'menu') {

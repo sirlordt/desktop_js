@@ -243,6 +243,18 @@ export class HintWC extends HTMLElement {
   get animationDuration(): number { return this._animationDuration }
   set animationDuration(v: number) { this._animationDuration = v }
 
+  get anchor(): HTMLElement | null { return this._anchor }
+  set anchor(v: HTMLElement | null) { this._anchor = v }
+
+  get trigger(): HintTrigger[] { return this._triggers }
+  set trigger(v: HintTrigger | HintTrigger[]) { this._triggers = Array.isArray(v) ? v : [v] }
+
+  get marginMouseCursorX(): number { return this._marginMouseCursorX }
+  set marginMouseCursorX(v: number) { this._marginMouseCursorX = v }
+
+  get marginMouseCursorY(): number { return this._marginMouseCursorY }
+  set marginMouseCursorY(v: number) { this._marginMouseCursorY = v }
+
   show(): void {
     if (this._disabled || this._destroyed) return
     this._clearTimers()

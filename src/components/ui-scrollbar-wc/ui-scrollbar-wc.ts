@@ -368,6 +368,18 @@ export class ScrollBarWC extends HTMLElement {
   set showStartZone(v: boolean) { this._startEl.style.display = v ? '' : 'none' }
   set showEndZone(v: boolean) { this._endEl.style.display = v ? '' : 'none' }
 
+  get hover(): boolean { return this._hover }
+  set hover(v: boolean) { this._hover = v; this._applyClasses() }
+
+  get focusable(): boolean { return this.tabIndex >= 0 }
+  set focusable(v: boolean) { this.tabIndex = v ? 0 : -1 }
+
+  get customWidth(): number { return this._customWidth }
+  set customWidth(v: number) { this._customWidth = v; if (v > 0) this.style.width = `${v}px` }
+
+  get customHeight(): number { return this._customHeight }
+  set customHeight(v: number) { this._customHeight = v; if (v > 0) this.style.height = `${v}px` }
+
   increase(amount?: number): void { if (!this._disabled) this.value = this._value + (amount ?? this.step) }
   decrease(amount?: number): void { if (!this._disabled) this.value = this._value - (amount ?? this.step) }
 

@@ -216,6 +216,39 @@ export class ScrollBoxWC extends HTMLElement {
   // Public API
   // =====================
 
+  get scrollMode(): ScrollMode { return this._scroll }
+  set scrollMode(v: ScrollMode) { this._scroll = v }
+
+  get verticalScroll(): VerticalScrollPosition { return this._verticalScroll }
+  set verticalScroll(v: VerticalScrollPosition) { this._verticalScroll = v }
+
+  get horizontalScroll(): HorizontalScrollPosition { return this._horizontalScroll }
+  set horizontalScroll(v: HorizontalScrollPosition) { this._horizontalScroll = v }
+
+  get scrollBarSize(): ScrollBarSize { return this._sbSize }
+  set scrollBarSize(v: ScrollBarSize) { this._sbSize = v }
+
+  get scrollBarHover(): boolean { return this._sbHover }
+  set scrollBarHover(v: boolean) { this._sbHover = v }
+
+  get scrollBarTooltip(): boolean { return this._sbTooltip }
+  set scrollBarTooltip(v: boolean) { this._sbTooltip = v }
+
+  get borderWidth(): number { return this._pendingBorderWidth }
+  set borderWidth(v: number) { this._pendingBorderWidth = v; if (this._initialized) this._applyHostStyles() }
+
+  get borderColor(): string { return this._pendingBorderColor }
+  set borderColor(v: string) { this._pendingBorderColor = v; if (this._initialized) this._applyHostStyles() }
+
+  get borderStyle(): string { return this._pendingBorderStyle }
+  set borderStyle(v: string) { this._pendingBorderStyle = v; if (this._initialized) this._applyHostStyles() }
+
+  get backgroundColor(): string { return this._pendingBackgroundColor }
+  set backgroundColor(v: string) { this._pendingBackgroundColor = v; if (this._initialized) this._applyHostStyles() }
+
+  get opacity(): number { return this._pendingOpacity }
+  set opacity(v: number) { this._pendingOpacity = v; if (this._initialized) this._applyHostStyles() }
+
   get contentElement(): HTMLDivElement { return this._contentEl }
 
   get hScrollTop(): ScrollBarWC | null { return this._hScrollTop }

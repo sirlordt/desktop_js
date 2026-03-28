@@ -275,6 +275,41 @@ export class PopupWC extends HTMLElement {
   get parentRef(): HTMLElement | null { return this._parentRef }
   set parentRef(el: HTMLElement | null) { this._parentRef = el }
 
+  set kind(v: PopupKind) { this._kind = v }
+
+  get alignment(): string { return this._alignment }
+  set alignment(v: string) { this._alignment = v; if (this._state === 'attached') this._reposition() }
+
+  get margin(): number { return this._margin }
+  set margin(v: number) { this._margin = v; if (this._state === 'attached') this._reposition() }
+
+  get width(): number { return this._width }
+  set width(v: number) { this._width = v; if (this._window) this._window.width = v }
+
+  get height(): number { return this._height }
+  set height(v: number) { this._height = v; if (this._window) this._window.height = v }
+
+  get minWidth(): number { return this._minWidth }
+  set minWidth(v: number) { this._minWidth = v; if (this._window) this._window.minWidth = v }
+
+  get minHeight(): number { return this._minHeight }
+  set minHeight(v: number) { this._minHeight = v; if (this._window) this._window.minHeight = v }
+
+  get resizable(): boolean { return this._resizable }
+  set resizable(v: boolean) { this._resizable = v; if (this._window) this._window.resizable = v }
+
+  get detachable(): boolean { return this._detachable }
+  set detachable(v: boolean) { this._detachable = v }
+
+  get closeOnClickOutside(): boolean { return this._closeOnClickOutside }
+  set closeOnClickOutside(v: boolean) { this._closeOnClickOutside = v }
+
+  get closeOnEscape(): boolean { return this._closeOnEscape }
+  set closeOnEscape(v: boolean) { this._closeOnEscape = v }
+
+  get scrollMode(): ScrollMode | undefined { return this._scrollMode }
+  set scrollMode(v: ScrollMode | undefined) { this._scrollMode = v }
+
   show(): void {
     if (this._state !== 'closed' || this._destroyed) return
     if (!this._anchor) return

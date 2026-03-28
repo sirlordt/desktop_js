@@ -809,6 +809,18 @@ export class WindowWC extends HTMLElement implements IWindowChild {
 
   get scrollBox(): ScrollBoxWC | null { return this._scrollBox }
 
+  get titleBarStyle(): string { return this._titleBarStyle }
+  set titleBarStyle(v: string) {
+    this._titleBarStyle = v
+    if (this._built) this.titleBarElement.className = `ui-window__titlebar ${v}`
+  }
+
+  get titleBarHeight(): number { return this._titleBarHeight }
+  set titleBarHeight(v: number) {
+    this._titleBarHeight = v
+    if (this._built) this.titleBarElement.style.height = `${v}px`
+  }
+
   // ── Manager requests ──
 
   private _requestClose(): void {

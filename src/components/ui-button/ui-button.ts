@@ -1,7 +1,7 @@
 import { UIView } from '../common/ui-view'
-import { UIHint } from '../ui-hint/ui-hint'
+import { HintWC } from '../ui-hint-wc/ui-hint-wc'
 import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus-core'
-import type { HintAlignment, UIHintOptions } from '../common/types'
+import type { HintAlignment, HintWCOptions } from '../common/types'
 import styles from './ui-button.css?raw'
 
 /** Attributes handled by the layout core */
@@ -31,7 +31,7 @@ export class UIButton extends HTMLElement {
   private _iconLeftEl!: HTMLSpanElement
   private _iconRightEl!: HTMLSpanElement
   private _labelEl!: HTMLSpanElement
-  private _hint: UIHint | null = null
+  private _hint: HintWC | null = null
   private _hintExternal: boolean = false
 
   constructor() {
@@ -315,9 +315,9 @@ export class UIButton extends HTMLElement {
 
   // ── Hint integration ──
 
-  get uiHint(): UIHint | null { return this._hint }
+  get uiHint(): HintWC | null { return this._hint }
 
-  set uiHint(hint: UIHint | null) {
+  set uiHint(hint: HintWC | null) {
     this._destroyInternalHint()
     if (hint) {
       this._hint = hint
@@ -328,10 +328,10 @@ export class UIButton extends HTMLElement {
     }
   }
 
-  setHint(options: Partial<Omit<UIHintOptions, 'anchor'>>): UIHint {
+  setHint(options: Partial<Omit<HintWCOptions, 'anchor'>>): HintWC {
     this._destroyInternalHint()
     this._hintExternal = false
-    const hint = new UIHint({
+    const hint = new HintWC({
       anchor: this,
       trigger: 'hover',
       showDelay: 300,
@@ -359,7 +359,7 @@ export class UIButton extends HTMLElement {
       this._hint.alignment = alignment
       this._hint.arrow = arrow
     } else {
-      this._hint = new UIHint({
+      this._hint = new HintWC({
         anchor: this,
         content: text,
         alignment,

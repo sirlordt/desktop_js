@@ -1,6 +1,6 @@
 import '../components/ui-button/ui-button'
 import { UIButton } from '../components/ui-button/ui-button'
-import { UIHint } from '../components/ui-hint/ui-hint'
+import { HintWC } from '../components/ui-hint-wc/ui-hint-wc'
 import type { DemoRoute } from '../header'
 
 export const buttonsDemo: DemoRoute = {
@@ -454,7 +454,7 @@ export const buttonsDemo: DemoRoute = {
         borderRadius: 8,
       })
 
-      // External UIHint (top aligned)
+      // External HintWC (top aligned)
       const extBtn = document.createElement('ui-button') as UIButton
       extBtn.textContent = 'External Hint'
       extBtn.setAttribute('variant', 'success')
@@ -471,7 +471,8 @@ export const buttonsDemo: DemoRoute = {
         <div style="font-size:11px;margin-bottom:3px;opacity:0.7;">Build: 1.2s</div>
         <div style="font-size:11px;opacity:0.7;">Tests: 42/42 green</div>
       `
-      extBtn.uiHint = new UIHint({
+      const extHint = new HintWC()
+      extHint.configure({
         anchor: extBtn,
         content: extContent,
         trigger: 'hover',
@@ -481,6 +482,7 @@ export const buttonsDemo: DemoRoute = {
         showDelay: 100,
         hideDelay: 100,
       })
+      extBtn.uiHint = extHint as any
     }
   },
 }

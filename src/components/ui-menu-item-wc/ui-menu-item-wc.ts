@@ -213,6 +213,7 @@ export class UIMenuItemWC extends HTMLElement {
   set text(value: string) {
     this._text = value
     this._textEl.textContent = value
+    if (this.getAttribute('text') !== value) this.setAttribute('text', value)
     this._checkTruncation()
   }
 
@@ -238,18 +239,25 @@ export class UIMenuItemWC extends HTMLElement {
     if (!this._pushable || this._pushed === value) return
     this._pushed = value
     this.classList.toggle('pushed', value)
+    if (value) { if (!this.hasAttribute('pushed')) this.setAttribute('pushed', '') }
+    else { if (this.hasAttribute('pushed')) this.removeAttribute('pushed') }
     this._updateLeftSlot()
     for (const h of this._pushedChangeHandlers) h(value)
 
     this.dispatchEvent(new CustomEvent('menuitem-pushed', {
       bubbles: true, composed: true, detail: { pushed: value },
     }))
+
+    // Standard change event for framework two-way binding
+    this.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
   }
 
   get disabled(): boolean { return this._disabled }
   set disabled(value: boolean) {
     this._disabled = value
     this.classList.toggle('disabled', value)
+    if (value) { if (!this.hasAttribute('disabled')) this.setAttribute('disabled', '') }
+    else { if (this.hasAttribute('disabled')) this.removeAttribute('disabled') }
   }
 
   set leftElement(el: HTMLElement | null) {
@@ -258,7 +266,8 @@ export class UIMenuItemWC extends HTMLElement {
   }
 
   set rightElement(el: HTMLElement | null) {
-    this._rightEl.innerHTML = ''
+    // Clear non-slot children (preserve the <slot> for framework content)
+    UIMenuItemWC._clearNonSlotChildren(this._rightEl)
     if (el) {
       this._rightEl.appendChild(el)
       this._rightEl.classList.add('has-content')
@@ -291,6 +300,8 @@ export class UIMenuItemWC extends HTMLElement {
   get pushable(): boolean { return this._pushable }
   set pushable(value: boolean) {
     this._pushable = value
+    if (value) { if (!this.hasAttribute('pushable')) this.setAttribute('pushable', '') }
+    else { if (this.hasAttribute('pushable')) this.removeAttribute('pushable') }
     if (!value && this._pushed) {
       this._pushed = false
       this.classList.remove('pushed')
@@ -303,6 +314,7 @@ export class UIMenuItemWC extends HTMLElement {
     this.classList.remove(this._size)
     this._size = value
     this.classList.add(this._size)
+    if (this.getAttribute('size') !== value) this.setAttribute('size', value)
     this._checkTruncation()
   }
 
@@ -311,6 +323,7 @@ export class UIMenuItemWC extends HTMLElement {
     this._textEl.classList.remove(`text--${this._textAlign}`)
     this._textAlign = value
     this._textEl.classList.add(`text--${this._textAlign}`)
+    if (this.getAttribute('text-align') !== value) this.setAttribute('text-align', value)
   }
 
   /** Minimum width needed to display text + shortcut without ellipsis */
@@ -353,6 +366,17 @@ export class UIMenuItemWC extends HTMLElement {
   }
 
   // ── Static helpers ──
+
+  /** Remove all children except <slot> elements from a shadow DOM container */
+  private static _clearNonSlotChildren(container: HTMLElement): void {
+    const toRemove: Node[] = []
+    for (let i = 0; i < container.childNodes.length; i++) {
+      const node = container.childNodes[i]
+      if (node instanceof HTMLSlotElement) continue
+      toRemove.push(node)
+    }
+    for (const node of toRemove) container.removeChild(node)
+  }
 
   private static _makeSvg(paths: string[], size = 14): HTMLElement {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -414,7 +438,7 @@ export class UIMenuItemWC extends HTMLElement {
 
     if (this._pushable && this._leftElement && this._pushedElement) {
       if (!this._animContainer) {
-        this._leftEl.innerHTML = ''
+        UIMenuItemWC._clearNonSlotChildren(this._leftEl)
         this._animContainer = document.createElement('div')
         this._animContainer.className = 'left-anim'
 
@@ -440,7 +464,7 @@ export class UIMenuItemWC extends HTMLElement {
       this._animContainer = null
       this._leftIconWrap = null
       this._pushedIconWrap = null
-      this._leftEl.innerHTML = ''
+      UIMenuItemWC._clearNonSlotChildren(this._leftEl)
       if (this._pushed && this._pushedElement) {
         this._leftEl.appendChild(this._pushedElement)
       } else if (this._leftElement) {
@@ -476,3 +500,9 @@ export class UIMenuItemWC extends HTMLElement {
 }
 
 customElements.define('menuitem-wc', UIMenuItemWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'menuitem-wc': UIMenuItemWC
+  }
+}

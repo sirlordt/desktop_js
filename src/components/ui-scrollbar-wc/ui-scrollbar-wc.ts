@@ -273,6 +273,14 @@ export class UIScrollBarWC extends HTMLElement {
       bubbles: true,
       composed: true,
     }))
+
+    // Standard events for framework two-way binding (mirrors <input type="range">)
+    if (event === 'change') {
+      this.dispatchEvent(new Event('input', { bubbles: true, composed: true }))
+    }
+    if (event === 'dragend') {
+      this.dispatchEvent(new Event('change', { bubbles: true, composed: true }))
+    }
   }
 
   // =====================
@@ -312,6 +320,8 @@ export class UIScrollBarWC extends HTMLElement {
   set disabled(value: boolean) {
     this._disabled = value
     this.classList.toggle('disabled', value)
+    if (value) { if (!this.hasAttribute('disabled')) this.setAttribute('disabled', '') }
+    else { if (this.hasAttribute('disabled')) this.removeAttribute('disabled') }
     if (this._decToolBtn) this._decToolBtn.disabled = value
     if (this._incToolBtn) this._incToolBtn.disabled = value
   }
@@ -342,6 +352,7 @@ export class UIScrollBarWC extends HTMLElement {
   get kind(): ScrollBarKind { return this._kind }
   set kind(v: ScrollBarKind) {
     this._kind = v
+    if (this.getAttribute('kind') !== v) this.setAttribute('kind', v)
     this._updateToolBtnIcons()
     this._applyClasses()
   }
@@ -349,15 +360,24 @@ export class UIScrollBarWC extends HTMLElement {
   get size(): ScrollBarSize { return this._size }
   set size(v: ScrollBarSize) {
     this._size = v
+    if (this.getAttribute('size') !== v) this.setAttribute('size', v)
     this._updateToolBtnIcons()
     this._applyClasses()
   }
 
   get min(): number { return this._min }
-  set min(v: number) { this._min = v; this._updateThumb() }
+  set min(v: number) {
+    this._min = v
+    if (this.getAttribute('min') !== String(v)) this.setAttribute('min', String(v))
+    this._updateThumb()
+  }
 
   get max(): number { return this._max }
-  set max(v: number) { this._max = v; this._updateThumb() }
+  set max(v: number) {
+    this._max = v
+    if (this.getAttribute('max') !== String(v)) this.setAttribute('max', String(v))
+    this._updateThumb()
+  }
 
   get value(): number { return this._value }
   set value(v: number) {
@@ -845,3 +865,9 @@ export class UIScrollBarWC extends HTMLElement {
 
 // Register the custom element
 customElements.define('scrollbar-wc', UIScrollBarWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'scrollbar-wc': UIScrollBarWC
+  }
+}

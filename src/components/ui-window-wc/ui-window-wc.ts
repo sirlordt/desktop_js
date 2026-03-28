@@ -430,8 +430,11 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
   get title(): string { return this._title }
   set title(v: string) {
     this._title = v
-    this._titleEl.textContent = v
-    if (this._titleHint) this._titleHint.content = v
+    if (this._built) {
+      this._titleEl.textContent = v
+      if (this._titleHint) this._titleHint.content = v
+    }
+    if (this.getAttribute('title') !== v) this.setAttribute('title', v)
   }
 
   get kind(): WindowKind { return this._kind }
@@ -1226,3 +1229,9 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
 }
 
 customElements.define('window-wc', UIWindowWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'window-wc': UIWindowWC
+  }
+}

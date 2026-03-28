@@ -298,3 +298,9 @@ export class UIPanelWC extends HTMLElement {
 }
 
 customElements.define('panel-wc', UIPanelWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'panel-wc': UIPanelWC
+  }
+}

@@ -380,3 +380,9 @@ export class UIButtonWC extends HTMLElement {
 }
 
 customElements.define('ui-button', UIButtonWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'ui-button': UIButtonWC
+  }
+}

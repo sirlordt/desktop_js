@@ -66,7 +66,8 @@ export class UIHintWC extends HTMLElement {
   private _autoDestroyTimer: ReturnType<typeof setTimeout> | null = null
   private _anchor: HTMLElement | null = null
 
-  // --- DOM (popup in document.body) ---
+  // --- DOM (popup in container, defaults to document.body) ---
+  private _container: HTMLElement = document.body
   private _el!: HTMLDivElement
   private _arrowEl!: HTMLDivElement
   private _arrowFillEl!: HTMLDivElement
@@ -120,6 +121,7 @@ export class UIHintWC extends HTMLElement {
     this._marginMouseCursorX = o.marginMouseCursorX ?? this._marginMouseCursorX
     this._marginMouseCursorY = o.marginMouseCursorY ?? this._marginMouseCursorY
 
+    if (o.container) this._container = o.container
     if (o.name) this._name = o.name
 
     if (o.trigger) {
@@ -251,6 +253,17 @@ export class UIHintWC extends HTMLElement {
 
   get anchor(): HTMLElement | null { return this._anchor }
   set anchor(v: HTMLElement | null) { this._anchor = v }
+
+  /** Container element for the popup DOM (default: document.body) */
+  get container(): HTMLElement { return this._container }
+  set container(v: HTMLElement) {
+    if (this._container === v) return
+    this._container = v
+    // Re-parent existing popup element if already built
+    if (this._el && this._el.parentNode !== v) {
+      v.appendChild(this._el)
+    }
+  }
 
   get trigger(): HintTrigger[] { return this._triggers }
   set trigger(v: HintTrigger | HintTrigger[]) { this._triggers = Array.isArray(v) ? v : [v] }
@@ -462,7 +475,7 @@ export class UIHintWC extends HTMLElement {
 
     if (this._name) this._el.id = this._name
 
-    document.body.appendChild(this._el)
+    this._container.appendChild(this._el)
   }
 
   private _applyThemeStyles(): void {
@@ -713,3 +726,9 @@ export class UIHintWC extends HTMLElement {
 }
 
 customElements.define('hint-wc', UIHintWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'hint-wc': UIHintWC
+  }
+}

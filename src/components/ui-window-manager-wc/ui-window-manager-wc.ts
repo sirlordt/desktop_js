@@ -27,12 +27,17 @@ export class UIWindowManagerWC extends UIPanelWC {
   private _cyclePrev: WindowCycleShortcut = { key: 'F6', altKey: true, shiftKey: true }
 
   animated: boolean = true
+  /** When true, disables the MutationObserver that auto-detects <window-wc>
+   *  children. Use this in framework environments (React, Vue, etc.) where
+   *  the framework controls DOM mutations — call addWindow()/removeWindow()
+   *  explicitly instead. */
+  manualChildManagement: boolean = false
   private _batchOp: boolean = false
   private _managerInitialized: boolean = false
   private _childObserver: MutationObserver | null = null
 
   static get observedAttributes(): string[] {
-    return [...UIPanelWC.observedAttributes, 'animated', 'minimize-slot-width', 'minimize-slot-height']
+    return [...UIPanelWC.observedAttributes, 'animated', 'minimize-slot-width', 'minimize-slot-height', 'manual-child-management']
   }
 
   constructor(options?: UIWindowManagerOptions) {
@@ -62,6 +67,7 @@ export class UIWindowManagerWC extends UIPanelWC {
 
     if (options.cycleNextShortcut) this._cycleNext = options.cycleNextShortcut
     if (options.cyclePrevShortcut) this._cyclePrev = options.cyclePrevShortcut
+    if (options.manualChildManagement != null) this.manualChildManagement = options.manualChildManagement
 
     this._ensureManagerInit()
   }
@@ -78,15 +84,17 @@ export class UIWindowManagerWC extends UIPanelWC {
       this.style.outline = 'none'
     }
 
-    // Auto-detect existing <window-wc> children
-    for (const child of Array.from(this.children)) {
-      if (child.tagName === 'WINDOW-WC' && !this._windows.includes(child as unknown as IWindowChild)) {
-        this.addWindow(child as unknown as IWindowChild)
+    // Auto-detect existing <window-wc> children (skip in manual mode)
+    if (!this.manualChildManagement) {
+      for (const child of Array.from(this.children)) {
+        if (child.tagName === 'WINDOW-WC' && !this._windows.includes(child as unknown as IWindowChild)) {
+          this.addWindow(child as unknown as IWindowChild)
+        }
       }
     }
 
-    // Observe future child additions/removals
-    if (!this._childObserver) {
+    // Observe future child additions/removals (skip in manual mode)
+    if (!this.manualChildManagement && !this._childObserver) {
       this._childObserver = new MutationObserver(mutations => {
         for (const m of mutations) {
           for (const node of Array.from(m.addedNodes)) {
@@ -119,6 +127,13 @@ export class UIWindowManagerWC extends UIPanelWC {
       case 'animated': this.animated = val !== null; return
       case 'minimize-slot-width': this.minimizeSlotWidth = val !== null ? parseFloat(val) : 160; return
       case 'minimize-slot-height': this.minimizeSlotHeight = val !== null ? parseFloat(val) : 28; return
+      case 'manual-child-management':
+        this.manualChildManagement = val !== null
+        if (this.manualChildManagement && this._childObserver) {
+          this._childObserver.disconnect()
+          this._childObserver = null
+        }
+        return
     }
     super.attributeChangedCallback(name, _old, val)
   }
@@ -673,3 +688,9 @@ export class UIWindowManagerWC extends UIPanelWC {
 }
 
 customElements.define('window-manager-wc', UIWindowManagerWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'window-manager-wc': UIWindowManagerWC
+  }
+}

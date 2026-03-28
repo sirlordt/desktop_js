@@ -644,6 +644,9 @@ export class UIScrollBoxWC extends HTMLElement {
       bubbles: true,
       composed: true,
     }))
+
+    // Standard scroll event for framework integration
+    this.dispatchEvent(new Event('scroll', { bubbles: true, composed: true }))
   }
 
   // =====================
@@ -701,3 +704,9 @@ export class UIScrollBoxWC extends HTMLElement {
 }
 
 customElements.define('scrollbox-wc', UIScrollBoxWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'scrollbox-wc': UIScrollBoxWC
+  }
+}

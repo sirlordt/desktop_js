@@ -49,7 +49,6 @@ export class UIPopupWC extends HTMLElement {
   private _parentRef: HTMLElement | null = null
 
   private _configured = false
-  private _childObserver: MutationObserver | null = null
 
   static get observedAttributes() {
     return [...POPUP_ATTRS]
@@ -120,20 +119,9 @@ export class UIPopupWC extends HTMLElement {
     if (!this._configured) {
       this._readAttributes()
     }
-
-    // Mirror children from <popup-wc> to internal UIWindowWC
-    this._mirrorChildren()
-    if (!this._childObserver) {
-      this._childObserver = new MutationObserver(() => this._mirrorChildren())
-      this._childObserver.observe(this, { childList: true })
-    }
   }
 
   disconnectedCallback(): void {
-    if (this._childObserver) {
-      this._childObserver.disconnect()
-      this._childObserver = null
-    }
     if (!this._destroyed && this.hasAttribute('auto-destroy')) {
       this._autoDestroyTimer = setTimeout(() => { this._autoDestroyTimer = null; this.destroy() }, 0)
     }
@@ -177,12 +165,36 @@ export class UIPopupWC extends HTMLElement {
     }
   }
 
-  /** Mirror light DOM children from <popup-wc> into the internal UIWindowWC's content */
-  private _mirrorChildren(): void {
+  /**
+   * Move light DOM children from <popup-wc> into the internal UIWindowWC's content.
+   * Called once at show() — NOT via MutationObserver — so frameworks don't race.
+   */
+  private _mirrorChildrenToWindow(): void {
     if (!this._window) return
     const content = this._window.contentElement
     while (this.firstChild) {
       content.appendChild(this.firstChild)
+    }
+  }
+
+  /**
+   * Return children from the UIWindowWC back to <popup-wc> so that
+   * frameworks (React, Vue, etc.) find them where they were rendered.
+   */
+  private _returnChildrenFromWindow(): void {
+    if (!this._window) return
+    const content = this._window.contentElement
+    // Only return children that are NOT from the imperative addChild() API
+    const imperativeSet = new Set(this._children)
+    const toReturn: Node[] = []
+    for (let i = 0; i < content.childNodes.length; i++) {
+      const node = content.childNodes[i]
+      if (!imperativeSet.has(node as HTMLElement)) {
+        toReturn.push(node)
+      }
+    }
+    for (const node of toReturn) {
+      this.appendChild(node)
     }
   }
 
@@ -284,10 +296,17 @@ export class UIPopupWC extends HTMLElement {
   get parentRef(): HTMLElement | null { return this._parentRef }
   set parentRef(el: HTMLElement | null) { this._parentRef = el }
 
-  set kind(v: PopupKind) { this._kind = v }
+  set kind(v: PopupKind) {
+    this._kind = v
+    if (this.getAttribute('kind') !== v) this.setAttribute('kind', v)
+  }
 
   get alignment(): string { return this._alignment }
-  set alignment(v: string) { this._alignment = v; if (this._state === 'attached') this._reposition() }
+  set alignment(v: string) {
+    this._alignment = v
+    if (this.getAttribute('alignment') !== v) this.setAttribute('alignment', v)
+    if (this._state === 'attached') this._reposition()
+  }
 
   get margin(): number { return this._margin }
   set margin(v: number) { this._margin = v; if (this._state === 'attached') this._reposition() }
@@ -327,6 +346,7 @@ export class UIPopupWC extends HTMLElement {
     if (!this.isConnected) document.body.appendChild(this as unknown as Node)
 
     this._ensureWindow()
+    this._mirrorChildrenToWindow()
     const win = this._window!
     const el = win as HTMLElement
     el.classList.remove('wm-anim', 'wm-anim-close', 'wm-anim-open-start')
@@ -431,6 +451,7 @@ export class UIPopupWC extends HTMLElement {
       this._focusedBeforeOpen = null
     }
 
+    this._returnChildrenFromWindow()
     const el = this._window as HTMLElement
     if (el.parentNode) el.parentNode.removeChild(el)
     this._state = 'closed'
@@ -479,10 +500,6 @@ export class UIPopupWC extends HTMLElement {
     this._removeListeners()
     this._listeners.clear()
     this._children.length = 0
-    if (this._childObserver) {
-      this._childObserver.disconnect()
-      this._childObserver = null
-    }
   }
 
   // ── Menu nav ──
@@ -831,3 +848,9 @@ export class UIPopupWC extends HTMLElement {
 }
 
 customElements.define('popup-wc', UIPopupWC)
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'popup-wc': UIPopupWC
+  }
+}

@@ -477,20 +477,21 @@ export class UIPopupWC extends HTMLElement {
 
     this._reposition()
 
-    if (this._parentMenuItem) {
-      // Sub-menu: skip focus management entirely — the root popup owns it.
+    if (this._parentMenuItem && this._kind === 'menu') {
+      // Menu sub-menu: skip focus management — the root popup owns keyboard nav.
       // Just visually mark this window's titlebar as focused.
+      win.simulateFocus = true
+    } else if (this._parentMenuItem && this._kind === 'container') {
+      // Container sub-menu: visual focus only here — _bindContainerNav()
+      // will move real focus to the first [data-focusable] child later.
+      win.titleBarElement.classList.add('focused')
       win.simulateFocus = true
     } else if (this._kind === 'menu') {
       // Root menu: anchor keeps real focus, popup uses document-level keyboard nav
       this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
       if (this._focusedBeforeOpen) applySimulateFocus(this._focusedBeforeOpen, true)
-      // Mark titlebar as focused without calling onFocused() — that would
-      // strip 'focused' from sibling windows in the same container.
       win.titleBarElement.classList.add('focused')
       win.simulateFocus = true
-    } else if (this._kind === 'container' && this._parentMenuItem) {
-      // Container sub-menu: do NOT steal focus — already handled above
     } else {
       // Container mode (standalone): move real focus to popup for Tab cycling
       this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
@@ -987,8 +988,12 @@ export class UIPopupWC extends HTMLElement {
   private _bindContainerNav(): void {
     if (!this._window) return
     this._setChildrenFocusable(true)
-    const first = this._window.contentElement.querySelector<HTMLElement>('[data-focusable]')
-    if (first) first.focus({ preventScroll: true })
+    // Sub-menu containers don't auto-focus — the parent popup owns focus.
+    // Only standalone containers move focus to their first child.
+    if (!this._parentMenuItem) {
+      const first = this._window.contentElement.querySelector<HTMLElement>('[data-focusable]')
+      if (first) first.focus({ preventScroll: true })
+    }
   }
 
   // ── Parent resolution ──

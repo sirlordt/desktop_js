@@ -420,14 +420,42 @@ export const popupsWCDemo: DemoRoute = {
     w2DetMenu.addChild(w2Resize)
     w2DetachBtn.addEventListener('click', () => w2DetMenu.toggle())
 
+    // Menu with container sub-menu at level 2
+    const w2ContBtn = makeBtn('Open Menu + Container')
+    const w2ContMenu = new UIPopupWC({ anchor: w2ContBtn, alignment: 'BottomLeft', width: 190, height: 180, detachable: true, title: 'Edit' })
+    w2ContMenu.overlord = secondWin
+    const w2SettingsItem = new UIMenuItemWC({ text: 'Settings', leftElement: makeIcon(ICONS.grid) })
+    const w2SettingsSub = new UIPopupWC({ anchor: w2SettingsItem, kind: 'container', width: 220, height: 160, detachable: true, title: 'Settings' })
+    const w2SettingsContent = document.createElement('div')
+    w2SettingsContent.style.cssText = 'display:flex;flex-direction:column;gap:8px;padding:10px 12px;font-size:13px;'
+    for (const name of ['GTK4 Light', 'GTK4 Dark', 'Win95 Light', 'Win95 Dark']) {
+      const label = document.createElement('label')
+      label.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;'
+      label.setAttribute('data-focusable', '')
+      label.innerHTML = `<input type="radio" name="w2-theme"> ${name}`
+      label.addEventListener('change', () => { w2Status.textContent = `Theme: ${name}` })
+      w2SettingsContent.appendChild(label)
+    }
+    w2SettingsSub.addChild(w2SettingsContent)
+    w2SettingsItem.subMenu = w2SettingsSub
+    const w2About = new UIMenuItemWC({ text: 'About', leftElement: makeIcon(ICONS.compass) })
+    w2About.onClick(() => { w2Status.textContent = 'Action: About' })
+    const w2Export = new UIMenuItemWC({ text: 'Export', leftElement: makeIcon(ICONS.save) })
+    w2Export.onClick(() => { w2Status.textContent = 'Action: Export' })
+    w2ContMenu.addChild(w2About)
+    w2ContMenu.addChild(w2SettingsItem)
+    w2ContMenu.addChild(w2Export)
+    w2ContBtn.addEventListener('click', () => w2ContMenu.toggle())
+
     const w2HoverLabel = document.createElement('div')
     w2HoverLabel.style.cssText = 'font-size:12px;opacity:0.6;width:100%;'
     w2HoverLabel.textContent = 'Hover: —'
     const w2SetHover = (item: UIMenuItemWC) => item.onHover(() => { w2HoverLabel.textContent = `Hover: ${item.text}` })
-    ;[w2AdjustItem, w2Crop, w2Resize, ...w2AdjItems].forEach(w2SetHover)
+    ;[w2AdjustItem, w2Crop, w2Resize, ...w2AdjItems, w2About, w2SettingsItem, w2Export].forEach(w2SetHover)
 
     secondWin.contentElement.appendChild(w2MenuBtn)
     secondWin.contentElement.appendChild(w2DetachBtn)
+    secondWin.contentElement.appendChild(w2ContBtn)
     secondWin.contentElement.appendChild(w2Status)
     secondWin.contentElement.appendChild(w2HoverLabel)
 

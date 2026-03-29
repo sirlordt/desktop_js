@@ -34,6 +34,7 @@ export class UIPopupWC extends HTMLElement {
   private _scrollMode: ScrollMode | undefined = undefined
   private _minWidth: number = 150
   private _minHeight: number = 100
+  private _maxHeight: number = 0
 
   private _closeOnClickOutside: boolean = true
   private _closeOnEscape: boolean = true
@@ -147,6 +148,7 @@ export class UIPopupWC extends HTMLElement {
     this._scrollMode = o.scroll ?? this._scrollMode
     this._minWidth = o.minWidth ?? this._minWidth
     this._minHeight = o.minHeight ?? this._minHeight
+    this._maxHeight = o.maxHeight ?? this._maxHeight
     this._detachedScroll = o.detachedScroll ?? this._detachedScroll
 
     this._configured = true
@@ -396,6 +398,9 @@ export class UIPopupWC extends HTMLElement {
   get resizable(): boolean { return this._resizable }
   set resizable(v: boolean) { this._resizable = v; if (this._window) this._window.resizable = v }
 
+  get maxHeight(): number { return this._maxHeight }
+  set maxHeight(v: number) { this._maxHeight = v }
+
   get detachable(): boolean { return this._detachable }
   set detachable(v: boolean) { this._detachable = v }
 
@@ -445,9 +450,10 @@ export class UIPopupWC extends HTMLElement {
 
     if (this._kind === 'menu') this._setChildrenFocusable(false)
 
-    // Auto-size menu popups to fit their widest item
+    // Auto-size menu popups to fit their content
     if (this._kind === 'menu') {
       this._autoSizeMenuWidth(win)
+      this._autoSizeMenuHeight(win)
     }
 
     const anchorRect = this._anchor.getBoundingClientRect()
@@ -1243,6 +1249,34 @@ export class UIPopupWC extends HTMLElement {
   }
 
   // ── Menu helpers ──
+
+  /** Measure all menu items and set the popup width to fit the widest one */
+  /** Measure all menu items and set popup height to fit them, capped by maxHeight and viewport */
+  private _autoSizeMenuHeight(win: UIWindowWC): void {
+    const items = win.contentElement.querySelectorAll<HTMLElement>('menuitem-wc')
+    if (items.length === 0) return
+
+    // Measure total content height needed
+    let totalH = 0
+    for (const item of items) totalH += item.offsetHeight || 28
+    const titleBarH = win.showTitle ? win.titleBarHeight : 0
+    const needed = totalH + titleBarH
+
+    // Determine max available height from viewport (or container)
+    const anchorRect = this._anchor?.getBoundingClientRect()
+    const viewH = window.innerHeight
+    const maxViewH = anchorRect
+      ? Math.max(viewH - anchorRect.bottom, anchorRect.top) - this._margin
+      : viewH - 20
+
+    // Cap: content needed → maxHeight → viewport available
+    let h = needed
+    if (this._maxHeight && h > this._maxHeight) h = this._maxHeight
+    if (h > maxViewH) h = maxViewH
+    if (h < this._minHeight) h = this._minHeight
+
+    win.height = h
+  }
 
   /** Measure all menu items and set the popup width to fit the widest one */
   private _autoSizeMenuWidth(win: UIWindowWC): void {

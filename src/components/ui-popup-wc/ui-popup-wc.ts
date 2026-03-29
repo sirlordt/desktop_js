@@ -1085,6 +1085,9 @@ export class UIPopupWC extends HTMLElement {
 
     this._window.showTitle = true
     this._window.closable = true
+    // Clear simulate-focus: the window is now a real tool, not an attached popup.
+    // It should participate in normal focus management (standalone mousedown handler).
+    this._window.simulateFocus = false
 
     const el = this._window as HTMLElement
 

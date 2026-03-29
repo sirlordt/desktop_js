@@ -721,6 +721,16 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
         const hasSimFocus = wc.hasAttribute('data-simulate-focus')
         if (wc !== this && !isOurTool && !hasSimFocus) wc.titleBarElement.classList.remove('focused')
       })
+      // For standalone windows (no WM), also blur tools of sibling windows.
+      // The WM handles this via bringToFront, but standalone windows don't have a WM.
+      // Check parent tag to detect WM even before MutationObserver sets manager.
+      if (!this.manager && parent.tagName !== 'WINDOW-MANAGER-WC') {
+        parent.querySelectorAll('window-wc').forEach(el => {
+          const wc = el as UIWindowWC
+          if (wc === this || this._tools.includes(wc) || wc.isTool) return
+          for (const tool of wc._tools) tool.titleBarElement.classList.remove('focused')
+        })
+      }
 
       // Without a WindowManager, manage z-index manually: push all sibling
       // windows to base z-index, then bring this window and its tools on top.

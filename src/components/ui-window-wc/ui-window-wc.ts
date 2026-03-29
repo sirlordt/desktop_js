@@ -1189,6 +1189,19 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
       owner.onFocused()
     }, true)
 
+    // Standalone blur: when a mousedown occurs outside this window and its tools,
+    // blur this window. This handles cross-context focus (e.g. clicking inside a WM
+    // should blur standalone windows, and vice versa).
+    document.addEventListener('mousedown', (e: MouseEvent) => {
+      if (this.manager) return
+      if (this._overlord) return  // tools are blurred via their overlord
+      if (!this.titleBarElement.classList.contains('focused')) return
+      const path = e.composedPath()
+      if (path.includes(this as any)) return
+      for (const tool of this._tools) { if (path.includes(tool as any)) return }
+      this.onBlurred()
+    }, true)
+
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return
       if (!this.titleBarElement.classList.contains('focused')) return

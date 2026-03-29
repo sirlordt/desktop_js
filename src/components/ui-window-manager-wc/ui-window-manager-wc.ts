@@ -35,7 +35,7 @@ export class UIWindowManagerWC extends UIPanelWC {
   private _batchOp: boolean = false
   private _managerInitialized: boolean = false
   private _childObserver: MutationObserver | null = null
-  private _focusOutHandler: ((e: FocusEvent) => void) | null = null
+  private _focusOutHandler: ((e: MouseEvent) => void) | null = null
 
   static get observedAttributes(): string[] {
     return [...UIPanelWC.observedAttributes, 'animated', 'minimize-slot-width', 'minimize-slot-height', 'manual-child-management']
@@ -85,15 +85,16 @@ export class UIWindowManagerWC extends UIPanelWC {
       this.style.outline = 'none'
     }
 
-    // Blur focused window when focus leaves the WM entirely
+    // Blur focused window when a mousedown occurs outside the WM
     if (!this._focusOutHandler) {
-      this._focusOutHandler = (e: FocusEvent) => {
-        const related = e.relatedTarget as HTMLElement | null
-        if (!related || !this.contains(related)) {
-          if (this._focused) this._focused.onBlurred?.()
-        }
-      }
-      this.addEventListener('focusout', this._focusOutHandler)
+      this._focusOutHandler = ((e: MouseEvent) => {
+        if (!this._focused) return
+        const path = e.composedPath()
+        if (path.includes(this)) return
+        this._focused.onBlurred?.()
+        this._focused = null
+      }) as any
+      document.addEventListener('mousedown', this._focusOutHandler as any, true)
     }
 
     // Auto-detect existing <window-wc> children (skip in manual mode)
@@ -133,7 +134,7 @@ export class UIWindowManagerWC extends UIPanelWC {
       this._childObserver = null
     }
     if (this._focusOutHandler) {
-      this.removeEventListener('focusout', this._focusOutHandler)
+      document.removeEventListener('mousedown', this._focusOutHandler as any, true)
       this._focusOutHandler = null
     }
   }

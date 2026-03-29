@@ -1281,6 +1281,7 @@ export class UIPopupWC extends HTMLElement {
     if (h < this._minHeight) h = this._minHeight
 
     win.height = h
+    win.minHeight = h
   }
 
   /** Measure all menu items and set the popup width to fit the widest one */

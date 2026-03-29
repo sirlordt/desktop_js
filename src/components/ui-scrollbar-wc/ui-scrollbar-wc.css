@@ -383,7 +383,8 @@
 }
 
 :host(.hover-mode) .ui-scrollbar__track {
-  transition: height 0.15s ease, width 0.15s ease, border-radius 0.15s ease;
+  background-color: transparent;
+  transition: height 0.15s ease, width 0.15s ease, border-radius 0.15s ease, background-color 0.15s ease;
 }
 
 :host(.horizontal.hover-mode) .ui-scrollbar__track { margin-top: auto; margin-bottom: auto; border-radius: 2px; }
@@ -412,8 +413,8 @@
 :host(.vertical.hover-mode.hover-active) .ui-scrollbar__start,
 :host(.vertical.hover-mode.hover-active) .ui-scrollbar__end { max-height: 100px; }
 
-:host(.horizontal.hover-mode.hover-active) .ui-scrollbar__track { height: 100%; border-radius: 0; }
-:host(.vertical.hover-mode.hover-active) .ui-scrollbar__track   { width: 100%; border-radius: 0; }
+:host(.horizontal.hover-mode.hover-active) .ui-scrollbar__track { height: 100%; border-radius: 0; background-color: var(--sb-track-bg); }
+:host(.vertical.hover-mode.hover-active) .ui-scrollbar__track   { width: 100%; border-radius: 0; background-color: var(--sb-track-bg); }
 
 :host(.hover-mode.hover-active) .ui-scrollbar__thumb { opacity: 1; }
 

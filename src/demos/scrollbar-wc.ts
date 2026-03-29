@@ -49,6 +49,7 @@ export const scrollbarWCDemo: DemoRoute = {
 
       // --- Hover mode ---
       addRow(section, 'Hover mode', (row) => {
+
         const h = sb({ kind: 'horizontal', size: sz, max: 100, value: 40, hover: true }, hWidth)
         const v = sb({ kind: 'vertical', size: sz, max: 100, value: 60, hover: true }, undefined, vHeight)
         row.appendChild(h); row.appendChild(v)
@@ -56,6 +57,7 @@ export const scrollbarWCDemo: DemoRoute = {
 
       // --- Hover mode + no buttons ---
       addRow(section, 'Hover + no buttons', (row) => {
+
         const h = sb({ kind: 'horizontal', size: sz, max: 100, value: 35, hover: true, showStartZone: false, showEndZone: false }, hWidth)
         const v = sb({ kind: 'vertical', size: sz, max: 100, value: 55, hover: true, showStartZone: false, showEndZone: false }, undefined, vHeight)
         row.appendChild(h); row.appendChild(v)

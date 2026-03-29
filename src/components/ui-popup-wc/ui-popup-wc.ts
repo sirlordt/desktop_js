@@ -309,6 +309,13 @@ export class UIPopupWC extends HTMLElement {
             const prev = items[this._activeIndex] as any
             if (prev?.hasSubMenu) prev.closeSubMenuIfAttached()
           }
+          // Clear highlights in detached sub-menu chain and reclaim keyboard control
+          if (this._activeSubMenu) {
+            this._forEachDetachedDescendant(p => {
+              if (p === this) return
+              p._activeIndex = -1; p._clearHighlight()
+            })
+          }
           this._activeSubMenu = null
           this._activeIndex = idx
           this._highlightMenuItem(items)

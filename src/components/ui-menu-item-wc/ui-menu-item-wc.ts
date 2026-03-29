@@ -428,6 +428,17 @@ export class UIMenuItemWC extends HTMLElement {
       }
     }
 
+    // Inherit detachedScroll and parentRef from parent so all levels behave consistently
+    if (parentPopup) {
+      if (this._subMenu.detachedScroll !== (parentPopup as any)._detachedScroll) {
+        this._subMenu.detachedScroll = (parentPopup as any)._detachedScroll
+      }
+      const parentRef = (parentPopup as any)._parentRef as HTMLElement | null
+      if (parentRef && !(this._subMenu as any)._parentRef) {
+        this._subMenu.parentRef = parentRef
+      }
+    }
+
     this._subMenu.show()
   }
 

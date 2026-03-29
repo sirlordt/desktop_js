@@ -1163,8 +1163,11 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
 
     // Standalone focus: when no WindowManager, handle focus on mousedown.
     // If this is a tool window, move it to front of siblings then focus the overlord.
+    // Skip for windows using simulateFocus (e.g. popup menus) — they manage
+    // their own focus state and should not strip 'focused' from siblings.
     this.addEventListener('mousedown', () => {
       if (this.manager) return
+      if (this._simulateFocus) return
       const owner = this._overlord ?? this
       if (this._overlord) {
         const tools = this._overlord._tools

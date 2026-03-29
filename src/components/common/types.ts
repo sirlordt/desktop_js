@@ -108,6 +108,9 @@ export type PopupState = typeof PopupState[keyof typeof PopupState]
 
 export type PopupKind = 'menu' | 'container'
 
+/** How detached popups behave on page scroll */
+export type DetachedScrollBehavior = 'fixed' | 'follow'
+
 export interface UIPopupOptions {
   anchor: HTMLElement
   kind?: PopupKind
@@ -126,6 +129,7 @@ export interface UIPopupOptions {
   title?: string
   closeOnClickOutside?: boolean
   closeOnEscape?: boolean
+  detachedScroll?: DetachedScrollBehavior
   className?: string
   parentRef?: HTMLElement | null
 }

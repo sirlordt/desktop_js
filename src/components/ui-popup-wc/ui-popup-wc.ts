@@ -1,4 +1,4 @@
-import type { PopupState, PopupKind, UIPopupOptions, ScrollMode } from '../common/types'
+import type { PopupState, PopupKind, UIPopupOptions, ScrollMode, DetachedScrollBehavior } from '../common/types'
 import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-focus-core'
 import { findBestPosition } from '../common/positioning'
 import { UIWindowWC } from '../ui-window-wc/ui-window-wc'
@@ -37,6 +37,8 @@ export class UIPopupWC extends HTMLElement {
 
   private _closeOnClickOutside: boolean = true
   private _closeOnEscape: boolean = true
+  private _detachedScroll: DetachedScrollBehavior = 'fixed'
+  private _detachedScrollHandler: (() => void) | null = null
   private _clickOutsideHandler: ((e: MouseEvent) => void) | null = null
   private _escapeHandler: ((e: KeyboardEvent) => void) | null = null
   private _keyNavHandler: ((e: KeyboardEvent) => void) | null = null
@@ -145,6 +147,7 @@ export class UIPopupWC extends HTMLElement {
     this._scrollMode = o.scroll ?? this._scrollMode
     this._minWidth = o.minWidth ?? this._minWidth
     this._minHeight = o.minHeight ?? this._minHeight
+    this._detachedScroll = o.detachedScroll ?? this._detachedScroll
 
     this._configured = true
     this._ensureWindow()
@@ -405,6 +408,9 @@ export class UIPopupWC extends HTMLElement {
   get scrollMode(): ScrollMode | undefined { return this._scrollMode }
   set scrollMode(v: ScrollMode | undefined) { this._scrollMode = v }
 
+  get detachedScroll(): DetachedScrollBehavior { return this._detachedScroll }
+  set detachedScroll(v: DetachedScrollBehavior) { this._detachedScroll = v }
+
   /** Whether this popup is being used as a sub-menu (has a parent menu item) */
   get isSubMenu(): boolean { return this._parentMenuItem !== null }
 
@@ -430,7 +436,7 @@ export class UIPopupWC extends HTMLElement {
     if (!el.parentNode) parent.appendChild(el)
     // Use absolute positioning when inside a positioned container (WM/Window)
     // so overflow:hidden clips the popup and coords are container-relative.
-    if (parent !== document.body) el.style.position = 'absolute'
+    if (parent !== document.body) win.positioning = 'absolute'
     this._state = 'attached'
 
     win.resetLastFocused()
@@ -511,7 +517,7 @@ export class UIPopupWC extends HTMLElement {
       // Don't close if scroll is inside a descendant sub-menu's window
       if (this._isClickInsideDescendantSubMenu(path)) return
       // Don't close on page-level scroll if popup is position:fixed (it doesn't move)
-      if (el.style.position === 'fixed') {
+      if (win.positioning === 'fixed') {
         const scrollTarget = path[0]
         if (scrollTarget === document || scrollTarget === document.documentElement || scrollTarget === document.body) return
       }
@@ -1058,10 +1064,13 @@ export class UIPopupWC extends HTMLElement {
     const { pos } = findBestPosition(anchorRect, w, h, this._alignment as any, this._margin)
     // findBestPosition returns viewport coords. When the popup is position:absolute
     // inside a container (e.g. UIWindowManagerWC), convert to container-relative.
-    if (el.style.position === 'absolute' && el.offsetParent) {
+    if (this._window.positioning === 'absolute' && el.offsetParent) {
       const r = el.offsetParent.getBoundingClientRect()
       pos.left -= r.left
       pos.top -= r.top
+      // Clamp so popup never escapes above or left of its container
+      if (pos.top < 0) pos.top = 0
+      if (pos.left < 0) pos.left = 0
     }
     el.style.left = `${Math.round(pos.left)}px`
     el.style.top = `${Math.round(pos.top)}px`
@@ -1081,7 +1090,7 @@ export class UIPopupWC extends HTMLElement {
 
     if (this._overlord) {
       // Detach with overlord: become a tool window relative to the overlord
-      const wasFixed = el.style.position === 'fixed'
+      const wasFixed = this._window.positioning === 'fixed'
       const fixedLeft = parseFloat(el.style.left) || 0
       const fixedTop = parseFloat(el.style.top) || 0
 
@@ -1141,7 +1150,44 @@ export class UIPopupWC extends HTMLElement {
       this._bringToolToFront()
     }
 
+    // Bind scroll-follow for detached popups with 'follow' behavior.
+    // Only the root detached popup binds the listener; it repositions
+    // itself and all descendant detached popups on each scroll frame.
+    if (this._detachedScroll === 'follow' && !this._parentMenuItem) {
+      this._bindDetachedScrollFollow()
+    }
+
     this._emit('detach')
+  }
+
+  /** Shift a detached popup's window position by a delta.
+   *  Only applies to position:fixed popups — absolute-positioned popups
+   *  already follow scroll naturally via their offset parent. */
+  private _shiftDetachedPosition(dx: number, dy: number): void {
+    if (!this._window || this._state !== 'detached') return
+    if (this._window.positioning !== 'fixed') return
+    const el = this._window as HTMLElement
+    const curLeft = parseFloat(el.style.left) || 0
+    const curTop = parseFloat(el.style.top) || 0
+    el.style.left = `${Math.round(curLeft + dx)}px`
+    el.style.top = `${Math.round(curTop + dy)}px`
+  }
+
+  /** Bind a page scroll listener that shifts all detached popups by the scroll delta */
+  private _bindDetachedScrollFollow(): void {
+    if (this._detachedScrollHandler) return
+    let lastScrollX = window.scrollX
+    let lastScrollY = window.scrollY
+    this._detachedScrollHandler = () => {
+      if (this._state !== 'detached') return
+      const dx = lastScrollX - window.scrollX
+      const dy = lastScrollY - window.scrollY
+      lastScrollX = window.scrollX
+      lastScrollY = window.scrollY
+      if (dx === 0 && dy === 0) return
+      this._forEachDetachedDescendant(p => p._shiftDetachedPosition(dx, dy))
+    }
+    document.addEventListener('scroll', this._detachedScrollHandler, { capture: true, passive: true } as any)
   }
 
   private _returnFromDetached(): void {
@@ -1188,6 +1234,7 @@ export class UIPopupWC extends HTMLElement {
     if (this._scrollHandler) { document.removeEventListener('scroll', this._scrollHandler, true); this._scrollHandler = null }
     if (this._anchorBlurHandler && this._anchor) { this._anchor.removeEventListener('blur', this._anchorBlurHandler); this._anchorBlurHandler = null }
     if (this._anchorFocusHandler && this._anchor) { this._anchor.removeEventListener('focus', this._anchorFocusHandler); this._anchorFocusHandler = null }
+    if (this._detachedScrollHandler) { document.removeEventListener('scroll', this._detachedScrollHandler, true); this._detachedScrollHandler = null }
   }
 
   // ── Menu helpers ──

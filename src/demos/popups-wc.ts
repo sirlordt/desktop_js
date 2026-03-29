@@ -62,7 +62,8 @@ export const popupsWCDemo: DemoRoute = {
   setup: () => {
     const container = document.getElementById('popup-wc-demo')!
     container.style.padding = '20px'
-    container.style.overflow = 'auto'
+    container.style.position = 'relative'
+    container.style.isolation = 'isolate'
 
     const wm = new UIWindowManagerWC({ width: 900, height: 600 })
     wm.style.border = '1px solid #888'
@@ -75,7 +76,7 @@ export const popupsWCDemo: DemoRoute = {
     sec1.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Basic Popup</h2>'
     const btn1 = makeBtn('Open Popup'); sec1.appendChild(btn1); root.appendChild(sec1)
 
-    const popup1 = new UIPopupWC({ anchor: btn1, alignment: 'BottomLeft', width: 220, height: 200 })
+    const popup1 = new UIPopupWC({ anchor: btn1, alignment: 'BottomLeft', width: 220, height: 200, parentRef: container })
     const fileItems: [string, string, string][] = [
       ['New File', 'Ctrl+N', ICONS.file],
       ['Open...', 'Ctrl+O', ICONS.folderOpen],
@@ -93,7 +94,7 @@ export const popupsWCDemo: DemoRoute = {
     secSub.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Sub-menus (nested, multi-level)</h2>'
     const btnSub = makeBtn('Open Menu with Sub-menus'); secSub.appendChild(btnSub); root.appendChild(secSub)
 
-    const popupSub = new UIPopupWC({ anchor: btnSub, alignment: 'BottomLeft', width: 220, height: 250 })
+    const popupSub = new UIPopupWC({ anchor: btnSub, alignment: 'BottomLeft', width: 220, height: 250, parentRef: container })
 
     // "New" item with sub-menu
     const newItem = new UIMenuItemWC({ text: 'New', leftElement: makeIcon(ICONS.file) })
@@ -127,7 +128,7 @@ export const popupsWCDemo: DemoRoute = {
     secDetSub.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Detachable Sub-menus (3 levels, all detachable)</h2>'
     const btnDetSub = makeBtn('Open Detachable Menu'); secDetSub.appendChild(btnDetSub); root.appendChild(secDetSub)
 
-    const detSubRoot = new UIPopupWC({ anchor: btnDetSub, alignment: 'BottomLeft', width: 200, height: 200, detachable: true, resizable: true, title: 'Tools' })
+    const detSubRoot = new UIPopupWC({ anchor: btnDetSub, alignment: 'BottomLeft', width: 200, height: 200, detachable: true, resizable: true, title: 'Tools', detachedScroll: 'follow', parentRef: container })
 
     // Level 1: Drawing sub-menu
     const drawItem = new UIMenuItemWC({ text: 'Drawing', leftElement: makeIcon(ICONS.brush) })
@@ -160,7 +161,7 @@ export const popupsWCDemo: DemoRoute = {
     secContSub.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Sub-menu with Container (level 3 = container)</h2>'
     const btnContSub = makeBtn('Open Menu'); secContSub.appendChild(btnContSub); root.appendChild(secContSub)
 
-    const contSubRoot = new UIPopupWC({ anchor: btnContSub, alignment: 'BottomLeft', width: 200, height: 180 })
+    const contSubRoot = new UIPopupWC({ anchor: btnContSub, alignment: 'BottomLeft', width: 200, height: 180, parentRef: container })
 
     // Level 1: "Settings" opens level 2
     const settingsItem = new UIMenuItemWC({ text: 'Settings', leftElement: makeIcon(ICONS.grid) })
@@ -199,7 +200,7 @@ export const popupsWCDemo: DemoRoute = {
     const edgeIcons = [ICONS.cursor, ICONS.eye, ICONS.sparkles]
     for (const [label, align] of [['Left Edge', 'LeftTop'], ['Center', 'BottomCenter'], ['Right Edge', 'RightTop']] as const) {
       const btn = makeBtn(label); edgeRow.appendChild(btn)
-      const popup = new UIPopupWC({ anchor: btn, alignment: align, width: 200, height: 180 })
+      const popup = new UIPopupWC({ anchor: btn, alignment: align, width: 200, height: 180, parentRef: container })
       ;['Option A', 'Option B', 'Option C'].forEach((t, i) => {
         popup.addChild(new UIMenuItemWC({ text: t, leftElement: makeIcon(edgeIcons[i]) }))
       })
@@ -217,7 +218,7 @@ export const popupsWCDemo: DemoRoute = {
       'LeftTop', 'LeftCenter', 'LeftBottom', 'RightTop', 'RightCenter', 'RightBottom']
     aligns.forEach(align => {
       const btn = makeBtn(align); alignGrid.appendChild(btn)
-      const popup = new UIPopupWC({ anchor: btn, alignment: align as any, width: 160, height: 120 })
+      const popup = new UIPopupWC({ anchor: btn, alignment: align as any, width: 160, height: 120, parentRef: container })
       ;['One', 'Two', 'Three'].forEach(t => popup.addChild(new UIMenuItemWC({ text: t })))
       btn.addEventListener('click', () => popup.toggle())
     })
@@ -227,7 +228,7 @@ export const popupsWCDemo: DemoRoute = {
     sec4.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Resizable Popup</h2>'
     root.appendChild(sec4)
     const btn4 = makeBtn('Open Resizable'); sec4.appendChild(btn4)
-    const popup4 = new UIPopupWC({ anchor: btn4, alignment: 'BottomLeft', width: 250, height: 200, resizable: true, minWidth: 150, minHeight: 100 })
+    const popup4 = new UIPopupWC({ anchor: btn4, alignment: 'BottomLeft', width: 250, height: 200, resizable: true, minWidth: 150, minHeight: 100, parentRef: container })
     const resizableIcons = [ICONS.file, ICONS.folderOpen, ICONS.save, ICONS.image, ICONS.layers, ICONS.grid]
     for (let i = 1; i <= 6; i++) popup4.addChild(new UIMenuItemWC({ text: `Resizable Item ${i}`, leftElement: makeIcon(resizableIcons[i - 1]) }))
     btn4.addEventListener('click', () => popup4.toggle())
@@ -237,7 +238,7 @@ export const popupsWCDemo: DemoRoute = {
     sec5.innerHTML = '<h2 style="margin:0 0 8px;font-size:16px;">Mini-Drag Popup</h2>'
     root.appendChild(sec5)
     const btn5 = makeBtn('Open Mini-Drag'); sec5.appendChild(btn5)
-    const popup5 = new UIPopupWC({ anchor: btn5, alignment: 'BottomLeft', width: 200, height: 180, title: 'Tools', resizable: true })
+    const popup5 = new UIPopupWC({ anchor: btn5, alignment: 'BottomLeft', width: 200, height: 180, title: 'Tools', resizable: true, parentRef: container })
     const miniDragItems: [string, string][] = [
       ['Select', ICONS.cursor], ['Move', ICONS.move], ['Rotate', ICONS.rotateCw],
       ['Scale', ICONS.maximize], ['Brush', ICONS.brush], ['Eraser', ICONS.eraser],

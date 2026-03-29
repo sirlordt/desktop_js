@@ -1547,6 +1547,187 @@ describe('sub-menus', () => {
   })
 
   // ═══════════════════════════════════════
+  // 7c-4. Detached scroll-follow behavior
+  // ═══════════════════════════════════════
+
+  describe('detached scroll-follow behavior', () => {
+    it('detachedScroll=follow shifts popup position by scroll delta', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools', detachedScroll: 'follow' as any })
+      root.addChild(createItem('Select All'))
+      root.addChild(createItem('Drawing'))
+
+      root.show()
+      await flush(50)
+
+      // Detach root
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+      expect(root.state).toBe('detached')
+
+      // Record position after detach
+      const el = root.window! as HTMLElement
+      const origLeft = parseFloat(el.style.left)
+      const origTop = parseFloat(el.style.top)
+
+      // Simulate scroll by changing window.scrollY and dispatching scroll
+      Object.defineProperty(window, 'scrollY', { value: 100, writable: true, configurable: true })
+      Object.defineProperty(window, 'scrollX', { value: 0, writable: true, configurable: true })
+      document.dispatchEvent(new Event('scroll', { bubbles: true }))
+      await flush()
+
+      // Position should shift by delta (0 - 0 = 0 for X, 0 - 100 = -100 for Y)
+      expect(parseFloat(el.style.left)).toBe(origLeft)
+      expect(parseFloat(el.style.top)).toBe(origTop - 100)
+
+      // Reset
+      Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true })
+    })
+
+    it('detachedScroll=follow shifts fixed popups, skips absolute (they follow naturally)', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools', detachedScroll: 'follow' as any })
+      const itemDrawing = createItem('Drawing')
+      root.addChild(itemDrawing)
+
+      const level1 = createPopup({ detachable: true, title: 'Drawing' })
+      const l1Item = createItem('Pencil')
+      level1.addChild(l1Item)
+      itemDrawing.subMenu = level1
+
+      root.show()
+      await flush(50)
+
+      // Detach root (no overlord → stays position:fixed)
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+
+      anchor.focus()
+      await flush()
+
+      // Open and detach level1 (has overlord → becomes position:absolute)
+      pressKey('ArrowDown')
+      pressKey('ArrowRight')
+      await flush(50)
+      level1.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+
+      const rootEl = root.window! as HTMLElement
+      const l1El = level1.window! as HTMLElement
+      const rootTop = parseFloat(rootEl.style.top)
+      const l1Top = parseFloat(l1El.style.top)
+
+      expect(rootEl.style.position).toBe('fixed')
+      expect(l1El.style.position).toBe('absolute')
+
+      // Scroll down 50px
+      Object.defineProperty(window, 'scrollY', { value: 50, writable: true, configurable: true })
+      Object.defineProperty(window, 'scrollX', { value: 0, writable: true, configurable: true })
+      document.dispatchEvent(new Event('scroll', { bubbles: true }))
+      await flush()
+
+      // Root (fixed) should shift by -50
+      expect(parseFloat(rootEl.style.top)).toBe(rootTop - 50)
+      // Level1 (absolute) should NOT be shifted — it follows scroll via offset parent
+      expect(parseFloat(l1El.style.top)).toBe(l1Top)
+
+      Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true })
+    })
+
+    it('detachedScroll=fixed (default) does not move popup on scroll', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      // Default: no detachedScroll option → 'fixed'
+      const root = createPopup({ detachable: true, title: 'Tools' })
+      root.addChild(createItem('Item'))
+
+      root.show()
+      await flush(50)
+
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+
+      const el = root.window! as HTMLElement
+      const origTop = parseFloat(el.style.top)
+
+      Object.defineProperty(window, 'scrollY', { value: 100, writable: true, configurable: true })
+      Object.defineProperty(window, 'scrollX', { value: 0, writable: true, configurable: true })
+      document.dispatchEvent(new Event('scroll', { bubbles: true }))
+      await flush()
+
+      // Should NOT have moved
+      expect(parseFloat(el.style.top)).toBe(origTop)
+
+      Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true })
+    })
+
+    it('scroll-follow handler is cleaned up on return from detached', async () => {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup({ detachable: true, title: 'Tools', detachedScroll: 'follow' as any })
+      root.addChild(createItem('Item'))
+
+      root.show()
+      await flush(50)
+
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+
+      const el = root.window! as HTMLElement
+
+      // Close the detached popup (return from detached)
+      root.window!.dispatchEvent(new CustomEvent('before-close', { bubbles: true }))
+      ;(root as any)._returnFromDetached()
+      await flush(50)
+      expect(root.state).toBe('closed')
+
+      // Re-open and detach again to get fresh position
+      root.show()
+      await flush(50)
+      root.window!.dispatchEvent(new CustomEvent('end-drag', { bubbles: true }))
+      await flush(50)
+
+      const origTop = parseFloat(el.style.top)
+
+      // Scroll should still work (new handler bound)
+      Object.defineProperty(window, 'scrollY', { value: 30, writable: true, configurable: true })
+      Object.defineProperty(window, 'scrollX', { value: 0, writable: true, configurable: true })
+      document.dispatchEvent(new Event('scroll', { bubbles: true }))
+      await flush()
+
+      expect(parseFloat(el.style.top)).toBe(origTop - 30)
+
+      Object.defineProperty(window, 'scrollY', { value: 0, writable: true, configurable: true })
+    })
+
+    it('detachedScroll is inherited by sub-menus from parent popup', async () => {
+      anchor = createAnchor()
+      const root = createPopup({ detachable: true, title: 'Tools', detachedScroll: 'follow' as any })
+      const item = createItem('Drawing')
+      root.addChild(item)
+
+      const sub = createPopup({ detachable: true, title: 'Drawing' })
+      sub.addChild(createItem('Pencil'))
+      item.subMenu = sub
+
+      root.show()
+      await flush(50)
+
+      // Open sub-menu — it should inherit detachedScroll
+      item.openSubMenu()
+      await flush(50)
+
+      expect((sub as any)._detachedScroll).toBe('follow')
+    })
+  })
+
+  // ═══════════════════════════════════════
   // 7d. Titlebar focus preservation
   // ═══════════════════════════════════════
 

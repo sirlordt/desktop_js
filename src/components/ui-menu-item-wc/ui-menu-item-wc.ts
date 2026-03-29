@@ -515,21 +515,6 @@ export class UIMenuItemWC extends HTMLElement {
     if (this._subMenuCloseTimer !== null) { clearTimeout(this._subMenuCloseTimer); this._subMenuCloseTimer = null }
   }
 
-  /** Check if any descendant sub-menu's window is being hovered */
-  private _isDescendantSubMenuHovered(): boolean {
-    if (!this._subMenu || !this._subMenu.window) return false
-    const win = this._subMenu.window as HTMLElement
-    if (win.matches(':hover')) return true
-    // Check items inside this sub-menu for their own open sub-menus
-    const items = this._subMenu.window!.contentElement?.querySelectorAll('menuitem-wc') ?? []
-    for (const item of items) {
-      const mi = item as any
-      if (mi.hasSubMenu && mi.subMenu?.visible) {
-        if (mi._isDescendantSubMenuHovered()) return true
-      }
-    }
-    return false
-  }
 
   onClick(handler: () => void): void { this._clickHandlers.add(handler) }
   offClick(handler: () => void): void { this._clickHandlers.delete(handler) }

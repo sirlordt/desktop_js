@@ -1868,7 +1868,7 @@ describe('sub-menus', () => {
     })
 
     it('ArrowDown with open container sub-menu closes it and highlights next item', async () => {
-      const { root, containerSub, item2 } = makeContainerSubMenuScene()
+      const { root, containerSub } = makeContainerSubMenuScene()
       await flush()
 
       pressKey('ArrowDown')  // highlight Settings
@@ -1884,7 +1884,7 @@ describe('sub-menus', () => {
     })
 
     it('ArrowUp with open container sub-menu closes it and highlights previous item', async () => {
-      const { root, containerSub } = makeContainerSubMenuScene()
+      const { containerSub } = makeContainerSubMenuScene()
       await flush()
 
       // Navigate to About (index 1), then back to Settings and open container

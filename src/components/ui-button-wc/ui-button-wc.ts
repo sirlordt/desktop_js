@@ -1,7 +1,7 @@
 import { UIView } from '../common/ui-view'
 import { UIHintWC } from '../ui-hint-wc/ui-hint-wc'
 import { applySimulateFocus, listenSimulateFocus } from '../common/simulate-focus-core'
-import type { HintAlignment, HintWCOptions } from '../common/types'
+import type { HintAlignment, UIHintOptions } from '../common/types'
 import styles from './ui-button-wc.css?raw'
 
 /** Attributes handled by the layout core */
@@ -328,10 +328,11 @@ export class UIButtonWC extends HTMLElement {
     }
   }
 
-  setHint(options: Partial<Omit<HintWCOptions, 'anchor'>>): UIHintWC {
+  setHint(options: Partial<Omit<UIHintOptions, 'anchor'>>): UIHintWC {
     this._destroyInternalHint()
     this._hintExternal = false
-    const hint = new UIHintWC({
+    const hint = new UIHintWC()
+    hint.configure({
       anchor: this,
       trigger: 'hover',
       showDelay: 300,
@@ -359,7 +360,8 @@ export class UIButtonWC extends HTMLElement {
       this._hint.alignment = alignment
       this._hint.arrow = arrow
     } else {
-      this._hint = new UIHintWC({
+      this._hint = new UIHintWC()
+      this._hint.configure({
         anchor: this,
         content: text,
         alignment,

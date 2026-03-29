@@ -334,7 +334,7 @@ export class UIToolButton {
     this._on(this._el, 'mousedown', (e) => { e.preventDefault() })
 
     if (this._repeat) {
-      this._on(this._el, 'mousedown', (e) => {
+      this._on(this._el, 'mousedown', (_e) => {
         if (this._disabled) return
         this._fireClick()
         this._repeatTimer = window.setTimeout(() => {

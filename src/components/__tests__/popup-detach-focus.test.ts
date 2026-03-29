@@ -766,7 +766,7 @@ describe('popup detach + tool window focus (WM integration)', () => {
       buildStandalone()
       await flush()
       await detachPopup(saPopupMenu)
-      const ct = await detachPopup(saPopupContainer)
+      await detachPopup(saPopupContainer)
       // Focus overlord to initialize
       standaloneOverlord.onFocused()
       await flush()

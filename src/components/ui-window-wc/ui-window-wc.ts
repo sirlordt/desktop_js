@@ -1146,7 +1146,7 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
         }
         return
       }
-      const parent = node.parentElement
+      const parent: HTMLElement | null = node.parentElement
       if (parent) { node = parent }
       else {
         const root = node.getRootNode()

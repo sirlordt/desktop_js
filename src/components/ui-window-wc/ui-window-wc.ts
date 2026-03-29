@@ -1199,6 +1199,10 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
       const path = e.composedPath()
       if (path.includes(this as any)) return
       for (const tool of this._tools) { if (path.includes(tool as any)) return }
+      // Don't blur if click is on a simulateFocus window (attached popup belonging to us)
+      for (const node of path) {
+        if ((node as any).tagName === 'WINDOW-WC' && (node as any)._simulateFocus) return
+      }
       this.onBlurred()
     }, true)
 

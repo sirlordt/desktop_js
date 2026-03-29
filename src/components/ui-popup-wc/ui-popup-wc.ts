@@ -1145,6 +1145,9 @@ export class UIPopupWC extends HTMLElement {
     if (this._overlord) {
       if (this._overlord.manager) this._overlord.manager.bringToFront(this._overlord)
       if (this._overlord.onFocused) this._overlord.onFocused()
+    } else {
+      // No overlord: the detached popup is a standalone window — focus it directly
+      this._window.onFocused()
     }
 
     if (this._kind === 'menu') {

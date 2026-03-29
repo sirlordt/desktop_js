@@ -1,5 +1,5 @@
 import type { PopupState, PopupKind, UIPopupOptions, ScrollMode, DetachedScrollBehavior } from '../common/types'
-import { applySimulateFocus, dispatchSimulateFocus } from '../common/simulate-focus-core'
+import { applySimulateFocus } from '../common/simulate-focus-core'
 import { findBestPosition } from '../common/positioning'
 import { UIWindowWC } from '../ui-window-wc/ui-window-wc'
 import { UIWindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
@@ -471,19 +471,19 @@ export class UIPopupWC extends HTMLElement {
     } else if (this._kind === 'menu') {
       // Root menu: anchor keeps real focus, popup uses document-level keyboard nav
       this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
-      if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
-      if (win.onFocused) win.onFocused()
-      // Protect root menu popup's titlebar from being stripped by sub-menu
-      // window's standalone mousedown → onFocused() sibling cleanup.
+      if (this._focusedBeforeOpen) applySimulateFocus(this._focusedBeforeOpen, true)
+      // Mark titlebar as focused without calling onFocused() — that would
+      // strip 'focused' from sibling windows in the same container.
+      win.titleBarElement.classList.add('focused')
       win.simulateFocus = true
     } else if (this._kind === 'container' && this._parentMenuItem) {
       // Container sub-menu: do NOT steal focus — already handled above
     } else {
       // Container mode (standalone): move real focus to popup for Tab cycling
       this._focusedBeforeOpen = UIPopupWC._deepActiveElement()
-      if (this._focusedBeforeOpen) dispatchSimulateFocus(this._focusedBeforeOpen, true)
+      if (this._focusedBeforeOpen) applySimulateFocus(this._focusedBeforeOpen, true)
       el.focus({ preventScroll: true })
-      if (win.onFocused) win.onFocused()
+      win.titleBarElement.classList.add('focused')
     }
 
     if (this._closeOnClickOutside) {
@@ -556,7 +556,9 @@ export class UIPopupWC extends HTMLElement {
 
     if (this._focusedBeforeOpen) {
       if (this._focusedBeforeOpen.isConnected) this._focusedBeforeOpen.focus({ preventScroll: true })
-      dispatchSimulateFocus(this._focusedBeforeOpen, false)
+      // Remove simulate-focus directly without dispatching a bubbling event,
+      // which would propagate up to the parent window and strip its focused state.
+      applySimulateFocus(this._focusedBeforeOpen, false)
       this._focusedBeforeOpen = null
     }
 
@@ -684,7 +686,7 @@ export class UIPopupWC extends HTMLElement {
 
       if (e.key === 'Tab') {
         if (this._focusedBeforeOpen) {
-          dispatchSimulateFocus(this._focusedBeforeOpen, false)
+          applySimulateFocus(this._focusedBeforeOpen, false)
           this._focusedBeforeOpen = null
         }
         this.close()
@@ -1130,7 +1132,7 @@ export class UIPopupWC extends HTMLElement {
     // Clear simulate-focus BEFORE restoring overlord focus, so that
     // overlord.onFocused() can re-add 'focused' to tools that simulateFocus=false stripped.
     if (this._focusedBeforeOpen) {
-      dispatchSimulateFocus(this._focusedBeforeOpen, false)
+      applySimulateFocus(this._focusedBeforeOpen, false)
       this._focusedBeforeOpen = null
     }
 
@@ -1218,7 +1220,7 @@ export class UIPopupWC extends HTMLElement {
 
     if (this._focusedBeforeOpen) {
       if (this._focusedBeforeOpen.isConnected) this._focusedBeforeOpen.focus({ preventScroll: true })
-      dispatchSimulateFocus(this._focusedBeforeOpen, false)
+      applySimulateFocus(this._focusedBeforeOpen, false)
       this._focusedBeforeOpen = null
     } else if (this._anchor?.isConnected) {
       // _focusedBeforeOpen was cleared during detach — restore focus to anchor

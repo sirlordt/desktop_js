@@ -70,6 +70,30 @@ describe('menuitem-wc', () => {
       expect(el.classList.contains('disabled')).toBe(true)
     })
 
+    it('highlighted getter/setter', () => {
+      el = new UIMenuItemWC({ text: 'T' })
+      document.body.appendChild(el)
+      expect(el.highlighted).toBe(false)
+      el.highlighted = true
+      expect(el.highlighted).toBe(true)
+      expect(el.classList.contains('highlight')).toBe(true)
+      el.highlighted = false
+      expect(el.highlighted).toBe(false)
+      expect(el.classList.contains('highlight')).toBe(false)
+    })
+
+    it('active getter/setter', () => {
+      el = new UIMenuItemWC({ text: 'T' })
+      document.body.appendChild(el)
+      expect(el.active).toBe(false)
+      el.active = true
+      expect(el.active).toBe(true)
+      expect(el.classList.contains('active')).toBe(true)
+      el.active = false
+      expect(el.active).toBe(false)
+      expect(el.classList.contains('active')).toBe(false)
+    })
+
     it('pushable getter/setter', () => {
       el = new UIMenuItemWC({ text: 'T' })
       document.body.appendChild(el)
@@ -132,6 +156,24 @@ describe('menuitem-wc', () => {
       el.onClick(() => { clicked = true })
       el.click()
       expect(clicked).toBe(false)
+    })
+
+    it('disabled still fires hover handler on mouseenter', () => {
+      el = new UIMenuItemWC({ text: 'Hover me' })
+      document.body.appendChild(el)
+      el.disabled = true
+      let hovered = false
+      el.onHover(() => { hovered = true })
+      el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }))
+      expect(hovered).toBe(true)
+    })
+
+    it('disabled does not have pointer-events:none (allows mouse interaction)', () => {
+      el = new UIMenuItemWC({ text: 'Test' })
+      document.body.appendChild(el)
+      el.disabled = true
+      const style = getComputedStyle(el)
+      expect(style.pointerEvents).not.toBe('none')
     })
   })
 

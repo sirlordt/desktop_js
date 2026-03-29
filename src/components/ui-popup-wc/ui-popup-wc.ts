@@ -299,7 +299,7 @@ export class UIPopupWC extends HTMLElement {
       this._window.contentElement.addEventListener('mousedown', (e: MouseEvent) => { e.preventDefault() })
       this._window.contentElement.addEventListener('mouseover', (e: MouseEvent) => {
         if (this._state === 'closed') return
-        const target = (e.target as HTMLElement).closest('menuitem-wc:not(.disabled)') as HTMLElement | null
+        const target = (e.target as HTMLElement).closest('menuitem-wc') as HTMLElement | null
         if (!target) return
         const items = this._getMenuItems()
         const idx = items.indexOf(target)
@@ -425,6 +425,14 @@ export class UIPopupWC extends HTMLElement {
 
   /** Whether this popup is being used as a sub-menu (has a parent menu item) */
   get isSubMenu(): boolean { return this._parentMenuItem !== null }
+
+  /** Whether a sub-menu is currently receiving keyboard navigation */
+  get hasActiveSubMenu(): boolean { return this._activeSubMenu !== null }
+
+  /** The currently highlighted menu item, or null */
+  get highlightedItem(): UIMenuItemWC | null {
+    return (this._getHighlightedItem() as UIMenuItemWC | null)
+  }
 
   /** Close only if in attached state (used for cascade close) */
   closeIfAttached(): void {
@@ -786,7 +794,7 @@ export class UIPopupWC extends HTMLElement {
     const items = this._getMenuItems()
     if (this._activeIndex < 0 || this._activeIndex >= items.length) return
     const item = items[this._activeIndex] as any
-    if (!item.hasSubMenu) return
+    if (!item.hasSubMenu || item.disabled) return
 
     const subPopup = item.subMenu as UIPopupWC
 
@@ -1351,22 +1359,22 @@ export class UIPopupWC extends HTMLElement {
 
   private _getMenuItems(): HTMLElement[] {
     if (!this._window) return []
-    return Array.from(this._window.contentElement.querySelectorAll<HTMLElement>('menuitem-wc:not(.disabled)'))
+    return Array.from(this._window.contentElement.querySelectorAll<HTMLElement>('menuitem-wc'))
   }
 
   private _highlightMenuItem(items: HTMLElement[]): void {
     this._clearHighlight()
     if (this._activeIndex >= 0 && this._activeIndex < items.length) {
-      const item = items[this._activeIndex]
-      item.classList.add('highlight')
+      const item = items[this._activeIndex] as UIMenuItemWC
+      item.highlighted = true
       if (this._window?.scrollBox) this._window.scrollBox.scrollChildIntoView(item)
     }
   }
 
   private _clearHighlight(): void {
     if (!this._window) return
-    this._window.contentElement.querySelectorAll('menuitem-wc.highlight').forEach(el => {
-      el.classList.remove('highlight')
+    this._window.contentElement.querySelectorAll<HTMLElement>('menuitem-wc.highlight').forEach(el => {
+      (el as UIMenuItemWC).highlighted = false
     })
   }
 

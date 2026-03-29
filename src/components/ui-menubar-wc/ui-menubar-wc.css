@@ -1,0 +1,37 @@
+/* =====================
+   UIMenuBarWC — Shadow DOM Stylesheet
+   ===================== */
+
+:host {
+  display: flex;
+  align-items: center;
+  height: var(--menubar-height, 28px);
+  background-color: var(--window-bg-color, transparent);
+  user-select: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.bar {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  overflow: hidden;
+  height: 100%;
+}
+
+::slotted(menuitem-wc) {
+  flex-shrink: 0;
+  width: auto !important;
+  padding: 0 10px;
+}
+
+:host(.disabled) {
+  color: var(--disabled-fg-color, rgba(128, 128, 128, 0.55));
+  pointer-events: none;
+}
+
+/* ── Overflow trigger ── */
+.overflow-trigger {
+  flex-shrink: 0;
+}

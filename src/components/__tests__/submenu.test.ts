@@ -1969,7 +1969,99 @@ describe('sub-menus', () => {
   })
 
   // ═══════════════════════════════════════
-  // 9. Destroy cleanup
+  // 9. Disabled items in keyboard navigation
+  // ═══════════════════════════════════════
+
+  describe('disabled items in keyboard navigation', () => {
+    it('ArrowDown navigates through disabled items (does not skip them)', async () => {
+      anchor = createAnchor()
+      const root = createPopup()
+      const item1 = createItem('Cut')
+      const item2 = createItem('Copy')
+      const item3 = createItem('Paste')
+      item2.disabled = true
+      root.addChild(item1)
+      root.addChild(item2)
+      root.addChild(item3)
+
+      root.show()
+      await flush()
+
+      pressKey('ArrowDown') // highlight Cut (0)
+      await flush()
+      expect(item1.classList.contains('highlight')).toBe(true)
+
+      pressKey('ArrowDown') // highlight Copy (1) — disabled but navigable
+      await flush()
+      expect(item2.classList.contains('highlight')).toBe(true)
+
+      pressKey('ArrowDown') // highlight Paste (2)
+      await flush()
+      expect(item3.classList.contains('highlight')).toBe(true)
+    })
+
+    it('Enter on disabled item does nothing', async () => {
+      anchor = createAnchor()
+      const root = createPopup()
+      const item1 = createItem('Action')
+      item1.disabled = true
+      let clicked = false
+      item1.onClick(() => { clicked = true })
+      root.addChild(item1)
+
+      root.show()
+      await flush()
+
+      pressKey('ArrowDown') // highlight Action
+      pressKey('Enter')
+      await flush()
+
+      expect(clicked).toBe(false)
+    })
+
+    it('ArrowRight on disabled item with sub-menu does not open it', async () => {
+      anchor = createAnchor()
+      const root = createPopup()
+      const item1 = createItem('File')
+      item1.disabled = true
+      root.addChild(item1)
+
+      const sub = createPopup()
+      sub.addChild(createItem('New'))
+      item1.subMenu = sub
+
+      root.show()
+      await flush()
+
+      pressKey('ArrowDown') // highlight File (disabled)
+      pressKey('ArrowRight') // should NOT open sub-menu
+      await flush()
+
+      expect(sub.visible).toBe(false)
+    })
+
+    it('mouse hover highlights disabled item in popup', async () => {
+      anchor = createAnchor()
+      const root = createPopup()
+      const item1 = createItem('Enabled')
+      const item2 = createItem('Disabled')
+      item2.disabled = true
+      root.addChild(item1)
+      root.addChild(item2)
+
+      root.show()
+      await flush()
+
+      // Simulate mouseover on disabled item
+      item2.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }))
+      await flush()
+
+      expect(item2.classList.contains('highlight')).toBe(true)
+    })
+  })
+
+  // ═══════════════════════════════════════
+  // 10. Destroy cleanup
   // ═══════════════════════════════════════
 
   describe('destroy cleanup', () => {

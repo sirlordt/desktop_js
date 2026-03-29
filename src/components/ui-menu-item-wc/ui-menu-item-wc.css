@@ -102,8 +102,25 @@
 
 /* ── Disabled ── */
 :host(.disabled) {
-  opacity: 0.45;
-  pointer-events: none;
+  color: var(--disabled-fg-color, rgba(128, 128, 128, 0.55));
+  cursor: default;
+}
+
+:host(.disabled) .left,
+:host(.disabled) .right,
+:host(.disabled) .shortcut {
+  color: var(--disabled-fg-color, rgba(128, 128, 128, 0.55));
+}
+
+:host(.win95.disabled) {
+  color: #808080;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+:host(.win95.disabled) .left,
+:host(.win95.disabled) .right,
+:host(.win95.disabled) .shortcut {
+  color: #808080;
 }
 
 /* ── Pushed indicator ── */
@@ -136,7 +153,8 @@
 }
 
 /* ── Highlight (hover/keyboard) ── */
-:host(.highlight) {
+:host(.highlight),
+:host(.active) {
   background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
   border-radius: 4px;
 }
@@ -171,14 +189,17 @@
   border-radius: 0;
 }
 
-:host(.win95.highlight) {
+:host(.win95.highlight),
+:host(.win95.active) {
   background-color: #000080;
   color: #ffffff;
   border-radius: 0;
 }
 
 :host(.win95.highlight) .left,
-:host(.win95.highlight) .right {
+:host(.win95.highlight) .right,
+:host(.win95.active) .left,
+:host(.win95.active) .right {
   color: #ffffff;
 }
 

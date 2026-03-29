@@ -275,6 +275,12 @@ export class UIMenuItemWC extends HTMLElement {
     else { if (this.hasAttribute('disabled')) this.removeAttribute('disabled') }
   }
 
+  get highlighted(): boolean { return this.classList.contains('highlight') }
+  set highlighted(value: boolean) { this.classList.toggle('highlight', value) }
+
+  get active(): boolean { return this.classList.contains('active') }
+  set active(value: boolean) { this.classList.toggle('active', value) }
+
   set leftElement(el: HTMLElement | null) {
     this._leftElement = el
     this._updateLeftSlot()
@@ -611,7 +617,6 @@ export class UIMenuItemWC extends HTMLElement {
     this._cleanups.push(() => this.removeEventListener('click', onClick))
 
     const onHover = () => {
-      if (this._disabled) return
       for (const h of this._hoverHandlers) h()
       this.dispatchEvent(new CustomEvent('menuitem-hover', {
         bubbles: true, composed: true,

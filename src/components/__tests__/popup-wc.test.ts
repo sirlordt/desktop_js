@@ -466,4 +466,53 @@ describe('UIPopupWC', () => {
       expect(true).toBe(true)
     })
   })
+
+  // ── Public API: hasActiveSubMenu, highlightedItem ──
+
+  describe('hasActiveSubMenu and highlightedItem', () => {
+    it('hasActiveSubMenu defaults to false', async () => {
+      const anchor = createAnchor()
+      const popup = new UIPopupWC({ anchor, kind: 'menu', width: 200, height: 200 })
+      document.body.appendChild(popup)
+      cleanups.push(popup)
+      popup.addChild(new UIMenuItemWC({ text: 'Item 1' }))
+
+      popup.show()
+      await flush()
+
+      expect(popup.hasActiveSubMenu).toBe(false)
+    })
+
+    it('highlightedItem returns null when nothing is highlighted', async () => {
+      const anchor = createAnchor()
+      const popup = new UIPopupWC({ anchor, kind: 'menu', width: 200, height: 200 })
+      document.body.appendChild(popup)
+      cleanups.push(popup)
+      popup.addChild(new UIMenuItemWC({ text: 'Item 1' }))
+
+      popup.show()
+      await flush()
+
+      expect(popup.highlightedItem).toBe(null)
+    })
+
+    it('highlightedItem returns the highlighted item after ArrowDown', async () => {
+      const anchor = createAnchor()
+      anchor.focus()
+      const popup = new UIPopupWC({ anchor, kind: 'menu', width: 200, height: 200 })
+      document.body.appendChild(popup)
+      cleanups.push(popup)
+      const item1 = new UIMenuItemWC({ text: 'First' })
+      popup.addChild(item1)
+      popup.addChild(new UIMenuItemWC({ text: 'Second' }))
+
+      popup.show()
+      await flush()
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }))
+      await flush()
+
+      expect(popup.highlightedItem).toBe(item1)
+    })
+  })
 })

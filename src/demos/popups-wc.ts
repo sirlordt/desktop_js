@@ -77,14 +77,14 @@ export const popupsWCDemo: DemoRoute = {
     const btn1 = makeBtn('Open Popup'); sec1.appendChild(btn1); root.appendChild(sec1)
 
     const popup1 = new UIPopupWC({ anchor: btn1, alignment: 'BottomLeft', width: 220, height: 200, parentRef: container })
-    const fileItems: [string, string, string][] = [
+    const fileItems: [string, string, string, boolean?][] = [
       ['New File', 'Ctrl+N', ICONS.file],
       ['Open...', 'Ctrl+O', ICONS.folderOpen],
-      ['Save', 'Ctrl+S', ICONS.save],
-      ['Close', 'Ctrl+W', ICONS.x],
+      ['Save', 'Ctrl+S', ICONS.save, true],
+      ['Close', 'Ctrl+W', ICONS.x, true],
     ]
-    fileItems.forEach(([text, shortcut, icon]) => {
-      const item = new UIMenuItemWC({ text, shortcut, leftElement: makeIcon(icon) })
+    fileItems.forEach(([text, shortcut, icon, dis]) => {
+      const item = new UIMenuItemWC({ text, shortcut, leftElement: makeIcon(icon), disabled: !!dis })
       popup1.addChild(item)
     })
     btn1.addEventListener('click', () => popup1.toggle())
@@ -119,7 +119,7 @@ export const popupsWCDemo: DemoRoute = {
     popupSub.addChild(newItem)
     popupSub.addChild(new UIMenuItemWC({ text: 'Open...', shortcut: 'Ctrl+O', leftElement: makeIcon(ICONS.folderOpen) }))
     popupSub.addChild(viewItem)
-    popupSub.addChild(new UIMenuItemWC({ text: 'Save', shortcut: 'Ctrl+S', leftElement: makeIcon(ICONS.save) }))
+    popupSub.addChild(new UIMenuItemWC({ text: 'Save', shortcut: 'Ctrl+S', leftElement: makeIcon(ICONS.save), disabled: true }))
     popupSub.addChild(new UIMenuItemWC({ text: 'Close', shortcut: 'Ctrl+W', leftElement: makeIcon(ICONS.x) }))
     btnSub.addEventListener('click', () => popupSub.toggle())
 

@@ -364,6 +364,11 @@ export interface WindowCycleShortcut {
   metaKey?: boolean
 }
 
+export interface UIMenuBarOptions {
+  disabled?: boolean
+  className?: string
+}
+
 export interface UIWindowManagerOptions {
   width?: number | 'auto'
   height?: number | 'auto'

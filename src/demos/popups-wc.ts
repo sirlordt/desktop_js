@@ -403,16 +403,33 @@ export const popupsWCDemo: DemoRoute = {
     w2DetMenu.overlord = secondWin
     const w2AdjustItem = new UIMenuItemWC({ text: 'Adjustments', leftElement: makeIcon(ICONS.wand) })
     const w2AdjustSub = new UIPopupWC({ anchor: w2AdjustItem, kind: 'menu', width: 160, height: 140, detachable: true, title: 'Adjustments' })
-    ;['Brightness', 'Contrast', 'Saturation', 'Hue'].forEach(t => w2AdjustSub.addChild(new UIMenuItemWC({ text: t })))
+    const w2AdjItems: UIMenuItemWC[] = []
+    ;['Brightness', 'Contrast', 'Saturation', 'Hue'].forEach(t => {
+      const item = new UIMenuItemWC({ text: t })
+      item.onClick(() => { w2Status.textContent = `Adjust: ${t}` })
+      w2AdjustSub.addChild(item)
+      w2AdjItems.push(item)
+    })
     w2AdjustItem.subMenu = w2AdjustSub
-    w2DetMenu.addChild(new UIMenuItemWC({ text: 'Crop', leftElement: makeIcon(ICONS.maximize) }))
+    const w2Crop = new UIMenuItemWC({ text: 'Crop', leftElement: makeIcon(ICONS.maximize) })
+    w2Crop.onClick(() => { w2Status.textContent = 'Action: Crop' })
+    w2DetMenu.addChild(w2Crop)
     w2DetMenu.addChild(w2AdjustItem)
-    w2DetMenu.addChild(new UIMenuItemWC({ text: 'Resize', leftElement: makeIcon(ICONS.move) }))
+    const w2Resize = new UIMenuItemWC({ text: 'Resize', leftElement: makeIcon(ICONS.move) })
+    w2Resize.onClick(() => { w2Status.textContent = 'Action: Resize' })
+    w2DetMenu.addChild(w2Resize)
     w2DetachBtn.addEventListener('click', () => w2DetMenu.toggle())
+
+    const w2HoverLabel = document.createElement('div')
+    w2HoverLabel.style.cssText = 'font-size:12px;opacity:0.6;width:100%;'
+    w2HoverLabel.textContent = 'Hover: —'
+    const w2SetHover = (item: UIMenuItemWC) => item.onHover(() => { w2HoverLabel.textContent = `Hover: ${item.text}` })
+    ;[w2AdjustItem, w2Crop, w2Resize, ...w2AdjItems].forEach(w2SetHover)
 
     secondWin.contentElement.appendChild(w2MenuBtn)
     secondWin.contentElement.appendChild(w2DetachBtn)
     secondWin.contentElement.appendChild(w2Status)
+    secondWin.contentElement.appendChild(w2HoverLabel)
 
     container.appendChild(wm)
     wm.addWindow(emptyWin)
@@ -510,15 +527,29 @@ export const popupsWCDemo: DemoRoute = {
     // Level 2: "Layout" sub-menu
     const w4LayoutItem = new UIMenuItemWC({ text: 'Layout', leftElement: makeIcon(ICONS.grid) })
     const w4LayoutSub = new UIPopupWC({ anchor: w4LayoutItem, kind: 'menu', width: 150, height: 100 })
-    ;['Single', 'Split', 'Grid'].forEach(t => w4LayoutSub.addChild(new UIMenuItemWC({ text: t })))
+    const w4LayoutItems: UIMenuItemWC[] = []
+    ;['Single', 'Split', 'Grid'].forEach(t => {
+      const item = new UIMenuItemWC({ text: t })
+      item.onClick(() => { w4Status.textContent = `Layout: ${t}` })
+      w4LayoutSub.addChild(item)
+      w4LayoutItems.push(item)
+    })
     w4LayoutItem.subMenu = w4LayoutSub
-    w4ViewSub.addChild(new UIMenuItemWC({ text: 'Zoom In', shortcut: 'Ctrl+=' }))
-    w4ViewSub.addChild(new UIMenuItemWC({ text: 'Zoom Out', shortcut: 'Ctrl+-' }))
+    const w4ZoomIn = new UIMenuItemWC({ text: 'Zoom In', shortcut: 'Ctrl+=' })
+    w4ZoomIn.onClick(() => { w4Status.textContent = 'Action: Zoom In' })
+    w4ViewSub.addChild(w4ZoomIn)
+    const w4ZoomOut = new UIMenuItemWC({ text: 'Zoom Out', shortcut: 'Ctrl+-' })
+    w4ZoomOut.onClick(() => { w4Status.textContent = 'Action: Zoom Out' })
+    w4ViewSub.addChild(w4ZoomOut)
     w4ViewSub.addChild(w4LayoutItem)
     w4ViewItem.subMenu = w4ViewSub
     w4Menu.addChild(w4ViewItem)
-    w4Menu.addChild(new UIMenuItemWC({ text: 'Help', leftElement: makeIcon(ICONS.compass) }))
-    w4Menu.addChild(new UIMenuItemWC({ text: 'Quit', shortcut: 'Ctrl+Q', leftElement: makeIcon(ICONS.x) }))
+    const w4Help = new UIMenuItemWC({ text: 'Help', leftElement: makeIcon(ICONS.compass) })
+    w4Help.onClick(() => { w4Status.textContent = 'Action: Help' })
+    w4Menu.addChild(w4Help)
+    const w4Quit = new UIMenuItemWC({ text: 'Quit', shortcut: 'Ctrl+Q', leftElement: makeIcon(ICONS.x) })
+    w4Quit.onClick(() => { w4Status.textContent = 'Action: Quit' })
+    w4Menu.addChild(w4Quit)
     w4MenuBtn.addEventListener('click', () => w4Menu.toggle())
 
     const w4DetSubBtn = makeBtn('Open Detachable Submenu')
@@ -529,28 +560,60 @@ export const popupsWCDemo: DemoRoute = {
     const w4DrawSub = new UIPopupWC({ anchor: w4DrawItem, kind: 'menu', width: 180, height: 180, detachable: true, resizable: true, title: 'Drawing' })
     const w4BrushTypeItem = new UIMenuItemWC({ text: 'Brush Type', leftElement: makeIcon(ICONS.brush) })
     const w4BrushTypeSub = new UIPopupWC({ anchor: w4BrushTypeItem, kind: 'menu', width: 160, height: 140, detachable: true, resizable: true, title: 'Brush Type' })
-    ;['Round', 'Flat', 'Fan', 'Palette Knife'].forEach(t => w4BrushTypeSub.addChild(new UIMenuItemWC({ text: t })))
+    const w4BrushItems: UIMenuItemWC[] = []
+    ;['Round', 'Flat', 'Fan', 'Palette Knife'].forEach(t => {
+      const item = new UIMenuItemWC({ text: t })
+      item.onClick(() => { w4Status.textContent = `Brush: ${t}` })
+      w4BrushTypeSub.addChild(item)
+      w4BrushItems.push(item)
+    })
     w4BrushTypeItem.subMenu = w4BrushTypeSub
-    w4DrawSub.addChild(new UIMenuItemWC({ text: 'Pencil', leftElement: makeIcon(ICONS.type) }))
+    const w4Pencil = new UIMenuItemWC({ text: 'Pencil', leftElement: makeIcon(ICONS.type) })
+    w4Pencil.onClick(() => { w4Status.textContent = 'Tool: Pencil' })
+    w4DrawSub.addChild(w4Pencil)
     w4DrawSub.addChild(w4BrushTypeItem)
-    w4DrawSub.addChild(new UIMenuItemWC({ text: 'Eraser', leftElement: makeIcon(ICONS.eraser) }))
-    w4DrawSub.addChild(new UIMenuItemWC({ text: 'Fill', leftElement: makeIcon(ICONS.paintBucket) }))
+    const w4Eraser = new UIMenuItemWC({ text: 'Eraser', leftElement: makeIcon(ICONS.eraser) })
+    w4Eraser.onClick(() => { w4Status.textContent = 'Tool: Eraser' })
+    w4DrawSub.addChild(w4Eraser)
+    const w4Fill = new UIMenuItemWC({ text: 'Fill', leftElement: makeIcon(ICONS.paintBucket) })
+    w4Fill.onClick(() => { w4Status.textContent = 'Tool: Fill' })
+    w4DrawSub.addChild(w4Fill)
     w4DrawItem.subMenu = w4DrawSub
 
     const w4TransformItem = new UIMenuItemWC({ text: 'Transform', leftElement: makeIcon(ICONS.move) })
     const w4TransformSub = new UIPopupWC({ anchor: w4TransformItem, kind: 'menu', width: 160, height: 120, detachable: true, resizable: true, title: 'Transform' })
-    ;['Move', 'Rotate', 'Scale', 'Skew'].forEach(t => w4TransformSub.addChild(new UIMenuItemWC({ text: t })))
+    const w4TransformItems: UIMenuItemWC[] = []
+    ;['Move', 'Rotate', 'Scale', 'Skew'].forEach(t => {
+      const item = new UIMenuItemWC({ text: t })
+      item.onClick(() => { w4Status.textContent = `Transform: ${t}` })
+      w4TransformSub.addChild(item)
+      w4TransformItems.push(item)
+    })
     w4TransformItem.subMenu = w4TransformSub
 
-    w4DetSubRoot.addChild(new UIMenuItemWC({ text: 'Select All', shortcut: 'Ctrl+A', leftElement: makeIcon(ICONS.cursor) }))
+    const w4SelectAll = new UIMenuItemWC({ text: 'Select All', shortcut: 'Ctrl+A', leftElement: makeIcon(ICONS.cursor) })
+    w4SelectAll.onClick(() => { w4Status.textContent = 'Action: Select All' })
+    w4DetSubRoot.addChild(w4SelectAll)
     w4DetSubRoot.addChild(w4DrawItem)
     w4DetSubRoot.addChild(w4TransformItem)
-    w4DetSubRoot.addChild(new UIMenuItemWC({ text: 'Flatten', leftElement: makeIcon(ICONS.layers) }))
+    const w4Flatten = new UIMenuItemWC({ text: 'Flatten', leftElement: makeIcon(ICONS.layers) })
+    w4Flatten.onClick(() => { w4Status.textContent = 'Action: Flatten' })
+    w4DetSubRoot.addChild(w4Flatten)
     w4DetSubBtn.addEventListener('click', () => w4DetSubRoot.toggle())
+
+    const w4HoverLabel = document.createElement('div')
+    w4HoverLabel.style.cssText = 'font-size:12px;opacity:0.6;width:100%;'
+    w4HoverLabel.textContent = 'Hover: —'
+    const w4SetHover = (item: UIMenuItemWC) => item.onHover(() => { w4HoverLabel.textContent = `Hover: ${item.text}` })
+    ;[w4ViewItem, w4LayoutItem, w4ZoomIn, w4ZoomOut, w4Help, w4Quit,
+      w4SelectAll, w4DrawItem, w4TransformItem, w4Flatten,
+      w4BrushTypeItem, w4Pencil, w4Eraser, w4Fill,
+      ...w4LayoutItems, ...w4BrushItems, ...w4TransformItems].forEach(w4SetHover)
 
     standaloneWin2.contentElement.appendChild(w4MenuBtn)
     standaloneWin2.contentElement.appendChild(w4DetSubBtn)
     standaloneWin2.contentElement.appendChild(w4Status)
+    standaloneWin2.contentElement.appendChild(w4HoverLabel)
 
     const standaloneRow = document.createElement('div')
     standaloneRow.style.cssText = 'display:flex;gap:16px;align-items:flex-start;'

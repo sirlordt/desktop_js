@@ -36,6 +36,7 @@ export class UIMenuItemWC extends HTMLElement {
   private _pushedElement: HTMLElement | null = null
 
   private _clickHandlers: Set<() => void> = new Set()
+  private _hoverHandlers: Set<() => void> = new Set()
   private _pushedChangeHandlers: Set<(pushed: boolean) => void> = new Set()
   private _cleanups: Array<() => void> = []
   private _destroyed = false
@@ -532,6 +533,8 @@ export class UIMenuItemWC extends HTMLElement {
 
   onClick(handler: () => void): void { this._clickHandlers.add(handler) }
   offClick(handler: () => void): void { this._clickHandlers.delete(handler) }
+  onHover(handler: () => void): void { this._hoverHandlers.add(handler) }
+  offHover(handler: () => void): void { this._hoverHandlers.delete(handler) }
   onPushedChange(handler: (pushed: boolean) => void): void { this._pushedChangeHandlers.add(handler) }
   offPushedChange(handler: (pushed: boolean) => void): void { this._pushedChangeHandlers.delete(handler) }
 
@@ -545,6 +548,7 @@ export class UIMenuItemWC extends HTMLElement {
     for (const fn of this._cleanups) fn()
     this._cleanups.length = 0
     this._clickHandlers.clear()
+    this._hoverHandlers.clear()
     this._pushedChangeHandlers.clear()
     if (this._hint) { this._hint.destroy(); this._hint = null }
     if (this._resizeObserver) { this._resizeObserver.disconnect(); this._resizeObserver = null }
@@ -620,6 +624,16 @@ export class UIMenuItemWC extends HTMLElement {
     }
     this.addEventListener('click', onClick)
     this._cleanups.push(() => this.removeEventListener('click', onClick))
+
+    const onHover = () => {
+      if (this._disabled) return
+      for (const h of this._hoverHandlers) h()
+      this.dispatchEvent(new CustomEvent('menuitem-hover', {
+        bubbles: true, composed: true,
+      }))
+    }
+    this.addEventListener('mouseenter', onHover)
+    this._cleanups.push(() => this.removeEventListener('mouseenter', onHover))
   }
 
   private _animContainer: HTMLDivElement | null = null

@@ -1260,7 +1260,9 @@ export class UIPopupWC extends HTMLElement {
     let totalH = 0
     for (const item of items) totalH += item.offsetHeight || 28
     const titleBarH = win.showTitle ? win.titleBarHeight : 0
-    const needed = totalH + titleBarH
+    const cs = getComputedStyle(win as HTMLElement)
+    const borderH = parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth)
+    const needed = totalH + titleBarH + borderH
 
     // Determine max available height from viewport (or container)
     const anchorRect = this._anchor?.getBoundingClientRect()

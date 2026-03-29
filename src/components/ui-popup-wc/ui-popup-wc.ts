@@ -708,6 +708,11 @@ export class UIPopupWC extends HTMLElement {
       }
       if (e.key === 'Escape' && this._closeOnEscape) {
         e.preventDefault(); e.stopPropagation()
+        // If a container sub-menu is open, close it instead of the whole popup
+        if (this._hasOpenContainerSubMenu()) {
+          this._closeSiblingSubMenus()
+          return
+        }
         this.close()
         return
       }
@@ -732,6 +737,12 @@ export class UIPopupWC extends HTMLElement {
         this._openSubMenuOfHighlighted()
       }
       else if (e.key === 'ArrowLeft') {
+        // If a container sub-menu is open, close it first
+        if (this._hasOpenContainerSubMenu()) {
+          e.preventDefault(); e.stopPropagation()
+          this._closeSiblingSubMenus()
+          return
+        }
         // If this is a sub-menu in attached state, close and return to parent
         if (this._parentMenuItem && this._state === 'attached') {
           e.preventDefault(); e.stopPropagation()
@@ -778,6 +789,18 @@ export class UIPopupWC extends HTMLElement {
     if (!item.hasSubMenu) return
 
     const subPopup = item.subMenu as UIPopupWC
+
+    // Container sub-menus never receive keyboard control — the parent keeps it.
+    // Just show/bring-to-front without setting _activeSubMenu.
+    if (subPopup._kind === 'container') {
+      if (subPopup.state === 'detached') {
+        subPopup._bringToolToFront()
+      } else if (subPopup.state === 'closed') {
+        item.openSubMenu()
+      }
+      return
+    }
+
     if (subPopup.state === 'detached') {
       // Sub-menu is detached — redirect navigation to it without opening
       this._activeSubMenu = subPopup
@@ -821,6 +844,19 @@ export class UIPopupWC extends HTMLElement {
       if (subWin && path.includes(subWin)) return true
       // Recurse into deeper levels
       if (subPopup._isClickInsideDescendantSubMenu(path)) return true
+    }
+    return false
+  }
+
+  /** Check if any child item has a visible container sub-menu (attached) */
+  private _hasOpenContainerSubMenu(): boolean {
+    const items = this._getMenuItems()
+    for (const item of items) {
+      const mi = item as any
+      if (mi.hasSubMenu) {
+        const sub = mi.subMenu as UIPopupWC
+        if (sub._kind === 'container' && sub._state === 'attached') return true
+      }
     }
     return false
   }

@@ -6,8 +6,8 @@ export interface PanelWCOptions {
   name?: string
   left?: number
   top?: number
-  width?: number
-  height?: number
+  width?: number | 'auto'
+  height?: number | 'auto'
   right?: number
   bottom?: number
   align?: Align
@@ -67,8 +67,14 @@ export class UIPanelWC extends HTMLElement {
     if (o.name !== undefined) this.core.viewName = o.name
     if (o.left !== undefined) this.core.viewLeft = o.left
     if (o.top !== undefined) this.core.viewTop = o.top
-    if (o.width !== undefined) this.core.viewWidth = o.width
-    if (o.height !== undefined) this.core.viewHeight = o.height
+    if (o.width !== undefined) {
+      if (o.width === 'auto') this.core.setViewWidthAuto()
+      else this.core.viewWidth = o.width
+    }
+    if (o.height !== undefined) {
+      if (o.height === 'auto') this.core.setViewHeightAuto()
+      else this.core.viewHeight = o.height
+    }
     if (o.right !== undefined) this.core.viewRight = o.right
     if (o.bottom !== undefined) this.core.viewBottom = o.bottom
     if (o.align !== undefined) this.core.viewAlign = o.align

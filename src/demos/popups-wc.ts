@@ -65,7 +65,7 @@ export const popupsWCDemo: DemoRoute = {
     container.style.position = 'relative'
     container.style.isolation = 'isolate'
 
-    const wm = new UIWindowManagerWC({ width: 900, height: 600 })
+    const wm = new UIWindowManagerWC({ height: 600 })
     wm.style.border = '1px solid #888'
     wm.style.display = 'block'
 

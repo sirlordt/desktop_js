@@ -1,6 +1,6 @@
 import type { DimensionProp, Align, Anchors, Rect, UISize, UIPosition } from './types'
 
-function dim(kind: 'set' | 'dynamic', value: number): DimensionProp {
+function dim(kind: 'set' | 'dynamic' | 'auto', value: number): DimensionProp {
   return { kind, value }
 }
 
@@ -130,6 +130,7 @@ export class UIView {
     return this._width
   }
   set viewWidth(v: number) { this._width = dim('set', v) }
+  setViewWidthAuto(): void { this._width = dim('auto', 0) }
 
   get viewHeight(): DimensionProp {
     if (this._alignRect && this._align !== 'none') {
@@ -142,6 +143,7 @@ export class UIView {
     return this._height
   }
   set viewHeight(v: number) { this._height = dim('set', v) }
+  setViewHeightAuto(): void { this._height = dim('auto', 0) }
 
   get viewRight(): DimensionProp {
     if (this._align !== 'none') {
@@ -421,19 +423,21 @@ export class UIView {
       this.el.style.top = ''
     }
 
-    // Dimensions
+    // Dimensions — 'auto' kind means "don't touch, let CSS handle it"
     if (isLayoutChild || this._align !== 'none' || this._position === 'absolute') {
-      this.el.style.width = `${this.viewWidth.value}px`
-      this.el.style.height = `${this.viewHeight.value}px`
+      this.el.style.width = this._width.kind === 'auto' ? '' : `${this.viewWidth.value}px`
+      this.el.style.height = this._height.kind === 'auto' ? '' : `${this.viewHeight.value}px`
     } else if (this._size === 'custom') {
       if (this._width.kind === 'set') this.el.style.width = `${this._width.value}px`
+      else if (this._width.kind === 'auto') this.el.style.width = ''
       if (this._height.kind === 'set') this.el.style.height = `${this._height.value}px`
+      else if (this._height.kind === 'auto') this.el.style.height = ''
     } else if (this._position === 'fluid') {
       this.el.style.width = ''
-      this.el.style.height = `${this.viewHeight.value}px`
+      this.el.style.height = this._height.kind === 'auto' ? '' : `${this.viewHeight.value}px`
     } else {
-      this.el.style.width = `${this.viewWidth.value}px`
-      this.el.style.height = `${this.viewHeight.value}px`
+      this.el.style.width = this._width.kind === 'auto' ? '' : `${this.viewWidth.value}px`
+      this.el.style.height = this._height.kind === 'auto' ? '' : `${this.viewHeight.value}px`
     }
 
     // Visibility
@@ -497,8 +501,8 @@ export class UIView {
     switch (name) {
       case 'left': if (val !== null) this._left = dim('set', parseFloat(val) || 0); break
       case 'top': if (val !== null) this._top = dim('set', parseFloat(val) || 0); break
-      case 'width': if (val !== null) this._width = dim('set', parseFloat(val) || 100); break
-      case 'height': if (val !== null) this._height = dim('set', parseFloat(val) || 0); break
+      case 'width': if (val !== null) this._width = val === 'auto' ? dim('auto', 0) : dim('set', parseFloat(val) || 100); break
+      case 'height': if (val !== null) this._height = val === 'auto' ? dim('auto', 0) : dim('set', parseFloat(val) || 0); break
       case 'right': if (val !== null) this._right = dim('set', parseFloat(val) || 0); break
       case 'bottom': if (val !== null) this._bottom = dim('set', parseFloat(val) || 0); break
       case 'size': this._size = (val as UISize) || 'medium'; this._applySizePreset(); break

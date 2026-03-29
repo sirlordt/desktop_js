@@ -1811,6 +1811,161 @@ describe('sub-menus', () => {
       // (In menu-kind, focus always stays on the anchor)
       expect(containerSub.visible).toBe(true)
     })
+
+    // ── Keyboard: ArrowRight on container sub-menu must NOT transfer keyboard control ──
+
+    function makeContainerSubMenuScene() {
+      anchor = createAnchor()
+      anchor.focus()
+
+      const root = createPopup()
+      const item1 = createItem('Settings')
+      const item2 = createItem('About')
+      const item3 = createItem('Export')
+      root.addChild(item1)
+      root.addChild(item2)
+      root.addChild(item3)
+
+      const containerSub = new UIPopupWC({
+        anchor: item1, kind: 'container', width: 200, height: 150,
+        title: 'Settings Panel', detachable: true,
+      })
+      document.body.appendChild(containerSub)
+      cleanup.push(containerSub)
+
+      const content = document.createElement('div')
+      content.innerHTML = '<input data-focusable placeholder="Name"><input data-focusable placeholder="Email">'
+      containerSub.addChild(content)
+      item1.subMenu = containerSub
+
+      root.show()
+      return { root, item1, item2, item3, containerSub }
+    }
+
+    it('ArrowRight opens container sub-menu but does NOT set _activeSubMenu', async () => {
+      const { root, containerSub } = makeContainerSubMenuScene()
+      await flush()
+
+      pressKey('ArrowDown')  // highlight Settings
+      pressKey('ArrowRight') // should open container sub-menu
+      await flush()
+
+      expect(containerSub.visible).toBe(true)
+      // Parent must NOT have transferred keyboard control
+      expect((root as any)._activeSubMenu).toBe(null)
+    })
+
+    it('ArrowRight on container sub-menu keeps highlight on parent item', async () => {
+      const { root } = makeContainerSubMenuScene()
+      await flush()
+
+      pressKey('ArrowDown')  // highlight Settings
+      pressKey('ArrowRight') // open container sub-menu
+      await flush()
+
+      // Parent's _activeIndex should still point to Settings (index 0)
+      expect((root as any)._activeIndex).toBe(0)
+    })
+
+    it('ArrowDown with open container sub-menu closes it and highlights next item', async () => {
+      const { root, containerSub, item2 } = makeContainerSubMenuScene()
+      await flush()
+
+      pressKey('ArrowDown')  // highlight Settings
+      pressKey('ArrowRight') // open container sub-menu
+      await flush()
+      expect(containerSub.visible).toBe(true)
+
+      pressKey('ArrowDown')  // should close container sub-menu and highlight About
+      await flush()
+
+      expect(containerSub.visible).toBe(false)
+      expect((root as any)._activeIndex).toBe(1) // About
+    })
+
+    it('ArrowUp with open container sub-menu closes it and highlights previous item', async () => {
+      const { root, containerSub } = makeContainerSubMenuScene()
+      await flush()
+
+      // Navigate to About (index 1), then back to Settings and open container
+      pressKey('ArrowDown')  // Settings (0)
+      pressKey('ArrowDown')  // About (1)
+      pressKey('ArrowUp')    // Settings (0) again
+      pressKey('ArrowRight') // open container sub-menu
+      await flush()
+      expect(containerSub.visible).toBe(true)
+
+      pressKey('ArrowUp')    // should close container and go to Export (last item, wrapping)
+      await flush()
+
+      expect(containerSub.visible).toBe(false)
+    })
+
+    it('Escape closes container sub-menu and keeps parent active', async () => {
+      const { root, containerSub } = makeContainerSubMenuScene()
+      await flush()
+
+      pressKey('ArrowDown')  // highlight Settings
+      pressKey('ArrowRight') // open container sub-menu
+      await flush()
+      expect(containerSub.visible).toBe(true)
+
+      pressKey('Escape')
+      await flush()
+
+      expect(containerSub.visible).toBe(false)
+      // Parent should still be open
+      expect(root.visible).toBe(true)
+    })
+
+    it('ArrowLeft closes container sub-menu same as Escape', async () => {
+      const { root, containerSub } = makeContainerSubMenuScene()
+      await flush()
+
+      pressKey('ArrowDown')  // highlight Settings
+      pressKey('ArrowRight') // open container sub-menu
+      await flush()
+      expect(containerSub.visible).toBe(true)
+
+      pressKey('ArrowLeft')
+      await flush()
+
+      expect(containerSub.visible).toBe(false)
+      expect(root.visible).toBe(true)
+    })
+
+    it('Enter on container sub-menu item opens it without transferring keyboard', async () => {
+      const { root, containerSub } = makeContainerSubMenuScene()
+      await flush()
+
+      pressKey('ArrowDown')  // highlight Settings
+      pressKey('Enter')      // should open container sub-menu
+      await flush()
+
+      expect(containerSub.visible).toBe(true)
+      expect((root as any)._activeSubMenu).toBe(null)
+    })
+
+    it('detached container sub-menu: ArrowRight brings to front without keyboard transfer', async () => {
+      const { root, containerSub } = makeContainerSubMenuScene()
+      await flush()
+
+      // Open container sub-menu, then simulate detach via internal method
+      pressKey('ArrowDown')  // highlight Settings
+      pressKey('ArrowRight') // open container sub-menu
+      await flush()
+
+      ;(containerSub as any)._detach()
+      await flush()
+      expect(containerSub.state).toBe('detached')
+
+      // ArrowRight again should bring to front, NOT transfer keyboard
+      pressKey('ArrowRight')
+      await flush()
+
+      expect((root as any)._activeSubMenu).toBe(null)
+      expect((root as any)._activeIndex).toBe(0) // still on Settings
+    })
   })
 
   // ═══════════════════════════════════════

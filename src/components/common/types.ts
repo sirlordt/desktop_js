@@ -1,6 +1,7 @@
 export const DimensionKind = {
   Set: 'set',
   Dynamic: 'dynamic',
+  Auto: 'auto',
 } as const
 export type DimensionKind = typeof DimensionKind[keyof typeof DimensionKind]
 
@@ -364,8 +365,8 @@ export interface WindowCycleShortcut {
 }
 
 export interface UIWindowManagerOptions {
-  width?: number
-  height?: number
+  width?: number | 'auto'
+  height?: number | 'auto'
   bg?: string
   borderColor?: string
   className?: string

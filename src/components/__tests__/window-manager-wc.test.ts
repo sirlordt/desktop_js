@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import '../ui-window-manager-wc/ui-window-manager-wc'
+import { UIWindowManagerWC } from '../ui-window-manager-wc/ui-window-manager-wc'
 import { UIWindowWC } from '../ui-window-wc/ui-window-wc'
 
 function flush(): Promise<void> { return new Promise(r => setTimeout(r, 10)) }
@@ -338,6 +339,85 @@ describe('window-manager-wc', () => {
       wm.addWindow(new UIWindowWC({ title: 'A' }))
       wm.destroy()
       expect(wm.isDestroyed).toBe(true)
+    })
+  })
+
+  // ── Fluid width (DimensionKind.Auto) ──
+
+  describe('fluid width — no width option', () => {
+    let container: HTMLDivElement
+
+    afterEach(() => {
+      if (container?.parentNode) container.remove()
+    })
+
+    function makeFluidWM(options?: ConstructorParameters<typeof UIWindowManagerWC>[0]) {
+      container = document.createElement('div')
+      container.style.cssText = 'width:1000px;display:block;position:relative;'
+      document.body.appendChild(container)
+      wm = new UIWindowManagerWC({ height: 600, ...options })
+      container.appendChild(wm)
+      return wm
+    }
+
+    it('does not set inline style.width when width is omitted', async () => {
+      makeFluidWM()
+      await flush()
+      // applyLayout must NOT force a px width — style.width should be empty
+      expect(wm.style.width).toBe('')
+    })
+
+    it('flows to parent width (clientWidth matches container)', async () => {
+      makeFluidWM()
+      await flush()
+      // The WM should fill its 1000px parent
+      expect(wm.clientWidth).toBeGreaterThan(0)
+      expect(wm.clientWidth).toBeLessThanOrEqual(1000)
+    })
+
+    it('managerWidth returns resolved clientWidth, not 0 or 100', async () => {
+      makeFluidWM()
+      await flush()
+      expect(wm.managerWidth).toBeGreaterThan(100)
+      expect(wm.managerWidth).toBeLessThanOrEqual(1000)
+    })
+
+    it('explicit width still works as fixed px', async () => {
+      makeFluidWM({ width: 500 })
+      await flush()
+      expect(wm.style.width).toBe('500px')
+      expect(wm.managerWidth).toBe(500)
+    })
+
+    it('explicit width: "auto" behaves same as omitting width', async () => {
+      makeFluidWM({ width: 'auto' })
+      await flush()
+      expect(wm.style.width).toBe('')
+      expect(wm.clientWidth).toBeGreaterThan(0)
+    })
+
+    it('keeps position:relative and overflow:hidden when fluid', async () => {
+      makeFluidWM()
+      await flush()
+      expect(wm.style.position).toBe('relative')
+      expect(wm.style.overflow).toBe('hidden')
+    })
+
+    it('child windows are constrained to fluid parent width', async () => {
+      makeFluidWM()
+      await flush()
+      const win = new UIWindowWC({ title: 'W', left: 900, top: 0, width: 200, height: 100 })
+      wm.addWindow(win)
+      await flush()
+      const winLeft = parseInt(win.element.style.left) || 0
+      // Window should be clamped inside the manager bounds
+      expect(winLeft + 200).toBeLessThanOrEqual(wm.managerWidth)
+    })
+
+    it('height is still explicit when only width is omitted', async () => {
+      makeFluidWM()
+      await flush()
+      expect(wm.style.height).toBe('600px')
     })
   })
 })

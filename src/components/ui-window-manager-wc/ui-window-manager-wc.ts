@@ -51,8 +51,8 @@ export class UIWindowManagerWC extends UIPanelWC {
    */
   configureManager(options: UIWindowManagerOptions): void {
     this.configure({
-      width: options.width,
-      height: options.height,
+      width: options.width ?? 'auto',
+      height: options.height ?? 'auto',
       bg: options.bg ?? 'var(--window-bg-color)',
       borderColor: options.borderColor,
       position: 'relative',
@@ -60,8 +60,8 @@ export class UIWindowManagerWC extends UIPanelWC {
 
     this.style.position = 'relative'
     this.style.overflow = 'hidden'
-    if (options.width) this.style.width = `${options.width}px`
-    if (options.height) this.style.height = `${options.height}px`
+    if (typeof options.width === 'number') this.style.width = `${options.width}px`
+    if (typeof options.height === 'number') this.style.height = `${options.height}px`
     this.tabIndex = -1
     this.style.outline = 'none'
     if (options.className) this.classList.add(...options.className.split(/\s+/))
@@ -175,10 +175,10 @@ export class UIWindowManagerWC extends UIPanelWC {
 
   get element(): HTMLElement { return this }
 
-  get managerWidth(): number { return parseInt(this.style.width) || this.clientWidth }
+  get managerWidth(): number { return this.clientWidth || parseInt(this.style.width) || 0 }
   set managerWidth(v: number) { this.style.width = `${v}px`; this.panelWidth = v }
 
-  get managerHeight(): number { return parseInt(this.style.height) || this.clientHeight }
+  get managerHeight(): number { return this.clientHeight || parseInt(this.style.height) || 0 }
   set managerHeight(v: number) { this.style.height = `${v}px`; this.panelHeight = v }
 
   // ── Keyboard shortcuts ──

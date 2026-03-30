@@ -255,10 +255,239 @@ describe('menubar-wc', () => {
       await flush()
       expect(popups[0].visible).toBe(true)
     })
+
+    it('ArrowRight wraps from last to first item', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      // Activate on last item (View)
+      items[2].click()
+      await flush()
+      popups[2].close()
+      await flush()
+
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[0].highlighted).toBe(true)
+      expect(items[2].highlighted).toBe(false)
+    })
+
+    it('ArrowLeft wraps from first to last item', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].click()
+      await flush()
+      popups[0].close()
+      await flush()
+
+      pressKey('ArrowLeft')
+      await flush()
+      expect(items[2].highlighted).toBe(true)
+      expect(items[0].highlighted).toBe(false)
+    })
+
+    it('ArrowRight clears previous highlight before setting new', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].click()
+      await flush()
+      popups[0].close()
+      await flush()
+
+      // File is highlighted (index 0)
+      expect(items[0].highlighted).toBe(true)
+
+      pressKey('ArrowRight')
+      await flush()
+
+      // Only Edit should be highlighted
+      expect(items[0].highlighted).toBe(false)
+      expect(items[1].highlighted).toBe(true)
+      expect(items[2].highlighted).toBe(false)
+    })
+
+    it('multiple ArrowRight steps cycle through all items', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].click()
+      await flush()
+      popups[0].close()
+      await flush()
+
+      // File → Edit
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[1].highlighted).toBe(true)
+
+      // Edit → View
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[2].highlighted).toBe(true)
+
+      // View → File (wrap)
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[0].highlighted).toBe(true)
+    })
+
+    it('Escape at bar level deactivates bar and clears highlight', async () => {
+      const { items } = buildMenu()
+      await flush()
+
+      // Activate bar via focus (no popup involved, so no _popupJustClosed)
+      items[0].focus()
+      await flush()
+      expect(items[0].highlighted).toBe(true)
+
+      // Escape at bar level: deactivates bar
+      pressKey('Escape')
+      await flush()
+
+      expect(items[0].highlighted).toBe(false)
+      expect(items[1].highlighted).toBe(false)
+      expect(items[2].highlighted).toBe(false)
+    })
+
+    it('Escape closes popup, returns to bar-level with highlight', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].click()
+      await flush()
+      expect(popups[0].visible).toBe(true)
+
+      // Escape 1: closes popup — _onPopupClosed re-highlights the item
+      pressKey('Escape')
+      await flush()
+      expect(popups[0].visible).toBe(false)
+      expect(items[0].highlighted).toBe(true)
+
+      // Escape 2: consumed by _popupJustClosed guard (still highlighted)
+      pressKey('Escape')
+      await flush()
+
+      // Escape 3: actually deactivates bar
+      pressKey('Escape')
+      await flush()
+      expect(items[0].highlighted).toBe(false)
+    })
+
+    it('after full Escape sequence, arrows do nothing', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].click()
+      await flush()
+
+      // Escape 1: close popup, Escape 2: skip (popupJustClosed), Escape 3: deactivate bar
+      pressKey('Escape')
+      await flush()
+      pressKey('Escape')
+      await flush()
+      pressKey('Escape')
+      await flush()
+
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[0].highlighted).toBe(false)
+      expect(items[1].highlighted).toBe(false)
+      expect(items[2].highlighted).toBe(false)
+    })
+
+    it('disabled bar ignores keyboard navigation', async () => {
+      const { bar, items } = buildMenu()
+      await flush()
+
+      bar.disabled = true
+      // Try to activate via focus
+      items[0].focus()
+      await flush()
+
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[1].highlighted).toBe(false)
+    })
   })
 
   // ═══════════════════════════════════════
-  // 7. Keyboard: popup boundary crossing
+  // 7. Keyboard: focus-based activation (Tab)
+  // ═══════════════════════════════════════
+
+  describe('keyboard — Tab focus activation', () => {
+    it('focus on item activates bar and highlights item', async () => {
+      const { items } = buildMenu()
+      await flush()
+
+      items[0].focus()
+      await flush()
+
+      expect(items[0].highlighted).toBe(true)
+    })
+
+    it('focus on item then ArrowRight moves highlight', async () => {
+      const { items } = buildMenu()
+      await flush()
+
+      items[0].focus()
+      await flush()
+      expect(items[0].highlighted).toBe(true)
+
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[0].highlighted).toBe(false)
+      expect(items[1].highlighted).toBe(true)
+    })
+
+    it('focus on item then Enter opens popup', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].focus()
+      await flush()
+
+      pressKey('Enter')
+      await flush()
+      expect(popups[0].visible).toBe(true)
+    })
+
+    it('focus on item then ArrowDown opens popup', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[1].focus()
+      await flush()
+
+      pressKey('ArrowDown')
+      await flush()
+      expect(popups[1].visible).toBe(true)
+    })
+
+    it('blur clears highlight when focus leaves the bar', async () => {
+      const { items } = buildMenu()
+      await flush()
+
+      // Create an external element to move focus to
+      const external = document.createElement('button')
+      external.textContent = 'Outside'
+      document.body.appendChild(external)
+      cleanup.push(external)
+
+      items[0].focus()
+      await flush()
+      expect(items[0].highlighted).toBe(true)
+
+      external.focus()
+      await flush(50) // wait for rAF in blur handler
+
+      expect(items[0].highlighted).toBe(false)
+    })
+  })
+
+  // ═══════════════════════════════════════
+  // 8. Keyboard: popup boundary crossing
   // ═══════════════════════════════════════
 
   describe('keyboard — popup boundary to bar', () => {
@@ -297,10 +526,211 @@ describe('menubar-wc', () => {
       expect(popups[0].visible).toBe(false)
       expect(popups[1].visible).toBe(true)
     })
+
+    it('ArrowLeft at popup root wraps to last bar item', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      // Open File popup (first item)
+      items[0].click()
+      await flush()
+      expect(popups[0].visible).toBe(true)
+
+      // ArrowLeft → should wrap to View (last item)
+      pressKey('ArrowLeft')
+      await flush()
+
+      expect(popups[0].visible).toBe(false)
+      expect(popups[2].visible).toBe(true)
+    })
+
+    it('ArrowRight at popup root wraps to first bar item', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      // Open View popup (last item)
+      items[2].click()
+      await flush()
+      expect(popups[2].visible).toBe(true)
+
+      // ArrowRight → should wrap to File (first item)
+      pressKey('ArrowRight')
+      await flush()
+
+      expect(popups[2].visible).toBe(false)
+      expect(popups[0].visible).toBe(true)
+    })
+
+    it('active item changes when crossing with ArrowLeft', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[2].click() // Open View
+      await flush()
+      expect(items[2].active).toBe(true)
+
+      pressKey('ArrowLeft') // Cross to Edit
+      await flush()
+
+      expect(items[2].active).toBe(false)
+      expect(items[1].active).toBe(true)
+      expect(popups[1].visible).toBe(true)
+    })
+
+    it('active item changes when crossing with ArrowRight', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].click() // Open File
+      await flush()
+      expect(items[0].active).toBe(true)
+
+      pressKey('ArrowRight') // Cross to Edit
+      await flush()
+
+      expect(items[0].active).toBe(false)
+      expect(items[1].active).toBe(true)
+      expect(popups[1].visible).toBe(true)
+    })
+
+    it('Escape closes popup and returns to bar-level nav', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      items[0].click()
+      await flush()
+      expect(popups[0].visible).toBe(true)
+
+      pressKey('Escape')
+      await flush()
+      expect(popups[0].visible).toBe(false)
+
+      // Bar should still be active with File highlighted
+      expect(items[0].highlighted).toBe(true)
+
+      // ArrowRight should now work at bar level
+      pressKey('ArrowRight')
+      await flush()
+      expect(items[1].highlighted).toBe(true)
+    })
+
+    it('rapid ArrowLeft crossing opens correct popups in sequence', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      // Open View
+      items[2].click()
+      await flush()
+      expect(popups[2].visible).toBe(true)
+
+      // ArrowLeft → Edit
+      pressKey('ArrowLeft')
+      await flush()
+      expect(popups[1].visible).toBe(true)
+
+      // ArrowLeft → File
+      pressKey('ArrowLeft')
+      await flush()
+      expect(popups[0].visible).toBe(true)
+
+      // ArrowLeft → View (wrap)
+      pressKey('ArrowLeft')
+      await flush()
+      expect(popups[2].visible).toBe(true)
+    })
+
+    it('rapid ArrowRight crossing opens correct popups in sequence', async () => {
+      const { items, popups } = buildMenu()
+      await flush()
+
+      // Open File
+      items[0].click()
+      await flush()
+      expect(popups[0].visible).toBe(true)
+
+      // ArrowRight → Edit
+      pressKey('ArrowRight')
+      await flush()
+      expect(popups[1].visible).toBe(true)
+
+      // ArrowRight → View
+      pressKey('ArrowRight')
+      await flush()
+      expect(popups[2].visible).toBe(true)
+
+      // ArrowRight → File (wrap)
+      pressKey('ArrowRight')
+      await flush()
+      expect(popups[0].visible).toBe(true)
+    })
   })
 
   // ═══════════════════════════════════════
-  // 8. Disabled
+  // 9. Multi-bar isolation
+  // ═══════════════════════════════════════
+
+  describe('multi-bar isolation', () => {
+    it('clicking on bar A deactivates bar B', async () => {
+      const { items: itemsA, popups: popupsA } = buildMenu()
+      await flush()
+
+      // Create a second bar
+      const bar2 = createBar()
+      const itemsB: UIMenuItemWC[] = []
+      const popupsB: UIPopupWC[] = []
+      for (const name of ['Alpha', 'Beta']) {
+        const item = createItem(name)
+        itemsB.push(item)
+        const popup = createPopup(item)
+        popup.addChild(new UIMenuItemWC({ text: `${name} Action` }))
+        bar2.addItem(item, popup)
+        popupsB.push(popup)
+      }
+      await flush()
+
+      // Activate bar A
+      itemsA[0].click()
+      await flush()
+      expect(popupsA[0].visible).toBe(true)
+
+      // Click on bar B item — should close bar A popup
+      itemsB[0].click()
+      await flush()
+      expect(popupsA[0].visible).toBe(false)
+      expect(popupsB[0].visible).toBe(true)
+    })
+
+    it('focusing bar B clears bar A highlight', async () => {
+      const { items: itemsA, popups: popupsA } = buildMenu()
+      await flush()
+
+      // Create a second bar
+      const bar2 = createBar()
+      const itemsB: UIMenuItemWC[] = []
+      for (const name of ['Alpha', 'Beta']) {
+        const item = createItem(name)
+        itemsB.push(item)
+        const popup = createPopup(item)
+        popup.addChild(new UIMenuItemWC({ text: `${name} Action` }))
+        bar2.addItem(item, popup)
+      }
+      await flush()
+
+      // Activate bar A via focus
+      itemsA[0].focus()
+      await flush()
+      expect(itemsA[0].highlighted).toBe(true)
+
+      // Focus bar B item
+      itemsB[0].focus()
+      await flush()
+      expect(itemsA[0].highlighted).toBe(false)
+      expect(itemsB[0].highlighted).toBe(true)
+    })
+  })
+
+  // ═══════════════════════════════════════
+  // 10. Disabled
   // ═══════════════════════════════════════
 
   describe('disabled', () => {
@@ -335,7 +765,7 @@ describe('menubar-wc', () => {
   })
 
   // ═══════════════════════════════════════
-  // 9. Events
+  // 11. Events
   // ═══════════════════════════════════════
 
   describe('events', () => {
@@ -369,7 +799,7 @@ describe('menubar-wc', () => {
   })
 
   // ═══════════════════════════════════════
-  // 10. Destroy
+  // 12. Destroy
   // ═══════════════════════════════════════
 
   describe('destroy', () => {

@@ -23,7 +23,14 @@
 ::slotted(menuitem-wc) {
   flex-shrink: 0;
   width: auto !important;
-  padding: 0 10px;
+  border-radius: 0 !important;
+  outline: none !important;
+  --ui-menuitem-margin: 8px;
+  --ui-menuitem-icon-gap: 6px;
+}
+
+::slotted(menuitem-wc:focus) {
+  background-color: var(--hover-bg-color, rgba(128, 128, 128, 0.12));
 }
 
 :host(.disabled) {

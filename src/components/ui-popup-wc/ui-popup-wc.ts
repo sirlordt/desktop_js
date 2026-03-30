@@ -429,6 +429,9 @@ export class UIPopupWC extends HTMLElement {
   /** Whether a sub-menu is currently receiving keyboard navigation */
   get hasActiveSubMenu(): boolean { return this._activeSubMenu !== null }
 
+  /** Whether a container sub-menu is open (attached) inside this popup */
+  get hasOpenContainerSubMenu(): boolean { return this._hasOpenContainerSubMenu() }
+
   /** The currently highlighted menu item, or null */
   get highlightedItem(): UIMenuItemWC | null {
     return (this._getHighlightedItem() as UIMenuItemWC | null)
@@ -689,6 +692,7 @@ export class UIPopupWC extends HTMLElement {
             if ((subItem as any).hasSubMenu) {
               deepest._openSubMenuOfHighlighted()
             } else {
+              deepest._clearHighlight()
               subItem.click()
             }
           }
@@ -763,6 +767,7 @@ export class UIPopupWC extends HTMLElement {
         if ((item as any).hasSubMenu) {
           this._openSubMenuOfHighlighted()
         } else {
+          this._clearHighlight()
           item.click()
         }
       }
@@ -935,7 +940,7 @@ export class UIPopupWC extends HTMLElement {
           const subItem = deepest._getHighlightedItem()
           if (subItem) {
             if ((subItem as any).hasSubMenu) deepest._openSubMenuOfHighlighted()
-            else subItem.click()
+            else { deepest._clearHighlight(); subItem.click() }
           }
           return
         }

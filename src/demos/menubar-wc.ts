@@ -1,6 +1,9 @@
+import '../components/ui-button-wc/ui-button-wc'
 import { UIMenuBarWC } from '../components/ui-menubar-wc/ui-menubar-wc'
 import { UIMenuItemWC } from '../components/ui-menu-item-wc/ui-menu-item-wc'
 import { UIPopupWC } from '../components/ui-popup-wc/ui-popup-wc'
+import { UIWindowManagerWC } from '../components/ui-window-manager-wc/ui-window-manager-wc'
+import { UIWindowWC } from '../components/ui-window-wc/ui-window-wc'
 import type { DemoRoute } from '../header'
 
 function makeIcon(d: string, size = 14): HTMLElement {
@@ -392,5 +395,466 @@ export const menuBarWCDemo: DemoRoute = {
     sec6.appendChild(widthSlider)
     sec6.appendChild(widthLabel)
     container.appendChild(sec6)
+
+    // ── 7. MenuBar inside UIWindowWC with WindowManager ──
+    const sec7 = document.createElement('div')
+    sec7.style.cssText = 'margin-bottom:40px;'
+    sec7.innerHTML = '<h2 style="margin:0 0 12px;font-size:16px;">MenuBar inside Window (with WindowManager)</h2>'
+
+    const wm = new UIWindowManagerWC({ height: 500 })
+    wm.style.border = '1px solid #888'
+    wm.style.display = 'block'
+
+    // Window 1 — app-like window with deep detachable menus
+    const win1 = new UIWindowWC({ title: 'App Window', left: 10, top: 10, width: 500, height: 350 })
+    const bar7 = new UIMenuBarWC()
+
+    // File menu — ROOT detachable, with 3-level detachable sub-menus
+    const w1FileItem = new UIMenuItemWC({ text: 'File', leftElement: makeIcon(I.file) })
+    const w1FilePopup = new UIPopupWC({ anchor: w1FileItem, kind: 'menu', width: 220, height: 'auto', detachable: true, title: 'File' })
+
+    // Level 1: New → Level 2: From Template → Level 3: Categories
+    const w1NewItem = new UIMenuItemWC({ text: 'New', leftElement: makeIcon(I.file) })
+    const w1NewSub = new UIPopupWC({ anchor: w1NewItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'New' })
+
+    const w1TemplateItem = new UIMenuItemWC({ text: 'From Template', leftElement: makeIcon(I.grid) })
+    const w1TemplateSub = new UIPopupWC({ anchor: w1TemplateItem, kind: 'menu', width: 170, height: 'auto', detachable: true, title: 'Templates' })
+
+    const w1CatItem = new UIMenuItemWC({ text: 'Categories', leftElement: makeIcon(I.layers) })
+    makeSubMenu(w1CatItem, ['Business', 'Personal', 'Academic', 'Creative'], { detachable: true, title: 'Categories' })
+
+    w1TemplateSub.addChild(new UIMenuItemWC({ text: 'Blank Document' }))
+    w1TemplateSub.addChild(new UIMenuItemWC({ text: 'Letter' }))
+    w1TemplateSub.addChild(new UIMenuItemWC({ text: 'Resume' }))
+    w1TemplateSub.addChild(w1CatItem)
+    w1TemplateItem.subMenu = w1TemplateSub
+
+    w1NewSub.addChild(new UIMenuItemWC({ text: 'Document' }))
+    w1NewSub.addChild(new UIMenuItemWC({ text: 'Spreadsheet' }))
+    w1NewSub.addChild(new UIMenuItemWC({ text: 'Presentation' }))
+    w1NewSub.addChild(w1TemplateItem)
+    w1NewItem.subMenu = w1NewSub
+
+    const w1RecentItem = new UIMenuItemWC({ text: 'Recent Files', leftElement: makeIcon(I.folder) })
+    makeSubMenu(w1RecentItem, ['report.docx', 'budget.xlsx', 'slides.pptx', 'notes.txt'], { detachable: true, title: 'Recent' })
+
+    w1FilePopup.addChild(w1NewItem)
+    w1FilePopup.addChild(new UIMenuItemWC({ text: 'Open...', shortcut: 'Ctrl+O', leftElement: makeIcon(I.folder) }))
+    w1FilePopup.addChild(w1RecentItem)
+    w1FilePopup.addChild(new UIMenuItemWC({ text: 'Save', shortcut: 'Ctrl+S', leftElement: makeIcon(I.save) }))
+    w1FilePopup.addChild(new UIMenuItemWC({ text: 'Save As...', shortcut: 'Ctrl+Shift+S', leftElement: makeIcon(I.save) }))
+    w1FilePopup.addChild(new UIMenuItemWC({ text: 'Exit', leftElement: makeIcon(I.x), disabled: true }))
+
+    bar7.addItem(w1FileItem, w1FilePopup)
+
+    // Edit menu — ROOT detachable, with Transform 2-level
+    const w1EditItem = new UIMenuItemWC({ text: 'Edit', leftElement: makeIcon(I.type) })
+    const w1EditPopup = new UIPopupWC({ anchor: w1EditItem, kind: 'menu', width: 220, height: 'auto', detachable: true, title: 'Edit' })
+
+    w1EditPopup.addChild(new UIMenuItemWC({ text: 'Undo', shortcut: 'Ctrl+Z', leftElement: makeIcon(I.undo) }))
+    w1EditPopup.addChild(new UIMenuItemWC({ text: 'Redo', shortcut: 'Ctrl+Y', leftElement: makeIcon(I.undo), disabled: true }))
+    w1EditPopup.addChild(new UIMenuItemWC({ text: 'Cut', shortcut: 'Ctrl+X' }))
+    w1EditPopup.addChild(new UIMenuItemWC({ text: 'Copy', shortcut: 'Ctrl+C' }))
+    w1EditPopup.addChild(new UIMenuItemWC({ text: 'Paste', shortcut: 'Ctrl+V' }))
+
+    const w1TransItem = new UIMenuItemWC({ text: 'Transform', leftElement: makeIcon(I.move) })
+    const w1TransSub = new UIPopupWC({ anchor: w1TransItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'Transform' })
+    const w1RotateItem = new UIMenuItemWC({ text: 'Rotate', leftElement: makeIcon(I.compass) })
+    makeSubMenu(w1RotateItem, ['90° CW', '90° CCW', '180°', 'Custom...'], { detachable: true, title: 'Rotate' })
+    w1TransSub.addChild(w1RotateItem)
+    w1TransSub.addChild(new UIMenuItemWC({ text: 'Flip Horizontal' }))
+    w1TransSub.addChild(new UIMenuItemWC({ text: 'Flip Vertical' }))
+    w1TransSub.addChild(new UIMenuItemWC({ text: 'Scale...' }))
+    w1TransItem.subMenu = w1TransSub
+    w1EditPopup.addChild(w1TransItem)
+
+    bar7.addItem(w1EditItem, w1EditPopup)
+
+    // View menu — ROOT detachable, Tool Palette + Layers (container)
+    const w1ViewItem = new UIMenuItemWC({ text: 'View', leftElement: makeIcon(I.eye) })
+    const w1ViewPopup = new UIPopupWC({ anchor: w1ViewItem, kind: 'menu', width: 200, height: 'auto', detachable: true, title: 'View' })
+
+    const w1ToolsItem = new UIMenuItemWC({ text: 'Tool Palette', leftElement: makeIcon(I.brush) })
+    const w1ToolsSub = new UIPopupWC({ anchor: w1ToolsItem, kind: 'menu', width: 160, height: 'auto', detachable: true, title: 'Tools' })
+    for (const t of ['Brush', 'Eraser', 'Fill', 'Select', 'Gradient']) {
+      w1ToolsSub.addChild(new UIMenuItemWC({ text: t }))
+    }
+    w1ToolsItem.subMenu = w1ToolsSub
+
+    const w1LayersItem = new UIMenuItemWC({ text: 'Layers', leftElement: makeIcon(I.layers) })
+    const w1LayersSub = new UIPopupWC({ anchor: w1LayersItem, kind: 'container', width: 190, height: 'auto', detachable: true, title: 'Layers' })
+    const layersContent = document.createElement('div')
+    layersContent.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:8px 10px;font-size:13px;'
+    for (const name of ['Background', 'Layer 1', 'Layer 2', 'Overlay']) {
+      const label = document.createElement('label')
+      label.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;'
+      label.setAttribute('data-focusable', '')
+      label.innerHTML = `<input type="checkbox" ${name === 'Background' ? 'checked' : ''}> ${name}`
+      layersContent.appendChild(label)
+    }
+    w1LayersSub.addChild(layersContent)
+    w1LayersItem.subMenu = w1LayersSub
+
+    w1ViewPopup.addChild(w1ToolsItem)
+    w1ViewPopup.addChild(w1LayersItem)
+    w1ViewPopup.addChild(new UIMenuItemWC({ text: 'Zoom In', shortcut: 'Ctrl++' }))
+    w1ViewPopup.addChild(new UIMenuItemWC({ text: 'Zoom Out', shortcut: 'Ctrl+-' }))
+    w1ViewPopup.addChild(new UIMenuItemWC({ text: 'Full Screen', shortcut: 'F11', leftElement: makeIcon(I.maximize) }))
+
+    bar7.addItem(w1ViewItem, w1ViewPopup)
+
+    win1.contentElement.style.display = 'flex'
+    win1.contentElement.style.flexDirection = 'column'
+    win1.contentElement.appendChild(bar7)
+    const w1Body = document.createElement('div')
+    w1Body.style.cssText = 'flex:1;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;'
+    for (const label of ['New Doc', 'Save', 'Undo', 'Redo', 'Bold', 'Italic']) {
+      const btn = document.createElement('ui-button') as HTMLElement
+      btn.setAttribute('variant', 'outline'); btn.setAttribute('size', 'small')
+      btn.setAttribute('data-focusable', ''); btn.textContent = label
+      w1Body.appendChild(btn)
+    }
+    win1.contentElement.appendChild(w1Body)
+
+    // Window 2 — with detachable root + 3-level Image menu
+    const win2 = new UIWindowWC({ title: 'Editor Window', left: 300, top: 50, width: 420, height: 300 })
+    const bar8 = new UIMenuBarWC()
+
+    // File menu — ROOT detachable
+    const w2FileItem = new UIMenuItemWC({ text: 'File' })
+    const w2FilePopup = new UIPopupWC({ anchor: w2FileItem, kind: 'menu', width: 200, height: 'auto', detachable: true, title: 'File' })
+    w2FilePopup.addChild(new UIMenuItemWC({ text: 'New', shortcut: 'Ctrl+N', leftElement: makeIcon(I.file) }))
+    w2FilePopup.addChild(new UIMenuItemWC({ text: 'Open', shortcut: 'Ctrl+O', leftElement: makeIcon(I.folder) }))
+    w2FilePopup.addChild(new UIMenuItemWC({ text: 'Save', shortcut: 'Ctrl+S', leftElement: makeIcon(I.save) }))
+    w2FilePopup.addChild(new UIMenuItemWC({ text: 'Print...', shortcut: 'Ctrl+P', disabled: true }))
+    bar8.addItem(w2FileItem, w2FilePopup)
+
+    // Image menu — ROOT detachable, 3 levels: Adjustments → Color → Presets
+    const w2ImageItem = new UIMenuItemWC({ text: 'Image', leftElement: makeIcon(I.image) })
+    const w2ImagePopup = new UIPopupWC({ anchor: w2ImageItem, kind: 'menu', width: 200, height: 'auto', detachable: true, title: 'Image' })
+
+    const w2AdjItem = new UIMenuItemWC({ text: 'Adjustments', leftElement: makeIcon(I.wand) })
+    const w2AdjSub = new UIPopupWC({ anchor: w2AdjItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'Adjustments' })
+
+    const w2ColorItem = new UIMenuItemWC({ text: 'Color', leftElement: makeIcon(I.brush) })
+    const w2ColorSub = new UIPopupWC({ anchor: w2ColorItem, kind: 'menu', width: 160, height: 'auto', detachable: true, title: 'Color' })
+
+    const w2PresetsItem = new UIMenuItemWC({ text: 'Presets', leftElement: makeIcon(I.sparkles) })
+    makeSubMenu(w2PresetsItem, ['Vivid', 'Muted', 'Sepia', 'B&W', 'Cinematic'], { detachable: true, title: 'Presets' })
+
+    w2ColorSub.addChild(new UIMenuItemWC({ text: 'Brightness' }))
+    w2ColorSub.addChild(new UIMenuItemWC({ text: 'Contrast' }))
+    w2ColorSub.addChild(new UIMenuItemWC({ text: 'Saturation' }))
+    w2ColorSub.addChild(w2PresetsItem)
+    w2ColorItem.subMenu = w2ColorSub
+
+    w2AdjSub.addChild(w2ColorItem)
+    w2AdjSub.addChild(new UIMenuItemWC({ text: 'Levels', leftElement: makeIcon(I.layers) }))
+    w2AdjSub.addChild(new UIMenuItemWC({ text: 'Curves', disabled: true }))
+    w2AdjItem.subMenu = w2AdjSub
+
+    const w2TransformItem = new UIMenuItemWC({ text: 'Transform', leftElement: makeIcon(I.move) })
+    makeSubMenu(w2TransformItem, ['Rotate 90° CW', 'Rotate 90° CCW', 'Flip H', 'Flip V'], { detachable: true, title: 'Transform' })
+
+    w2ImagePopup.addChild(w2AdjItem)
+    w2ImagePopup.addChild(w2TransformItem)
+    w2ImagePopup.addChild(new UIMenuItemWC({ text: 'Crop', shortcut: 'Ctrl+Shift+X', leftElement: makeIcon(I.maximize) }))
+    w2ImagePopup.addChild(new UIMenuItemWC({ text: 'Resize...', leftElement: makeIcon(I.move) }))
+
+    bar8.addItem(w2ImageItem, w2ImagePopup)
+
+    // View menu — ROOT detachable
+    const w2ViewItem = new UIMenuItemWC({ text: 'View' })
+    const w2ViewPopup = new UIPopupWC({ anchor: w2ViewItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'View' })
+    w2ViewPopup.addChild(new UIMenuItemWC({ text: 'Word Wrap', leftElement: makeIcon(I.type) }))
+    w2ViewPopup.addChild(new UIMenuItemWC({ text: 'Line Numbers' }))
+    w2ViewPopup.addChild(new UIMenuItemWC({ text: 'Minimap' }))
+    w2ViewPopup.addChild(new UIMenuItemWC({ text: 'Status Bar' }))
+    bar8.addItem(w2ViewItem, w2ViewPopup)
+
+    win2.contentElement.style.display = 'flex'
+    win2.contentElement.style.flexDirection = 'column'
+    win2.contentElement.appendChild(bar8)
+    const w2Body = document.createElement('div')
+    w2Body.style.cssText = 'flex:1;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;'
+    for (const label of ['Find', 'Replace', 'Go To Line', 'Select All']) {
+      const btn = document.createElement('ui-button') as HTMLElement
+      btn.setAttribute('variant', 'outline'); btn.setAttribute('size', 'small')
+      btn.setAttribute('data-focusable', ''); btn.textContent = label
+      w2Body.appendChild(btn)
+    }
+    win2.contentElement.appendChild(w2Body)
+
+    sec7.appendChild(wm)
+    container.appendChild(sec7)
+    wm.addWindow(win1)
+    wm.addWindow(win2)
+
+    // ── 8. Standalone windows with MenuBar (no WindowManager) ──
+    const sec8 = document.createElement('div')
+    sec8.style.cssText = 'margin-bottom:40px;'
+    sec8.innerHTML = '<h2 style="margin:0 0 12px;font-size:16px;">Standalone Windows with MenuBar (no WM)</h2>'
+
+    const standaloneContainer = document.createElement('div')
+    standaloneContainer.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;'
+
+    // Window 3 — standalone, ROOT detachable + 3-level deep detachable menus
+    const win3 = new UIWindowWC({ title: 'Window 3 (standalone)', left: 0, top: 0, width: 480, height: 320, positioning: 'relative' })
+    const bar9 = new UIMenuBarWC()
+
+    // File menu — ROOT detachable, 3 levels: New → From Template → Categories
+    const w3FileItem = new UIMenuItemWC({ text: 'File', leftElement: makeIcon(I.file) })
+    const w3FilePopup = new UIPopupWC({ anchor: w3FileItem, kind: 'menu', width: 220, height: 'auto', detachable: true, title: 'File' })
+
+    const w3NewItem = new UIMenuItemWC({ text: 'New', leftElement: makeIcon(I.file) })
+    const w3NewSub = new UIPopupWC({ anchor: w3NewItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'New' })
+
+    const w3TemplateItem = new UIMenuItemWC({ text: 'From Template', leftElement: makeIcon(I.grid) })
+    const w3TemplateSub = new UIPopupWC({ anchor: w3TemplateItem, kind: 'menu', width: 170, height: 'auto', detachable: true, title: 'Templates' })
+
+    const w3CatItem = new UIMenuItemWC({ text: 'Categories', leftElement: makeIcon(I.layers) })
+    makeSubMenu(w3CatItem, ['Business', 'Personal', 'Academic', 'Creative'], { detachable: true, title: 'Categories' })
+
+    w3TemplateSub.addChild(new UIMenuItemWC({ text: 'Blank Document' }))
+    w3TemplateSub.addChild(new UIMenuItemWC({ text: 'Letter' }))
+    w3TemplateSub.addChild(new UIMenuItemWC({ text: 'Resume' }))
+    w3TemplateSub.addChild(w3CatItem)
+    w3TemplateItem.subMenu = w3TemplateSub
+
+    w3NewSub.addChild(new UIMenuItemWC({ text: 'Document' }))
+    w3NewSub.addChild(new UIMenuItemWC({ text: 'Spreadsheet' }))
+    w3NewSub.addChild(new UIMenuItemWC({ text: 'Presentation' }))
+    w3NewSub.addChild(new UIMenuItemWC({ text: 'Drawing' }))
+    w3NewSub.addChild(w3TemplateItem)
+    w3NewItem.subMenu = w3NewSub
+
+    const w3RecentItem = new UIMenuItemWC({ text: 'Recent Files', leftElement: makeIcon(I.folder) })
+    makeSubMenu(w3RecentItem, ['report_2026.docx', 'budget.xlsx', 'slides.pptx', 'notes.txt', 'sketch.svg'], { detachable: true, title: 'Recent' })
+
+    w3FilePopup.addChild(w3NewItem)
+    w3FilePopup.addChild(new UIMenuItemWC({ text: 'Open...', shortcut: 'Ctrl+O', leftElement: makeIcon(I.folder) }))
+    w3FilePopup.addChild(w3RecentItem)
+    w3FilePopup.addChild(new UIMenuItemWC({ text: 'Save', shortcut: 'Ctrl+S', leftElement: makeIcon(I.save) }))
+    w3FilePopup.addChild(new UIMenuItemWC({ text: 'Save As...', shortcut: 'Ctrl+Shift+S', leftElement: makeIcon(I.save) }))
+    w3FilePopup.addChild(new UIMenuItemWC({ text: 'Export...', leftElement: makeIcon(I.image), disabled: true }))
+    w3FilePopup.addChild(new UIMenuItemWC({ text: 'Close', shortcut: 'Ctrl+W', leftElement: makeIcon(I.x) }))
+
+    bar9.addItem(w3FileItem, w3FilePopup)
+
+    // Edit menu — ROOT detachable, with Transform → Rotate (3 levels)
+    const w3EditItem = new UIMenuItemWC({ text: 'Edit', leftElement: makeIcon(I.type) })
+    const w3EditPopup = new UIPopupWC({ anchor: w3EditItem, kind: 'menu', width: 220, height: 'auto', detachable: true, title: 'Edit' })
+
+    w3EditPopup.addChild(new UIMenuItemWC({ text: 'Undo', shortcut: 'Ctrl+Z', leftElement: makeIcon(I.undo) }))
+    w3EditPopup.addChild(new UIMenuItemWC({ text: 'Redo', shortcut: 'Ctrl+Y', leftElement: makeIcon(I.undo), disabled: true }))
+    w3EditPopup.addChild(new UIMenuItemWC({ text: 'Cut', shortcut: 'Ctrl+X' }))
+    w3EditPopup.addChild(new UIMenuItemWC({ text: 'Copy', shortcut: 'Ctrl+C' }))
+    w3EditPopup.addChild(new UIMenuItemWC({ text: 'Paste', shortcut: 'Ctrl+V' }))
+
+    const w3TransItem = new UIMenuItemWC({ text: 'Transform', leftElement: makeIcon(I.move) })
+    const w3TransSub = new UIPopupWC({ anchor: w3TransItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'Transform' })
+    const w3RotateItem = new UIMenuItemWC({ text: 'Rotate', leftElement: makeIcon(I.compass) })
+    makeSubMenu(w3RotateItem, ['90° CW', '90° CCW', '180°', 'Custom...'], { detachable: true, title: 'Rotate' })
+    w3TransSub.addChild(w3RotateItem)
+    w3TransSub.addChild(new UIMenuItemWC({ text: 'Flip Horizontal' }))
+    w3TransSub.addChild(new UIMenuItemWC({ text: 'Flip Vertical' }))
+    w3TransSub.addChild(new UIMenuItemWC({ text: 'Scale...' }))
+    w3TransItem.subMenu = w3TransSub
+    w3EditPopup.addChild(w3TransItem)
+
+    w3EditPopup.addChild(new UIMenuItemWC({ text: 'Select All', shortcut: 'Ctrl+A' }))
+    w3EditPopup.addChild(new UIMenuItemWC({ text: 'Find...', shortcut: 'Ctrl+F' }))
+
+    bar9.addItem(w3EditItem, w3EditPopup)
+
+    // View menu — ROOT detachable, Tool Palette + Layers (container)
+    const w3ViewItem = new UIMenuItemWC({ text: 'View', leftElement: makeIcon(I.eye) })
+    const w3ViewPopup = new UIPopupWC({ anchor: w3ViewItem, kind: 'menu', width: 200, height: 'auto', detachable: true, title: 'View' })
+
+    const w3ToolsItem = new UIMenuItemWC({ text: 'Tool Palette', leftElement: makeIcon(I.brush) })
+    const w3ToolsSub = new UIPopupWC({ anchor: w3ToolsItem, kind: 'menu', width: 160, height: 'auto', detachable: true, title: 'Tools' })
+    for (const t of ['Brush', 'Eraser', 'Fill', 'Select', 'Gradient']) {
+      w3ToolsSub.addChild(new UIMenuItemWC({ text: t }))
+    }
+    w3ToolsItem.subMenu = w3ToolsSub
+
+    const w3LayersItem = new UIMenuItemWC({ text: 'Layers', leftElement: makeIcon(I.layers) })
+    const w3LayersSub = new UIPopupWC({ anchor: w3LayersItem, kind: 'container', width: 190, height: 'auto', detachable: true, title: 'Layers' })
+    const w3LayersContent = document.createElement('div')
+    w3LayersContent.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:8px 10px;font-size:13px;'
+    for (const name of ['Background', 'Layer 1', 'Layer 2', 'Overlay', 'Effects']) {
+      const label = document.createElement('label')
+      label.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;'
+      label.setAttribute('data-focusable', '')
+      label.innerHTML = `<input type="checkbox" ${name === 'Background' ? 'checked' : ''}> ${name}`
+      w3LayersContent.appendChild(label)
+    }
+    w3LayersSub.addChild(w3LayersContent)
+    w3LayersItem.subMenu = w3LayersSub
+
+    w3ViewPopup.addChild(w3ToolsItem)
+    w3ViewPopup.addChild(w3LayersItem)
+    w3ViewPopup.addChild(new UIMenuItemWC({ text: 'Zoom In', shortcut: 'Ctrl++' }))
+    w3ViewPopup.addChild(new UIMenuItemWC({ text: 'Zoom Out', shortcut: 'Ctrl+-' }))
+    w3ViewPopup.addChild(new UIMenuItemWC({ text: 'Full Screen', shortcut: 'F11', leftElement: makeIcon(I.maximize) }))
+
+    bar9.addItem(w3ViewItem, w3ViewPopup)
+
+    // Help menu — ROOT detachable
+    const w3HelpItem = new UIMenuItemWC({ text: 'Help', leftElement: makeIcon(I.help) })
+    const w3HelpPopup = new UIPopupWC({ anchor: w3HelpItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'Help' })
+    w3HelpPopup.addChild(new UIMenuItemWC({ text: 'Documentation', leftElement: makeIcon(I.help) }))
+    w3HelpPopup.addChild(new UIMenuItemWC({ text: 'Release Notes', leftElement: makeIcon(I.file) }))
+    w3HelpPopup.addChild(new UIMenuItemWC({ text: 'About', leftElement: makeIcon(I.compass) }))
+    bar9.addItem(w3HelpItem, w3HelpPopup)
+
+    win3.contentElement.style.display = 'flex'
+    win3.contentElement.style.flexDirection = 'column'
+    win3.contentElement.appendChild(bar9)
+    const w3Body = document.createElement('div')
+    w3Body.style.cssText = 'flex:1;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;'
+    for (const label of ['New Doc', 'Save', 'Undo', 'Redo', 'Draw', 'Clear', 'Export']) {
+      const btn = document.createElement('ui-button') as HTMLElement
+      btn.setAttribute('variant', 'outline'); btn.setAttribute('size', 'small')
+      btn.setAttribute('data-focusable', ''); btn.textContent = label
+      w3Body.appendChild(btn)
+    }
+    win3.contentElement.appendChild(w3Body)
+    standaloneContainer.appendChild(win3)
+
+    // Window 4 — standalone, ROOT detachable + 3-level deep (Filters → Blur → Presets)
+    const win4 = new UIWindowWC({ title: 'Window 4 (standalone)', left: 0, top: 0, width: 480, height: 320, positioning: 'relative' })
+    const bar10 = new UIMenuBarWC()
+
+    // Settings menu — ROOT detachable, Appearance (container) + Editor (container)
+    const w4SettingsItem = new UIMenuItemWC({ text: 'Settings', leftElement: makeIcon(I.settings) })
+    const w4SettingsPopup = new UIPopupWC({ anchor: w4SettingsItem, kind: 'menu', width: 220, height: 'auto', detachable: true, title: 'Settings' })
+
+    const w4AppearItem = new UIMenuItemWC({ text: 'Appearance', leftElement: makeIcon(I.eye) })
+    const w4AppearSub = new UIPopupWC({ anchor: w4AppearItem, kind: 'container', width: 220, height: 'auto', detachable: true, title: 'Appearance' })
+    const w4AppearContent = document.createElement('div')
+    w4AppearContent.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:8px 10px;font-size:13px;'
+    for (const t of ['Dark Mode', 'Compact View', 'Show Icons', 'Animate Transitions']) {
+      const label = document.createElement('label')
+      label.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;'
+      label.setAttribute('data-focusable', '')
+      label.innerHTML = `<input type="checkbox"> ${t}`
+      w4AppearContent.appendChild(label)
+    }
+    w4AppearSub.addChild(w4AppearContent)
+    w4AppearItem.subMenu = w4AppearSub
+
+    const w4EditorItem = new UIMenuItemWC({ text: 'Editor', leftElement: makeIcon(I.type) })
+    const w4EditorSub = new UIPopupWC({ anchor: w4EditorItem, kind: 'container', width: 220, height: 'auto', detachable: true, title: 'Editor Settings' })
+    const w4EditorContent = document.createElement('div')
+    w4EditorContent.style.cssText = 'display:flex;flex-direction:column;gap:6px;padding:8px 10px;font-size:13px;'
+    for (const t of ['Word Wrap', 'Line Numbers', 'Minimap', 'Bracket Matching', 'Auto-Save']) {
+      const label = document.createElement('label')
+      label.style.cssText = 'display:flex;align-items:center;gap:6px;cursor:pointer;'
+      label.setAttribute('data-focusable', '')
+      label.innerHTML = `<input type="checkbox"> ${t}`
+      w4EditorContent.appendChild(label)
+    }
+    w4EditorSub.addChild(w4EditorContent)
+    w4EditorItem.subMenu = w4EditorSub
+
+    w4SettingsPopup.addChild(w4AppearItem)
+    w4SettingsPopup.addChild(w4EditorItem)
+    w4SettingsPopup.addChild(new UIMenuItemWC({ text: 'Keyboard Shortcuts', shortcut: 'Ctrl+K Ctrl+S', leftElement: makeIcon(I.terminal) }))
+    w4SettingsPopup.addChild(new UIMenuItemWC({ text: 'Reset to Defaults', disabled: true }))
+
+    bar10.addItem(w4SettingsItem, w4SettingsPopup)
+
+    // Tools menu — ROOT detachable, 3 levels: Brush → Presets → Custom
+    const w4ToolsItem = new UIMenuItemWC({ text: 'Tools', leftElement: makeIcon(I.wand) })
+    const w4ToolsPopup = new UIPopupWC({ anchor: w4ToolsItem, kind: 'menu', width: 220, height: 'auto', detachable: true, title: 'Tools' })
+
+    const w4BrushItem = new UIMenuItemWC({ text: 'Brush Tool', leftElement: makeIcon(I.brush) })
+    const w4BrushSub = new UIPopupWC({ anchor: w4BrushItem, kind: 'menu', width: 170, height: 'auto', detachable: true, title: 'Brush Types' })
+
+    const w4BrushPresetsItem = new UIMenuItemWC({ text: 'Presets', leftElement: makeIcon(I.sparkles) })
+    const w4BrushPresetsSub = new UIPopupWC({ anchor: w4BrushPresetsItem, kind: 'menu', width: 160, height: 'auto', detachable: true, title: 'Brush Presets' })
+    const w4CustomItem = new UIMenuItemWC({ text: 'Custom', leftElement: makeIcon(I.settings) })
+    makeSubMenu(w4CustomItem, ['Size', 'Opacity', 'Flow', 'Hardness'], { detachable: true, title: 'Custom Brush' })
+    w4BrushPresetsSub.addChild(new UIMenuItemWC({ text: 'Soft Round' }))
+    w4BrushPresetsSub.addChild(new UIMenuItemWC({ text: 'Hard Round' }))
+    w4BrushPresetsSub.addChild(new UIMenuItemWC({ text: 'Textured' }))
+    w4BrushPresetsSub.addChild(w4CustomItem)
+    w4BrushPresetsItem.subMenu = w4BrushPresetsSub
+
+    w4BrushSub.addChild(new UIMenuItemWC({ text: 'Round' }))
+    w4BrushSub.addChild(new UIMenuItemWC({ text: 'Flat' }))
+    w4BrushSub.addChild(new UIMenuItemWC({ text: 'Fan' }))
+    w4BrushSub.addChild(new UIMenuItemWC({ text: 'Airbrush' }))
+    w4BrushSub.addChild(w4BrushPresetsItem)
+    w4BrushItem.subMenu = w4BrushSub
+
+    const w4EraserItem = new UIMenuItemWC({ text: 'Eraser', leftElement: makeIcon(I.eraser) })
+    makeSubMenu(w4EraserItem, ['Soft', 'Hard', 'Block', 'Background'], { detachable: true, title: 'Eraser Modes' })
+
+    const w4FillItem = new UIMenuItemWC({ text: 'Fill Options', leftElement: makeIcon(I.bucket) })
+    makeSubMenu(w4FillItem, ['Tolerance: Low', 'Tolerance: Medium', 'Tolerance: High', 'Contiguous', 'All Layers'], {
+      kind: 'container', detachable: true, title: 'Fill Options', width: 200,
+    })
+
+    w4ToolsPopup.addChild(w4BrushItem)
+    w4ToolsPopup.addChild(w4EraserItem)
+    w4ToolsPopup.addChild(w4FillItem)
+    w4ToolsPopup.addChild(new UIMenuItemWC({ text: 'Color Picker', shortcut: 'I', leftElement: makeIcon(I.eyeOff) }))
+    w4ToolsPopup.addChild(new UIMenuItemWC({ text: 'Magic Wand', shortcut: 'W', leftElement: makeIcon(I.sparkles), disabled: true }))
+
+    bar10.addItem(w4ToolsItem, w4ToolsPopup)
+
+    // Filters menu — ROOT detachable, 3 levels: Blur → Gaussian → Quality
+    const w4FiltersItem = new UIMenuItemWC({ text: 'Filters', leftElement: makeIcon(I.sparkles) })
+    const w4FiltersPopup = new UIPopupWC({ anchor: w4FiltersItem, kind: 'menu', width: 200, height: 'auto', detachable: true, title: 'Filters' })
+
+    const w4BlurItem = new UIMenuItemWC({ text: 'Blur', leftElement: makeIcon(I.eye) })
+    const w4BlurSub = new UIPopupWC({ anchor: w4BlurItem, kind: 'menu', width: 170, height: 'auto', detachable: true, title: 'Blur' })
+
+    const w4GaussianItem = new UIMenuItemWC({ text: 'Gaussian', leftElement: makeIcon(I.sparkles) })
+    makeSubMenu(w4GaussianItem, ['Low (1px)', 'Medium (3px)', 'High (5px)', 'Custom...'], { detachable: true, title: 'Gaussian Blur' })
+
+    w4BlurSub.addChild(w4GaussianItem)
+    w4BlurSub.addChild(new UIMenuItemWC({ text: 'Motion' }))
+    w4BlurSub.addChild(new UIMenuItemWC({ text: 'Radial' }))
+    w4BlurSub.addChild(new UIMenuItemWC({ text: 'Box' }))
+    w4BlurItem.subMenu = w4BlurSub
+
+    const w4SharpenItem = new UIMenuItemWC({ text: 'Sharpen', leftElement: makeIcon(I.wand) })
+    makeSubMenu(w4SharpenItem, ['Unsharp Mask', 'Smart Sharpen', 'High Pass'], { detachable: true, title: 'Sharpen' })
+
+    w4FiltersPopup.addChild(w4BlurItem)
+    w4FiltersPopup.addChild(w4SharpenItem)
+    w4FiltersPopup.addChild(new UIMenuItemWC({ text: 'Noise Reduction', leftElement: makeIcon(I.sparkles), disabled: true }))
+    w4FiltersPopup.addChild(new UIMenuItemWC({ text: 'Distort', leftElement: makeIcon(I.compass) }))
+
+    bar10.addItem(w4FiltersItem, w4FiltersPopup)
+
+    // Help menu — ROOT detachable
+    const w4HelpItem = new UIMenuItemWC({ text: 'Help', leftElement: makeIcon(I.help) })
+    const w4HelpPopup = new UIPopupWC({ anchor: w4HelpItem, kind: 'menu', width: 180, height: 'auto', detachable: true, title: 'Help' })
+    w4HelpPopup.addChild(new UIMenuItemWC({ text: 'Documentation', leftElement: makeIcon(I.help) }))
+    w4HelpPopup.addChild(new UIMenuItemWC({ text: 'Release Notes', leftElement: makeIcon(I.file) }))
+    w4HelpPopup.addChild(new UIMenuItemWC({ text: 'Report a Bug', leftElement: makeIcon(I.terminal) }))
+    w4HelpPopup.addChild(new UIMenuItemWC({ text: 'About', leftElement: makeIcon(I.compass) }))
+    bar10.addItem(w4HelpItem, w4HelpPopup)
+
+    win4.contentElement.style.display = 'flex'
+    win4.contentElement.style.flexDirection = 'column'
+    win4.contentElement.appendChild(bar10)
+    const w4Body = document.createElement('div')
+    w4Body.style.cssText = 'flex:1;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;'
+    for (const label of ['Apply', 'Cancel', 'Reset', 'Import', 'Export', 'Preview']) {
+      const btn = document.createElement('ui-button') as HTMLElement
+      btn.setAttribute('variant', 'outline'); btn.setAttribute('size', 'small')
+      btn.setAttribute('data-focusable', ''); btn.textContent = label
+      w4Body.appendChild(btn)
+    }
+    win4.contentElement.appendChild(w4Body)
+    standaloneContainer.appendChild(win4)
+
+    sec8.appendChild(standaloneContainer)
+    container.appendChild(sec8)
   },
 }

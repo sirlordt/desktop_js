@@ -1,6 +1,7 @@
 import cssText from './ui-menubar-wc.css?raw'
 import { UIMenuItemWC } from '../ui-menu-item-wc/ui-menu-item-wc'
 import { UIPopupWC } from '../ui-popup-wc/ui-popup-wc'
+import { UIWindowWC } from '../ui-window-wc/ui-window-wc'
 import type { UIMenuBarOptions } from '../common/types'
 
 export class UIMenuBarWC extends HTMLElement {
@@ -101,7 +102,44 @@ export class UIMenuBarWC extends HTMLElement {
     popup.minHeight = 0
     popup.closeOnClickOutside = true
     popup.closeOnEscape = true
+    // Assign overlord if already in the DOM
+    if (this._ancestorWindow) popup.overlord = this._ancestorWindow
     this._popupRegistry.set(item, popup)
+  }
+
+  private _ancestorWindow: UIWindowWC | null = null
+  private _ancestorResolved: boolean = false
+
+  /** Lazily resolve ancestor window and assign overlord to all registered popups */
+  private _ensureAncestorWindow(): void {
+    if (this._ancestorResolved) return
+    this._ancestorResolved = true
+    this._ancestorWindow = this._findAncestorWindow()
+    if (this._ancestorWindow) {
+      for (const popup of this._popupRegistry.values()) {
+        popup.overlord = this._ancestorWindow
+      }
+    }
+  }
+
+  /** Walk up to find nearest UIWindowWC ancestor (crossing shadow boundaries) */
+  private _findAncestorWindow(): UIWindowWC | null {
+    let el: HTMLElement | null = this as HTMLElement
+    while (el) {
+      if (el instanceof UIWindowWC) return el
+      const parent: HTMLElement | null = el.parentElement
+      if (parent) {
+        el = parent
+      } else {
+        const root = el.getRootNode()
+        if (root instanceof ShadowRoot) {
+          el = root.host as HTMLElement
+        } else {
+          break
+        }
+      }
+    }
+    return null
   }
 
   removeItem(item: UIMenuItemWC): void {
@@ -240,6 +278,45 @@ export class UIMenuBarWC extends HTMLElement {
     item.addEventListener('mouseleave', onLeave)
     fns.push(() => item.removeEventListener('mouseleave', onLeave))
 
+    // Clear highlight when item loses focus (e.g. Tab out of bar)
+    const onBlur = () => {
+      if (this._openItem !== item) {
+        item.highlighted = false
+        item.active = false
+      }
+      // If no item in this bar has focus after this frame, deactivate bar
+      requestAnimationFrame(() => {
+        if (this._openPopup) return  // popup open — stay active
+        // Check if the new focused element is one of our items
+        // Walk activeElement through shadow roots to find the deepest focused element
+        let focused: Element | null = document.activeElement
+        while (focused?.shadowRoot?.activeElement) {
+          focused = focused.shadowRoot.activeElement
+        }
+        if (focused && (this.contains(focused) || this._shadow.contains(focused))) return
+        this._barActive = false
+        this._clearHighlight()
+      })
+    }
+    item.addEventListener('blur', onBlur)
+    fns.push(() => item.removeEventListener('blur', onBlur))
+
+    // Activate bar when item receives focus (e.g. Tab cycling)
+    const onFocus = () => {
+      if (this._disabled) return
+      // Deactivate all other menubars
+      document.querySelectorAll<UIMenuBarWC>('menubar-wc').forEach(other => {
+        if (other !== this) { other._closeOpenPopup(); other._clearHighlight(); other._barActive = false }
+      })
+      this._barActive = true
+      this._clearHighlight()
+      item.highlighted = true
+      const items = this.getItems()
+      this._activeIndex = items.indexOf(item)
+    }
+    item.addEventListener('focus', onFocus)
+    fns.push(() => item.removeEventListener('focus', onFocus))
+
     this._itemCleanups.set(item, fns)
   }
 
@@ -261,6 +338,9 @@ export class UIMenuBarWC extends HTMLElement {
     if (this._disabled) return
     const popup = this._getPopup(item)
     if (!popup) return
+
+    // Lazily resolve ancestor window on first popup open
+    this._ensureAncestorWindow()
 
     // Close any currently open popup
     this._closeOpenPopup()
@@ -285,8 +365,10 @@ export class UIMenuBarWC extends HTMLElement {
     const focusTarget = item.style.display === 'none' ? this._overflowItem : item
     focusTarget.focus({ preventScroll: true })
 
-    // Open the popup
-    popup.show()
+    // Open the popup (skip if already detached — it lives independently)
+    if (popup.state !== 'detached') {
+      popup.show()
+    }
 
     // Listen for popup close
     const onClose = () => {
@@ -307,7 +389,8 @@ export class UIMenuBarWC extends HTMLElement {
     this._openPopup = null
     this._openItem = null
     if (prevItem) prevItem.active = false
-    if (prevPopup && prevPopup.visible) prevPopup.close()
+    // Don't close detached popups — they live independently as tool windows
+    if (prevPopup && prevPopup.visible && prevPopup.state !== 'detached') prevPopup.close()
   }
 
   private _onPopupClosed(item: UIMenuItemWC): void {
@@ -422,6 +505,7 @@ export class UIMenuBarWC extends HTMLElement {
     if (index < 0 || index >= items.length) return
     this._activeIndex = index
     items[index].highlighted = true
+    items[index].focus({ preventScroll: true })
   }
 
   private _clearHighlight(): void {
@@ -454,9 +538,9 @@ export class UIMenuBarWC extends HTMLElement {
   private _handleKeyDown(e: KeyboardEvent): void {
     if (this._disabled) return
 
-    // If a popup is open, handle boundary crossing
+    // If a popup is open, this bar owns the interaction — handle boundary crossing
+    // (No _isEventMine check needed: only one bar can have a popup open at a time)
     if (this._openPopup?.visible) {
-      if (!this._isEventMine(e)) return
       this._handleKeyWithPopupOpen(e)
       return
     }
@@ -468,9 +552,8 @@ export class UIMenuBarWC extends HTMLElement {
       if (e.key === 'Escape') return
     }
 
-    // Bar-level nav only when bar is active (after a popup was closed or item clicked)
+    // Bar-level nav only when bar is active (after a popup was closed, item clicked, or Tab focus)
     if (!this._barActive) return
-    if (!this._isEventMine(e)) return
 
     const items = this.getItems()
     if (items.length === 0) return
@@ -503,21 +586,21 @@ export class UIMenuBarWC extends HTMLElement {
     if (!this._openPopup) return
 
     // Only intercept at the popup root level (no active sub-menu chain)
-    if (this._openPopup.hasActiveSubMenu) return
+    // For menu sub-menus: _activeSubMenu tracks the chain
+    // For container sub-menus: they don't use _activeSubMenu, check separately
+    if (this._openPopup.hasActiveSubMenu || this._openPopup.hasOpenContainerSubMenu) return
 
     const items = this.getItems()
     if (items.length === 0) return
 
     if (e.key === 'ArrowLeft') {
-      // If the popup is a sub-menu root with no active sub, cross to previous bar item
-      e.preventDefault(); e.stopPropagation()
+      e.preventDefault(); e.stopImmediatePropagation()
       const prev = this._activeIndex > 0 ? this._activeIndex - 1 : items.length - 1
       this._openItemPopup(items[prev])
     } else if (e.key === 'ArrowRight') {
-      // Only cross to next bar item if highlighted item has no sub-menu
       const highlighted = this._openPopup.highlightedItem
-      if (highlighted && highlighted.hasSubMenu) return // let popup handle it
-      e.preventDefault(); e.stopPropagation()
+      if (highlighted && highlighted.hasSubMenu) return // let popup open sub-menu
+      e.preventDefault(); e.stopImmediatePropagation()
       const next = this._activeIndex < items.length - 1 ? this._activeIndex + 1 : 0
       this._openItemPopup(items[next])
     } else if (e.key === 'Escape') {

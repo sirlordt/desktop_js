@@ -197,8 +197,28 @@ export class UIWindowManagerWC extends UIPanelWC {
     return true
   }
 
+  /** Check if this manager should handle keyboard shortcuts.
+   *  True when: the active element is inside this WM, OR no other WM owns focus
+   *  (i.e. focus is on body/document and this WM has a _focused child). */
+  private _ownsKeyboardFocus(): boolean {
+    let el = document.activeElement as HTMLElement | null
+    // Walk up from active element (crossing shadow roots) to find a manager
+    while (el) {
+      if (el === this) return true
+      // If another manager owns focus, we don't
+      if (el !== this && el.tagName === 'WINDOW-MANAGER-WC') return false
+      const root = el.getRootNode()
+      if (root instanceof ShadowRoot) el = root.host as HTMLElement
+      else el = el.parentElement
+    }
+    // Active element is not inside any WM (e.g. body) — only respond if we have a focused child
+    return this._focused !== null
+  }
+
   private _bindKeyboard(): void {
     const handler = (e: KeyboardEvent) => {
+      // Only respond if this manager owns keyboard focus
+      if (!this._ownsKeyboardFocus()) return
       if (this._matchShortcut(e, this._cycleNext)) { e.preventDefault(); this.focusNext() }
       else if (this._matchShortcut(e, this._cyclePrev)) { e.preventDefault(); this.focusPrevious() }
       else if (this._focused) {

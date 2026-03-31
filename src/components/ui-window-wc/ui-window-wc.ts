@@ -17,6 +17,28 @@ const WINDOW_ATTRS = [
   'titlebar-height', 'auto-unfold',
 ] as const
 
+// Shared theme observer — one MutationObserver for all UIWindowWC instances
+const _themeInstances: Set<UIWindowWC> = new Set()
+let _themeObserver: MutationObserver | null = null
+
+function _registerThemeInstance(win: UIWindowWC): void {
+  _themeInstances.add(win)
+  if (!_themeObserver) {
+    _themeObserver = new MutationObserver(() => {
+      for (const w of _themeInstances) w._syncTheme()
+    })
+    _themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  }
+}
+
+function _unregisterThemeInstance(win: UIWindowWC): void {
+  _themeInstances.delete(win)
+  if (_themeInstances.size === 0 && _themeObserver) {
+    _themeObserver.disconnect()
+    _themeObserver = null
+  }
+}
+
 export class UIWindowWC extends HTMLElement implements IWindowChild {
   windowId: string = ''
   contentElement!: HTMLDivElement
@@ -414,10 +436,9 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
       this.simulateFocus = active
     }))
 
-    // Theme observer
-    const themeObs = new MutationObserver(() => this._syncTheme())
-    themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-    this._cleanups.push(() => themeObs.disconnect())
+    // Theme observer (shared static — one for all instances)
+    _registerThemeInstance(this)
+    this._cleanups.push(() => _unregisterThemeInstance(this))
 
     // Release build options reference
     this._buildOptions = null
@@ -886,7 +907,8 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
 
   // ── Theme ──
 
-  private _syncTheme(): void {
+  /** @internal — called by shared theme observer */
+  _syncTheme(): void {
     const theme = document.documentElement.getAttribute('data-theme') || ''
     this.classList.remove('win95', 'win95-dark')
     if (theme === 'win95-dark') {
@@ -899,20 +921,6 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
   // ── Drag ──
 
   private _bindDrag(): void {
-    const onMouseDown = (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('.buttons')) return
-      if ((e.target as HTMLElement).closest('.right-slot')) return
-      if (!this._movable) return
-      if (this.windowState === 'maximized' || this.windowState === 'minimized') return
-      e.preventDefault()
-      const startLeft = this.left, startTop = this.top
-      if (!this._emitWindowEvent('start-drag', { left: startLeft, top: startTop, width: this.width, height: this.height })) return
-      this._dragging = true
-      this._dragStartX = e.clientX; this._dragStartY = e.clientY
-      this._dragStartLeft = startLeft; this._dragStartTop = startTop
-      if (this.manager) this.manager.bringToFront(this)
-    }
-
     const onMouseMove = (e: MouseEvent) => {
       if (!this._dragging) return
       const mgrEl = this._getManagerElement()
@@ -934,18 +942,33 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
     const onMouseUp = () => {
       if (!this._dragging) return
       this._dragging = false
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
       if (!this._emitWindowEvent('end-drag', { left: this.left, top: this.top, width: this.width, height: this.height })) {
         this.left = this._dragStartLeft; this.top = this._dragStartTop
       }
     }
 
+    const onMouseDown = (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('.buttons')) return
+      if ((e.target as HTMLElement).closest('.right-slot')) return
+      if (!this._movable) return
+      if (this.windowState === 'maximized' || this.windowState === 'minimized') return
+      e.preventDefault()
+      const startLeft = this.left, startTop = this.top
+      if (!this._emitWindowEvent('start-drag', { left: startLeft, top: startTop, width: this.width, height: this.height })) return
+      this._dragging = true
+      this._dragStartX = e.clientX; this._dragStartY = e.clientY
+      this._dragStartLeft = startLeft; this._dragStartTop = startTop
+      if (this.manager) this.manager.bringToFront(this)
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    }
+
     this.titleBarElement.addEventListener('mousedown', onMouseDown)
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
     this._cleanups.push(
       () => this.titleBarElement.removeEventListener('mousedown', onMouseDown),
-      () => document.removeEventListener('mousemove', onMouseMove),
-      () => document.removeEventListener('mouseup', onMouseUp),
+      () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) },
     )
   }
 
@@ -1001,18 +1024,23 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
       const onMouseUp = () => {
         if (!resizing) return
         resizing = false
+        document.removeEventListener('mousemove', onMouseMove)
+        document.removeEventListener('mouseup', onMouseUp)
         if (!this._emitWindowEvent('end-resize', { left: this.left, top: this.top, width: this.width, height: this.height })) {
           this.left = startL; this.top = startT; this.width = startW; this.height = startH
         }
       }
 
-      handle.addEventListener('mousedown', onMouseDown)
-      document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('mouseup', onMouseUp)
+      handle.addEventListener('mousedown', (e: MouseEvent) => {
+        onMouseDown(e)
+        if (resizing) {
+          document.addEventListener('mousemove', onMouseMove)
+          document.addEventListener('mouseup', onMouseUp)
+        }
+      })
       this._cleanups.push(
         () => handle.removeEventListener('mousedown', onMouseDown),
-        () => document.removeEventListener('mousemove', onMouseMove),
-        () => document.removeEventListener('mouseup', onMouseUp),
+        () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp) },
       )
     }
 
@@ -1192,7 +1220,7 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
     // Standalone blur: when a mousedown occurs outside this window and its tools,
     // blur this window. This handles cross-context focus (e.g. clicking inside a WM
     // should blur standalone windows, and vice versa).
-    document.addEventListener('mousedown', (e: MouseEvent) => {
+    const standaloneBlurHandler = (e: MouseEvent) => {
       if (this.manager) return
       if (this._overlord) return  // tools are blurred via their overlord
       if (!this.titleBarElement.classList.contains('focused')) return
@@ -1204,7 +1232,9 @@ export class UIWindowWC extends HTMLElement implements IWindowChild {
         if ((node as any).tagName === 'WINDOW-WC' && (node as any)._simulateFocus) return
       }
       this.onBlurred()
-    }, true)
+    }
+    document.addEventListener('mousedown', standaloneBlurHandler, true)
+    this._cleanups.push(() => document.removeEventListener('mousedown', standaloneBlurHandler, true))
 
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') return

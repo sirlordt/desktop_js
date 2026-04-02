@@ -39,6 +39,14 @@
   --input-border-color: rgba(0, 0, 0, 0.18);
   --input-focus-border-color: #3584e4;
   --input-placeholder-color: #929595;
+  --input-label-color: #666;
+  --input-label-focus-color: #3584e4;
+  --input-filled-bg-color: rgba(0, 0, 0, 0.04);
+  --input-success-color: #2ec27e;
+  --input-error-color: #c01c28;
+  --input-disabled-opacity: 0.5;
+  --input-border-radius: 6px;
+  --input-transition: all 300ms ease-out;
 
   /* Menu / Dropdown */
   --menu-bg-color: #ffffff;

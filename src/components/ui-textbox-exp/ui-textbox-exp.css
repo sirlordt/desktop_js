@@ -1,0 +1,40 @@
+:host {
+  display: inline-block;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.render-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.hidden-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+  font: inherit;
+  cursor: text;
+  pointer-events: auto;
+}
+
+:host([disabled]) .hidden-input {
+  pointer-events: none;
+  cursor: default;
+}

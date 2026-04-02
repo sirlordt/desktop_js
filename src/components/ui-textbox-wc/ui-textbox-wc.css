@@ -1,0 +1,563 @@
+/* =============================================
+   UITextBoxWC — Shadow DOM Styles
+   ============================================= */
+
+:host {
+  display: inline-block;
+  position: relative;
+  font-family: var(--font-family, sans-serif);
+  --_border-color: var(--input-border-color, #555);
+  --_focus-color: var(--input-focus-border-color, #3584e4);
+  --_bg: var(--input-bg-color, #2d2d2d);
+  --_fg: var(--input-fg-color, #fff);
+  --_label-color: var(--input-label-color, #999);
+  --_label-focus-color: var(--input-label-focus-color, var(--_focus-color));
+  --_placeholder-color: var(--input-placeholder-color, #777);
+  --_filled-bg: var(--input-filled-bg-color, rgba(255,255,255,0.06));
+  --_success-color: var(--input-success-color, #33d17a);
+  --_error-color: var(--input-error-color, #e01b24);
+  --_radius: var(--input-border-radius, 6px);
+  --_transition: var(--input-transition, all 150ms ease);
+  --_disabled-opacity: var(--input-disabled-opacity, 0.5);
+}
+
+:host([disabled]) {
+  pointer-events: none;
+  opacity: var(--_disabled-opacity);
+}
+
+/* ── Container ── */
+
+.textbox {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Input area (input + label) ── */
+
+.input-area {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--_fg);
+  font: inherit;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+input::placeholder {
+  color: var(--_placeholder-color);
+  opacity: 1;
+}
+
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* ── Floating label ── */
+
+.floating-label {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--_label-color);
+  pointer-events: none;
+  transform-origin: left center;
+  transition: var(--_transition);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 8px);
+}
+
+/* Floated state: focused or has value */
+.textbox.floated .floating-label,
+.textbox.focused .floating-label {
+  color: var(--_label-focus-color);
+}
+
+.textbox.floated:not(.focused) .floating-label {
+  color: var(--_label-color);
+}
+
+/* ── Slots ── */
+
+slot[name="start"]::slotted(*),
+slot[name="end"]::slotted(*) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.slot-start,
+.slot-end {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Filled/Standard: when focused/has-value, icon drops to align with text */
+.textbox.filled .slot-start,
+.textbox.filled .slot-end,
+.textbox.standard .slot-start,
+.textbox.standard .slot-end {
+  transition: transform var(--_transition);
+  transform: translateY(0);
+}
+
+.textbox.filled.floated .slot-start,
+.textbox.filled.floated .slot-end,
+.textbox.filled.focused .slot-start,
+.textbox.filled.focused .slot-end,
+.textbox.standard.floated .slot-start,
+.textbox.standard.floated .slot-end,
+.textbox.standard.focused .slot-start,
+.textbox.standard.focused .slot-end {
+  transform: translateY(7px);
+}
+:host([size="small"]) .textbox.filled.floated .slot-start,
+:host([size="small"]) .textbox.filled.floated .slot-end,
+:host([size="small"]) .textbox.filled.focused .slot-start,
+:host([size="small"]) .textbox.filled.focused .slot-end,
+:host([size="small"]) .textbox.standard.floated .slot-start,
+:host([size="small"]) .textbox.standard.floated .slot-end,
+:host([size="small"]) .textbox.standard.focused .slot-start,
+:host([size="small"]) .textbox.standard.focused .slot-end {
+  transform: translateY(8px);
+}
+:host([size="large"]) .textbox.filled.floated .slot-start,
+:host([size="large"]) .textbox.filled.floated .slot-end,
+:host([size="large"]) .textbox.filled.focused .slot-start,
+:host([size="large"]) .textbox.filled.focused .slot-end,
+:host([size="large"]) .textbox.standard.floated .slot-start,
+:host([size="large"]) .textbox.standard.floated .slot-end,
+:host([size="large"]) .textbox.standard.focused .slot-start,
+:host([size="large"]) .textbox.standard.focused .slot-end {
+  transform: translateY(10px);
+}
+
+/* Slots: centered by default (aligns with label), translateY when focused/has-value (aligns with text) */
+
+.slot-start:empty,
+.slot-end:empty {
+  display: none;
+}
+
+/* ── Clear button ── */
+
+.clear-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--_label-color);
+  cursor: pointer;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  transition: var(--_transition);
+}
+
+.clear-btn:hover {
+  color: var(--_fg);
+  background: rgba(128,128,128,0.2);
+}
+
+.textbox.has-value.clearable .clear-btn {
+  display: inline-flex;
+}
+
+/* ── Helper text ── */
+
+.helper {
+  font-size: 12px;
+  padding: 4px 4px 0;
+  color: var(--_label-color);
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.helper-icon:empty {
+  display: none;
+}
+
+.helper-icon {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* ── Fieldset (outlined notch) — hidden, kept for DOM ── */
+
+.outline-border {
+  display: none;
+}
+
+/* =============================================
+   VARIANT: Outlined
+   ============================================= */
+
+.textbox.outlined .input-wrapper {
+  border: 1px solid var(--_border-color);
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  border-radius: var(--_radius);
+  background: var(--_bg);
+  position: relative;
+  transition: var(--_transition);
+}
+
+.textbox.outlined.focused .input-wrapper {
+  border-color: var(--_focus-color);
+  outline-color: var(--_focus-color);
+}
+
+.textbox.outlined .floating-label {
+  left: 3px;
+  padding: 0 3px;
+  margin-left: -3px;
+}
+
+.textbox.outlined.floated .floating-label,
+.textbox.outlined.focused:not(.has-value) .floating-label {
+  transform: translateY(-150%) scale(0.75);
+  background: var(--_bg);
+}
+:host([size="large"]) .textbox.outlined.floated .floating-label,
+:host([size="large"]) .textbox.outlined.focused:not(.has-value) .floating-label {
+  transform: translateY(-130%) scale(0.75);
+}
+
+/* When has start slot and floated, label aligns to wrapper left edge */
+.textbox.outlined.has-start.floated .floating-label,
+.textbox.outlined.has-start.focused:not(.has-value) .floating-label {
+  left: 4px;
+  margin-left: calc(-1 * var(--_start-offset, 0px));
+}
+
+/* =============================================
+   VARIANT: Filled
+   ============================================= */
+
+.textbox.filled .input-wrapper {
+  background: var(--_filled-bg);
+  border-radius: var(--_radius) var(--_radius) 0 0;
+  border-bottom: 1px solid var(--_border-color);
+  transition: var(--_transition);
+}
+
+.textbox.filled.focused .input-wrapper {
+  border-bottom-color: var(--_focus-color);
+}
+
+.textbox.filled input {
+  padding-top: 16px;
+  padding-bottom: 2px;
+}
+:host([size="small"]) .textbox.filled input {
+  padding-top: 17px;
+  padding-bottom: 1px;
+}
+:host([size="large"]) .textbox.filled input {
+  padding-top: 20px;
+  padding-bottom: 0px;
+}
+
+.textbox.filled .floating-label {
+  left: 3px;
+  top: 50%;
+}
+
+.textbox.filled.has-start.floated .floating-label,
+.textbox.filled.has-start.focused:not(.has-value) .floating-label {
+  margin-left: calc(-1 * var(--_start-offset, 0px));
+}
+
+.textbox.filled.floated .floating-label,
+.textbox.filled.focused:not(.has-value) .floating-label {
+  transform: translateY(-95%) scale(0.75);
+}
+:host([size="small"]) .textbox.filled.floated .floating-label,
+:host([size="small"]) .textbox.filled.focused:not(.has-value) .floating-label {
+  transform: translateY(-95%) scale(0.75);
+}
+
+/* =============================================
+   VARIANT: Standard
+   ============================================= */
+
+.textbox.standard .input-wrapper {
+  background: transparent;
+  border-bottom: 1px solid var(--_border-color);
+  transition: var(--_transition);
+  border-radius: 0;
+}
+
+.textbox.standard.focused .input-wrapper {
+  border-bottom-color: var(--_focus-color);
+}
+
+.textbox.standard input {
+  padding-top: 16px;
+  padding-bottom: 2px;
+}
+:host([size="small"]) .textbox.standard input {
+  padding-top: 17px;
+  padding-bottom: 1px;
+}
+:host([size="large"]) .textbox.standard input {
+  padding-top: 20px;
+  padding-bottom: 0px;
+}
+
+.textbox.standard .floating-label {
+  left: 3px;
+  top: 50%;
+}
+
+.textbox.standard.has-start.floated .floating-label,
+.textbox.standard.has-start.focused:not(.has-value) .floating-label {
+  margin-left: calc(-1 * var(--_start-offset, 0px));
+}
+
+.textbox.standard.floated .floating-label,
+.textbox.standard.focused:not(.has-value) .floating-label {
+  transform: translateY(-95%) scale(0.75);
+}
+:host([size="small"]) .textbox.standard.floated .floating-label,
+:host([size="small"]) .textbox.standard.focused:not(.has-value) .floating-label {
+  transform: translateY(-95%) scale(0.75);
+}
+
+/* =============================================
+   VARIANT: Fixed
+   ============================================= */
+
+.textbox.fixed .floating-label {
+  position: static;
+  transform: none !important;
+  margin-bottom: 4px;
+  font-size: 13px;
+  display: block;
+  color: var(--_label-color);
+}
+
+.textbox.fixed.focused .floating-label {
+  color: var(--_label-focus-color);
+}
+
+.textbox.fixed .input-wrapper {
+  border: 1px solid var(--_border-color);
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  border-radius: var(--_radius);
+  background: var(--_bg);
+  transition: var(--_transition);
+}
+
+.textbox.fixed input {
+  padding-top: 7px;
+  padding-bottom: 5px;
+}
+:host([size="small"]) .textbox.fixed input {
+  padding-top: 5px;
+  padding-bottom: 3px;
+}
+:host([size="large"]) .textbox.fixed input {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.textbox.fixed.focused .input-wrapper {
+  border-color: var(--_focus-color);
+  outline-color: var(--_focus-color);
+}
+
+/* =============================================
+   SIZES
+   ============================================= */
+
+/* ── Small ── */
+:host([size="small"]) .input-wrapper { min-height: 36px; }
+:host([size="small"]) input { font-size: 13px; padding: 8px 3px 4px; }
+:host([size="small"]) .floating-label { font-size: 13px; }
+:host([size="small"]) .slot-start { padding-left: 4px; }
+:host([size="small"]) .slot-end { padding-right: 4px; }
+
+/* ── Medium (default) ── */
+.input-wrapper { min-height: 40px; }
+input { font-size: 14px; padding: 10px 3px 6px; }
+.floating-label { font-size: 14px; }
+.slot-start { padding-left: 4px; gap: 4px; }
+.slot-end { padding-right: 4px; gap: 4px; }
+
+/* ── Large ── */
+:host([size="large"]) .input-wrapper { min-height: 48px; }
+:host([size="large"]) input { font-size: 24px; padding: 12px 4px 8px; }
+:host([size="large"]) .floating-label { font-size: 24px; }
+:host([size="large"]) .slot-start { padding-left: 4px; }
+:host([size="large"]) .slot-end { padding-right: 4px; }
+
+/* =============================================
+   VALIDATION
+   ============================================= */
+
+.textbox.validation-success .input-wrapper {
+  border-color: var(--_success-color) !important;
+  outline-color: var(--_success-color) !important;
+}
+.textbox.validation-success .floating-label {
+  color: var(--_success-color) !important;
+}
+.textbox.validation-success .helper {
+  color: var(--_success-color);
+}
+
+.textbox.validation-error .input-wrapper {
+  border-color: var(--_error-color) !important;
+  outline-color: var(--_error-color) !important;
+}
+.textbox.validation-error .floating-label {
+  color: var(--_error-color) !important;
+}
+.textbox.validation-error .helper {
+  color: var(--_error-color);
+}
+
+/* =============================================
+   MULTILINE (textarea)
+   ============================================= */
+
+textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--_fg);
+  font: inherit;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  resize: none;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+textarea::placeholder {
+  color: var(--_placeholder-color);
+  opacity: 1;
+}
+
+/* Multiline container: align items to top instead of center */
+.textbox.multiline .input-wrapper {
+  align-items: flex-start;
+}
+
+.textbox.multiline .input-area {
+  align-items: flex-start;
+}
+
+/* Floating label: anchor to top in multiline */
+.textbox.multiline .floating-label {
+  top: 0;
+  transform: translateY(50%);
+}
+
+.textbox.multiline.floated .floating-label,
+.textbox.multiline.focused .floating-label {
+  transform: translateY(-50%) scale(0.75);
+}
+
+/* Outlined multiline label float */
+.textbox.outlined.multiline.floated .floating-label,
+.textbox.outlined.multiline.focused:not(.has-value) .floating-label {
+  transform: translateY(-50%) scale(0.75);
+  background: var(--_bg);
+}
+
+/* Filled/Standard multiline: floating label inside, clip textarea top so scrolled text hides behind label */
+.textbox.filled.multiline textarea,
+.textbox.standard.multiline textarea {
+  padding-top: 22px;
+  clip-path: inset(22px 0 0 0);
+}
+:host([size="small"]) .textbox.filled.multiline textarea,
+:host([size="small"]) .textbox.standard.multiline textarea {
+  padding-top: 20px;
+  clip-path: inset(20px 0 0 0);
+}
+:host([size="large"]) .textbox.filled.multiline textarea,
+:host([size="large"]) .textbox.standard.multiline textarea {
+  padding-top: 28px;
+  clip-path: inset(28px 0 0 0);
+}
+
+.textbox.filled.multiline .floating-label,
+.textbox.standard.multiline .floating-label {
+  top: 0;
+  transform: translateY(50%);
+}
+
+.textbox.filled.multiline.floated .floating-label,
+.textbox.filled.multiline.focused:not(.has-value) .floating-label,
+.textbox.standard.multiline.floated .floating-label,
+.textbox.standard.multiline.focused:not(.has-value) .floating-label {
+  transform: translateY(15%) scale(0.75);
+}
+
+/* Multiline slots align to top */
+.textbox.multiline .slot-start,
+.textbox.multiline .slot-end {
+  padding-top: 8px;
+}
+
+/* Clear button aligns to top in multiline */
+.textbox.multiline .clear-btn {
+  margin-top: 8px;
+}
+
+/* Scrollbar inside multiline: styled inline (scrollbar _applyClasses overwrites className) */
+
+/* Sizes for textarea */
+:host([size="small"]) textarea { font-size: 13px; padding: 8px 3px 4px; }
+textarea { font-size: 14px; padding: 10px 3px 6px; }
+:host([size="large"]) textarea { font-size: 24px; padding: 12px 4px 8px; }
+
+/* Fixed multiline: same padding as fixed input */
+.textbox.fixed.multiline textarea { padding-top: 7px; padding-bottom: 5px; }
+:host([size="small"]) .textbox.fixed.multiline textarea { padding-top: 5px; padding-bottom: 3px; }
+:host([size="large"]) .textbox.fixed.multiline textarea { padding-top: 5px; padding-bottom: 5px; }
+
+/* WIN95 overrides are handled via CSS custom properties:
+   --input-border-radius: 0px and --input-transition: none
+   are set in the win95 theme files, so no :host-context needed. */

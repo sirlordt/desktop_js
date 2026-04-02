@@ -418,3 +418,80 @@ export interface UIWindowOptions {
   showShortcuts?: boolean
   allowMoveOffParent?: boolean
 }
+
+// ── TextBox Experimental ──
+
+export interface UITextBoxExpOptions {
+  /** Initial text value */
+  value?: string
+  /** Placeholder text shown when empty and unfocused */
+  placeholder?: string
+  /** Width in pixels */
+  width?: number
+  /** Height in pixels */
+  height?: number
+  /** Font family */
+  fontFamily?: string
+  /** Font size in pixels */
+  fontSize?: number
+  /** Disabled state — no interaction */
+  disabled?: boolean
+  /** Read-only state — selectable but not editable */
+  readonly?: boolean
+  /** Maximum character count (-1 = unlimited) */
+  maxLength?: number
+  /** CSS class to add to host */
+  className?: string
+}
+
+// ── TextBox WC (production) ──
+
+export const TextBoxVariant = {
+  Outlined: 'outlined',
+  Filled: 'filled',
+  Standard: 'standard',
+  Fixed: 'fixed',
+} as const
+export type TextBoxVariant = typeof TextBoxVariant[keyof typeof TextBoxVariant]
+
+export const TextBoxSize = {
+  Small: 'small',
+  Medium: 'medium',
+  Large: 'large',
+} as const
+export type TextBoxSize = typeof TextBoxSize[keyof typeof TextBoxSize]
+
+export const TextBoxValidation = {
+  None: 'none',
+  Success: 'success',
+  Error: 'error',
+} as const
+export type TextBoxValidation = typeof TextBoxValidation[keyof typeof TextBoxValidation]
+
+export interface UITextBoxWCOptions {
+  variant?: TextBoxVariant
+  size?: TextBoxSize
+  label?: string
+  placeholder?: string
+  value?: string
+  type?: 'text' | 'password' | 'email' | 'number' | 'tel' | 'url' | 'search'
+  disabled?: boolean
+  readonly?: boolean
+  maxLength?: number
+  pattern?: string
+  required?: boolean
+  validation?: TextBoxValidation
+  helperText?: string
+  clearable?: boolean
+  /** Icon shown before helper text. 'auto' shows ✓ for success, ⚠ for error */
+  helperIcon?: string | 'auto'
+  /** Tooltip hint: string for simple text, or a pre-configured UIHintWC instance */
+  hint?: string | HTMLElement
+  width?: number | string
+  name?: string
+  autocomplete?: string
+  /** Use a <textarea> instead of <input>. Switchable at runtime. */
+  multiline?: boolean
+  /** Number of visible rows when multiline (default: 3) */
+  rows?: number
+}

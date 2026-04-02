@@ -11,6 +11,8 @@ import { windowsWCDemo } from './demos/windows-wc'
 import { menuItemsWCDemo } from './demos/menu-items-wc'
 import { popupsWCDemo } from './demos/popups-wc'
 import { menuBarWCDemo } from './demos/menubar-wc'
+import { textboxExpDemo } from './demos/textbox-exp'
+import { textboxWCDemo } from './demos/textbox-wc'
 
 // Register all demos here
 registerDemos([
@@ -25,6 +27,8 @@ registerDemos([
   menuItemsWCDemo,
   popupsWCDemo,
   menuBarWCDemo,
+  textboxExpDemo,
+  textboxWCDemo,
 ])
 
 initApp()

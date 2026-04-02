@@ -39,6 +39,14 @@
   --input-border-color: #808080;
   --input-focus-border-color: #000080;
   --input-placeholder-color: #808080;
+  --input-label-color: #333;
+  --input-label-focus-color: #000080;
+  --input-filled-bg-color: #e8e8e8;
+  --input-success-color: #008000;
+  --input-error-color: #cc0000;
+  --input-disabled-opacity: 0.5;
+  --input-border-radius: 0px;
+  --input-transition: all 300ms ease-out;
 
   /* Menu / Dropdown */
   --menu-bg-color: #c0c0c0;

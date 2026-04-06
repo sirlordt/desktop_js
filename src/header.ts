@@ -43,6 +43,7 @@ export function renderHeader(): string {
           ${routes.map(r => `
             <a href="#${r.id}" class="nav-link ${currentRoute === r.id ? 'active' : ''}">${r.label}</a>
           `).join('')}
+          <a href="/demo2d.html" class="nav-link">2D</a>
         </nav>
       </div>
       <div class="header-right">

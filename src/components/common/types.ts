@@ -419,6 +419,59 @@ export interface UIWindowOptions {
   allowMoveOffParent?: boolean
 }
 
+// ── Scrollbar2D types ──
+
+export const ScrollBar2DKind = {
+  Horizontal: 'horizontal',
+  Vertical: 'vertical',
+} as const
+export type ScrollBar2DKind = typeof ScrollBar2DKind[keyof typeof ScrollBar2DKind]
+
+export type { CanvasColors as ScrollBar2DTheme } from './canvas-theme'
+import type { CanvasColors } from './canvas-theme'
+
+export const ScrollBar2DSize = {
+  Small: 'small',
+  Normal: 'normal',
+  Large: 'large',
+  Custom: 'custom',
+} as const
+export type ScrollBar2DSize = typeof ScrollBar2DSize[keyof typeof ScrollBar2DSize]
+
+export interface ScrollBar2DOptions {
+  kind?: ScrollBar2DKind
+  size?: ScrollBar2DSize
+  width?: number
+  height?: number
+  barSize?: number              // only used when size is 'custom'
+  min?: number
+  max?: number
+  value?: number
+  visibleSize?: number
+  step?: number
+  pageStep?: number
+  enabled?: boolean              // default: true
+  focusable?: boolean           // default: false
+  showBackButton?: boolean      // default: true
+  showForwardButton?: boolean   // default: true
+  slim?: boolean                // default: false — shrinks to 20% when not hovered/focused
+  startButtons?: ScrollBar2DButtonConfig[]   // buttons before the back button
+  endButtons?: ScrollBar2DButtonConfig[]     // buttons after the forward button
+  theme?: Partial<CanvasColors>
+}
+
+export type ScrollBar2DIconName = 'minus' | 'plus' | 'square' | 'circle'
+
+export interface ScrollBar2DButtonConfig {
+  icon: ScrollBar2DIconName | string   // named icon or SVG path data
+  onClick: () => void
+}
+
+export interface ScrollBar2DChangeDetail {
+  value: number
+  previousValue: number
+}
+
 // ── TextBox Experimental ──
 
 export interface UITextBoxExpOptions {
@@ -494,4 +547,6 @@ export interface UITextBoxWCOptions {
   multiline?: boolean
   /** Number of visible rows when multiline (default: 3) */
   rows?: number
+  /** Text wrapping mode for multiline: 'soft' (default, word-wrap) or 'off' (no wrap, horizontal scroll) */
+  wrap?: 'soft' | 'off'
 }
